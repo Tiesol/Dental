@@ -7,9 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Valores en español tal como los nombra el PDF del docente (ver CONVENCIONES.md sección 1).
 enum Role {
-  PATIENT
-  DENTIST
+  PACIENTE
+  ODONTOLOGO
   ADMIN
 }
 
@@ -21,13 +22,13 @@ enum AppointmentStatus {
   CANCELADA
 }
 
+// Usuario base para autenticación. El perfil (Patient o Dentist) lleva los datos de negocio.
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
   passwordHash String
-  fullName     String
-  role         Role     @default(PATIENT)
-  isActive     Boolean  @default(true)
+  role         Role     @default(PACIENTE)
+  activo       Boolean  @default(true)
   createdAt    DateTime @default(now())
   patient      Patient?
   dentist      Dentist?
@@ -37,34 +38,39 @@ model Patient {
   id           String        @id @default(uuid())
   userId       String        @unique
   user         User          @relation(fields: [userId], references: [id])
-  phone        String?
-  birthDate    DateTime?
+  nombre       String
+  apellido     String
+  telefono     String?
   appointments Appointment[]
 }
 
+// Un odontólogo deshabilitado (activo = false) no acepta nuevas citas; su historial se conserva.
 model Dentist {
-  id           String             @id @default(uuid())
-  userId       String             @unique
-  user         User               @relation(fields: [userId], references: [id])
-  specialty    String
-  enabled      Boolean            @default(true)
-  services     DentistService[]
-  schedules    WorkSchedule[]
-  blocks       UnavailableBlock[]
-  appointments Appointment[]
+  id                String             @id @default(uuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id])
+  nombre            String
+  especialidad      String
+  activo            Boolean            @default(true)
+  services          DentistService[]
+  availabilityRules AvailabilityRule[]
+  unavailableBlocks UnavailableBlock[]
+  appointments      Appointment[]
 }
 
+// Un servicio deshabilitado (activo = false) no está disponible para nuevas reservas.
 model Service {
-  id              String           @id @default(uuid())
-  name            String           @unique
-  description     String
-  durationMinutes Int
-  referencePrice  Decimal?         @db.Decimal(10, 2)
-  enabled         Boolean          @default(true)
-  dentists        DentistService[]
-  appointments    Appointment[]
+  id                String           @id @default(uuid())
+  nombre            String           @unique
+  descripcion       String
+  duracionMin       Int
+  precioReferencial Decimal?         @db.Decimal(10, 2)
+  activo            Boolean          @default(true)
+  dentists          DentistService[]
+  appointments      Appointment[]
 }
 
+// Qué servicios realiza cada odontólogo.
 model DentistService {
   dentistId String
   serviceId String
@@ -74,26 +80,36 @@ model DentistService {
   @@id([dentistId, serviceId])
 }
 
-// Horario semanal recurrente: dayOfWeek 0=Dom..6=Sáb, minutos desde 00:00
-model WorkSchedule {
-  id          String  @id @default(uuid())
-  dentistId   String
-  dentist     Dentist @relation(fields: [dentistId], references: [id])
-  dayOfWeek   Int
-  startMinute Int
-  endMinute   Int
+// Horario semanal recurrente de atención.
+// diaSemana: 0 = domingo ... 6 = sábado. minutoInicio/minutoFin: minutos desde las 00:00
+// en la zona horaria de la clínica (CLINIC_TIMEZONE). Ej.: 09:00 = 540, 12:00 = 720.
+model AvailabilityRule {
+  id           String  @id @default(uuid())
+  dentistId    String
+  dentist      Dentist @relation(fields: [dentistId], references: [id])
+  diaSemana    Int
+  minutoInicio Int
+  minutoFin    Int
+
+  @@index([dentistId, diaSemana])
 }
 
-// Pausas / bloques no disponibles puntuales
+// Pausas o bloques puntuales en los que el odontólogo no atiende.
 model UnavailableBlock {
   id        String   @id @default(uuid())
   dentistId String
   dentist   Dentist  @relation(fields: [dentistId], references: [id])
-  startsAt  DateTime
-  endsAt    DateTime
-  reason    String?
+  inicio    DateTime @db.Timestamptz(3)
+  fin       DateTime @db.Timestamptz(3)
+  motivo    String?
+
+  @@index([dentistId, inicio])
 }
 
+// Cita. horaFin la calcula el backend (horaInicio + duracionMin del servicio).
+// Intervalo semiabierto [horaInicio, horaFin). Además del chequeo en la aplicación,
+// la migración agrega un constraint de exclusión en PostgreSQL que impide que dos citas
+// activas (estado <> CANCELADA) del mismo odontólogo se solapen.
 model Appointment {
   id          String            @id @default(uuid())
   patientId   String
@@ -102,12 +118,22 @@ model Appointment {
   patient     Patient           @relation(fields: [patientId], references: [id])
   dentist     Dentist           @relation(fields: [dentistId], references: [id])
   service     Service           @relation(fields: [serviceId], references: [id])
-  startsAt    DateTime
-  endsAt      DateTime
-  status      AppointmentStatus @default(PENDIENTE)
-  observation String?
+  horaInicio  DateTime          @db.Timestamptz(3)
+  horaFin     DateTime          @db.Timestamptz(3)
+  estado      AppointmentStatus @default(PENDIENTE)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+  observation Observation?
 
-  @@index([dentistId, startsAt])
+  @@index([dentistId, horaInicio])
+  @@index([patientId, horaInicio])
+}
+
+// Observación de atención registrada por el odontólogo al finalizar la cita.
+model Observation {
+  id            String      @id @default(uuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  texto         String
+  createdAt     DateTime    @default(now())
 }

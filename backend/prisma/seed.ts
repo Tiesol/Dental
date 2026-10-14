@@ -1,6 +1,8 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
+// Datos mínimos para desarrollo: un ADMIN y un ODONTOLOGO.
+// Los pacientes se registran desde el frontend o con POST /api/v1/auth/register.
 const prisma = new PrismaClient();
 
 async function main() {
@@ -9,25 +11,25 @@ async function main() {
     update: {},
     create: {
       email: 'admin@clinica.com',
-      fullName: 'Administrador',
-      role: Role.ADMIN,
+      role: 'ADMIN',
       passwordHash: await hash('Admin12345', 10),
     },
   });
 
-  const dentist = await prisma.user.upsert({
-    where: { email: 'dentista@clinica.com' },
+  const odontologo = await prisma.user.upsert({
+    where: { email: 'odontologo@clinica.com' },
     update: {},
     create: {
-      email: 'dentista@clinica.com',
-      fullName: 'Dra. Laura Gómez',
-      role: Role.DENTIST,
-      passwordHash: await hash('Dentista12345', 10),
-      dentist: { create: { specialty: 'Odontología general' } },
+      email: 'odontologo@clinica.com',
+      role: 'ODONTOLOGO',
+      passwordHash: await hash('Odontologo12345', 10),
+      dentist: {
+        create: { nombre: 'Dra. Laura Gómez', especialidad: 'Odontología general' },
+      },
     },
   });
 
-  console.log(`Seed listo: ${admin.email}, ${dentist.email}`);
+  console.log(`Seed listo: ${admin.email}, ${odontologo.email}`);
 }
 
 main()
