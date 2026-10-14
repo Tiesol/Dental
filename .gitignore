@@ -1,0 +1,26 @@
+# Documentación interna (no se versiona)
+docs/
+
+# Dependencias y builds
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+!.env.test.example
+
+# Artefactos generados
+graphify-out/
+playwright-report/
+test-results/
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
+*.log
