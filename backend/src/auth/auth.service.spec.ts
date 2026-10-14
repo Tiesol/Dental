@@ -1,7 +1,7 @@
 import { ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
-import { compare } from 'bcryptjs';
+import { compare, hash } from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 
@@ -79,6 +79,38 @@ describe('AuthService', () => {
 
       expect(user).not.toHaveProperty('passwordHash');
       expect(user).toMatchObject({ email: 'ana@mail.com', role: 'PATIENT' });
+    });
+  });
+
+  describe('login', () => {
+    let usuarioGuardado: Record<string, unknown>;
+
+    beforeEach(async () => {
+      usuarioGuardado = {
+        id: 'u1',
+        email: 'ana@mail.com',
+        fullName: 'Ana Pérez',
+        role: 'PATIENT',
+        isActive: true,
+        passwordHash: await hash('secreta123', 4),
+      };
+      prisma.user.findUnique.mockResolvedValue(usuarioGuardado);
+      jwt.signAsync.mockResolvedValue('token-firmado');
+    });
+
+    it('devuelve accessToken con payload { sub, email, role } si las credenciales son correctas', async () => {
+      const result = await service.login({
+        email: 'ANA@mail.com',
+        password: 'secreta123',
+      });
+
+      expect(jwt.signAsync).toHaveBeenCalledWith({
+        sub: 'u1',
+        email: 'ana@mail.com',
+        role: 'PATIENT',
+      });
+      expect(result.accessToken).toBe('token-firmado');
+      expect(result.user).not.toHaveProperty('passwordHash');
     });
   });
 });
