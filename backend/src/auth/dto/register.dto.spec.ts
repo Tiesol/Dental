@@ -23,4 +23,8 @@ describe('RegisterDto', () => {
 
     expect(campos.sort()).toEqual(['email', 'fullName', 'password']);
   });
+
+  it('acepta datos válidos', async () => {
+    expect(await camposConError(valido)).toEqual([]);
+  });
 });
