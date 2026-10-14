@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { hash } from 'bcryptjs';
 import { Role } from '@prisma/client';
@@ -13,10 +13,16 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    const email = dto.email.trim().toLowerCase();
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      throw new ConflictException('El email ya está registrado');
+    }
+
     const passwordHash = await hash(dto.password, 10);
     return this.prisma.user.create({
       data: {
-        email: dto.email.trim().toLowerCase(),
+        email,
         fullName: dto.fullName,
         passwordHash,
         role: Role.PATIENT,
