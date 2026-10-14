@@ -1,4 +1,4 @@
-import { ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '@prisma/client';
 import { Roles } from '../decorators/roles.decorator';
@@ -25,5 +25,11 @@ describe('RolesGuard', () => {
 
   it('permite el acceso si la ruta no tiene @Roles', () => {
     expect(guard.canActivate(contexto(rutas.publica, Role.PATIENT))).toBe(true);
+  });
+
+  it('deniega el acceso con ForbiddenException si el rol no coincide', () => {
+    expect(() =>
+      guard.canActivate(contexto(rutas.soloAdmin, Role.PATIENT)),
+    ).toThrow(ForbiddenException);
   });
 });
