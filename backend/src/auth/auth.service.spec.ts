@@ -55,5 +55,13 @@ describe('AuthService', () => {
 
       expect(datosCreados().email).toBe('ana@mail.com');
     });
+
+    it('siempre asigna rol PATIENT y crea el registro Patient', async () => {
+      await service.register({ ...registro, role: 'ADMIN' } as any);
+
+      const data = datosCreados();
+      expect(data.role).toBe('PATIENT');
+      expect(data.patient).toEqual({ create: {} });
+    });
   });
 });
