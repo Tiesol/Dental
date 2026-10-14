@@ -1,17 +1,25 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth';
+import { useAuth } from '../useAuth';
 
-export function RegisterPage() {
+type Form = { nombre: string; apellido: string; telefono: string; email: string; password: string };
+
+export function RegistroPage() {
   const { user, register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ fullName: '', email: '', password: '' });
+  const [form, setForm] = useState<Form>({
+    nombre: '',
+    apellido: '',
+    telefono: '',
+    email: '',
+    password: '',
+  });
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
 
   if (user) return <Navigate to="/" replace />;
 
-  const update = (field: keyof typeof form) => (value: string) =>
+  const update = (field: keyof Form) => (value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
 
   const onSubmit = async (e: FormEvent) => {
@@ -19,7 +27,13 @@ export function RegisterPage() {
     setError('');
     setSending(true);
     try {
-      await register(form);
+      await register({
+        nombre: form.nombre,
+        apellido: form.apellido,
+        email: form.email,
+        password: form.password,
+        ...(form.telefono.trim() ? { telefono: form.telefono.trim() } : {}),
+      });
       navigate('/');
     } catch (err) {
       setError((err as Error).message);
@@ -32,12 +46,30 @@ export function RegisterPage() {
     <form className="card" onSubmit={onSubmit}>
       <h1>Crear cuenta de paciente</h1>
       <label>
-        Nombre completo
+        Nombre
         <input
-          value={form.fullName}
-          onChange={(e) => update('fullName')(e.target.value)}
+          value={form.nombre}
+          onChange={(e) => update('nombre')(e.target.value)}
           required
-          autoComplete="name"
+          autoComplete="given-name"
+        />
+      </label>
+      <label>
+        Apellido
+        <input
+          value={form.apellido}
+          onChange={(e) => update('apellido')(e.target.value)}
+          required
+          autoComplete="family-name"
+        />
+      </label>
+      <label>
+        Teléfono (opcional)
+        <input
+          type="tel"
+          value={form.telefono}
+          onChange={(e) => update('telefono')(e.target.value)}
+          autoComplete="tel"
         />
       </label>
       <label>
@@ -62,8 +94,12 @@ export function RegisterPage() {
         />
         <small className="muted">Mínimo 8 caracteres</small>
       </label>
-      {error && <p className="error" role="alert">{error}</p>}
-      <button type="submit" disabled={sending}>
+      {error && (
+        <p className="error" role="alert" data-testid="error-mensaje">
+          {error}
+        </p>
+      )}
+      <button type="submit" disabled={sending} data-testid="btn-registrar">
         {sending ? 'Creando…' : 'Crear cuenta'}
       </button>
       <p className="muted">

@@ -1,18 +1,13 @@
-import { useAuth } from '../auth';
+import { useAuth } from '@/features/auth';
+import { ROLE_LABEL } from '@/shared/lib/roles';
 
-const ROLE_LABEL = {
-  PATIENT: 'Paciente',
-  DENTIST: 'Dentista',
-  ADMIN: 'Administrador',
-} as const;
-
-export function HomePage() {
+export function MiCuentaPage() {
   const { user } = useAuth();
   if (!user) return null;
 
   return (
     <section className="card">
-      <h1>Hola, {user.fullName}</h1>
+      <h1>Hola, {user.nombre}</h1>
       <dl>
         <dt>Email</dt>
         <dd>{user.email}</dd>

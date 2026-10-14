@@ -16,7 +16,11 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Alias @/ -> src/ (ver CONVENCIONES.md sección 2) */
+    "paths": { "@/*": ["./src/*"] },
+
     /* Linting */
+    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,

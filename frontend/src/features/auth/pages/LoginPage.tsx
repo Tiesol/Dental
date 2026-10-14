@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth';
+import { useAuth } from '../useAuth';
 
 export function LoginPage() {
   const { user, login } = useAuth();
@@ -49,8 +49,12 @@ export function LoginPage() {
           autoComplete="current-password"
         />
       </label>
-      {error && <p className="error" role="alert">{error}</p>}
-      <button type="submit" disabled={sending}>
+      {error && (
+        <p className="error" role="alert" data-testid="error-mensaje">
+          {error}
+        </p>
+      )}
+      <button type="submit" disabled={sending} data-testid="btn-login">
         {sending ? 'Ingresando…' : 'Ingresar'}
       </button>
       <p className="muted">
