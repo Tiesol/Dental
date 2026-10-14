@@ -127,5 +127,16 @@ describe('AuthService', () => {
       ).rejects.toThrow(new UnauthorizedException('Credenciales inválidas'));
       expect(jwt.signAsync).not.toHaveBeenCalled();
     });
+
+    it('lanza UnauthorizedException si el usuario está inactivo', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        ...usuarioGuardado,
+        isActive: false,
+      });
+
+      await expect(
+        service.login({ email: 'ana@mail.com', password: 'secreta123' }),
+      ).rejects.toThrow(new UnauthorizedException('Credenciales inválidas'));
+    });
   });
 });
