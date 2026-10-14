@@ -15,7 +15,6 @@ coverage/
 !.env.test.example
 
 # Artefactos generados
-graphify-out/
 playwright-report/
 test-results/
 

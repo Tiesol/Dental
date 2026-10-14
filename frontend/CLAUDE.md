@@ -8,12 +8,12 @@ Antes de escribir código lee, en este orden:
 2. `CONVENCIONES.md` — idioma, nombres, React, estilos, tests, `data-testid`, git.
 3. Skill `reglas-de-negocio-citas` — qué debe reflejar la interfaz según el PDF del docente.
 
-Skills disponibles en `.claude/skills/`: `reglas-de-negocio-citas`, `crear-feature`, `consumo-api`, `test-componente`, `e2e-playwright`.
-Agentes en `.claude/agents/`: `revisor-flujos-ui`, `revisor-tests-frontend`, `revisor-accesibilidad-ux`.
+Skills en `.claude/skills/`: `reglas-de-negocio-citas`, `ciclo-tdd` (RED/GREEN/REFACTOR, bugs, Definition of Done), `crear-feature`, `consumo-api`, `test-componente`, `e2e-playwright`.
+Agentes en `.claude/agents/`: `revisor-flujos-ui`, `revisor-tests-frontend`, `revisor-accesibilidad-ux`, `revisor-codigo`.
 
 Reglas no negociables:
 
 - Ninguna llamada a la red fuera de `src/api/`.
 - Las acciones visibles por estado y rol salen de `shared/lib/estados-cita.ts`, nunca de `if` sueltos en componentes.
 - Los `data-testid` listados en `CONVENCIONES.md` sección 4 no se renombran sin actualizar los E2E.
-- No se marca una tarea como terminada sin que `npm run lint` y `npm run test` pasen; si tocó un flujo del PDF, también `npm run test:e2e`.
+- No se marca una tarea como terminada sin `npm run lint` y `npm run build` (y `npm run test` cuando exista) en verde; si tocó un flujo del PDF, también `npm run test:e2e`. Y sin la Definition of Done del skill `ciclo-tdd`.

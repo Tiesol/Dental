@@ -74,7 +74,11 @@ Reglas de estilo y de trabajo que aplican a todo el código del backend. Si algo
 - Commits en formato **Conventional Commits**, en español en el cuerpo, tipo en inglés:
   `feat(appointments): reprogramar cita liberando el horario anterior`
   `test(availability): cubrir cálculo de slots con bloques no disponibles`
-- Un commit no rompe los tests. Antes de commitear: `npm run lint && npm run test`.
+- **Commits atómicos**: un commit hace una sola cosa lógica. Con TDD, cada paso puede ser un commit (`test(...): RED - ...`, `feat(...): GREEN - ...`, `refactor(...): ...`). Tamaño objetivo 100 a 300 líneas; más de 1000 se parte.
+- **Separar refactor de funcionalidad** y formato de comportamiento: nunca en el mismo commit. Pequeñas limpiezas (renombrar una variable) pueden ir con la feature.
+- El cuerpo del commit explica el **por qué**, no lo que ya se ve en el diff.
+- Un commit no rompe los tests (salvo los `RED` del ciclo TDD). Antes de commitear: `npm run lint && npm run test`.
+- `main` siempre en verde y desplegable; ramas de trabajo cortas (días, no semanas) para no acumular conflictos.
 - Nunca commitear `.env`. Sí `.env.example`.
 
 ## 9. Formato y lint

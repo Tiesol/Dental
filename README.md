@@ -10,7 +10,6 @@ citas-dentales/
 ├── CLAUDE.md                 <- punto de entrada para Claude Code en la raíz
 ├── compose.yml               <- PostgreSQL de desarrollo (5434) y de test (5433)
 ├── .env.example              <- variables para compose
-├── .claude/                  <- librería genérica de skills/commands/agents (agent-skills, graphify)
 ├── backend/                  <- API NestJS
 │   ├── CLAUDE.md             <- qué leer antes de tocar el backend
 │   ├── ARQUITECTURA.md       <- capas, carpetas, modelo de datos, concurrencia, estados, seguridad, API, testing
@@ -97,15 +96,12 @@ Prefijo `/api/v1`. Errores con formato uniforme `{ statusCode, error, message, d
 
 ## Skills y agentes de Claude Code
 
-Hay dos niveles:
+Viven por carpeta, en `backend/.claude/` y `frontend/.claude/`; son específicos de este proyecto (codifican el PDF del docente y la arquitectura decidida) y Claude Code los carga al trabajar dentro de cada carpeta. Lo que valía la pena de la librería genérica que había en la raíz (ciclo TDD, Definition of Done, checklists de seguridad y accesibilidad, revisión de código en cinco ejes, commits atómicos) quedó adaptado dentro de estos.
 
-- **Raíz `.claude/`**: librería genérica (agent-skills de addyosmani, graphify, comandos `/spec`, `/build`, `/test`, `/review`...). Sirve para el flujo de trabajo general (TDD, planificación, revisión).
-- **`backend/.claude/` y `frontend/.claude/`**: específicos de este proyecto; codifican el PDF del docente y la arquitectura decidida. Claude Code los carga al abrir cada carpeta.
-
-| Carpeta  | Skills                                                                                                                                        | Agentes                                                                   |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| backend  | `reglas-de-negocio-citas` (fuente de verdad del PDF), `crear-modulo-nest`, `test-unitario-reglas`, `test-integracion-api`, `prisma-migraciones` | `revisor-reglas-negocio`, `revisor-tests-backend`, `auditor-seguridad-roles` |
-| frontend | `reglas-de-negocio-citas` (vista UI), `crear-feature`, `consumo-api`, `test-componente`, `e2e-playwright`                                       | `revisor-flujos-ui`, `revisor-tests-frontend`, `revisor-accesibilidad-ux`    |
+| Carpeta  | Skills                                                                                                                                                                       | Agentes                                                                                      |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| backend  | `reglas-de-negocio-citas` (fuente de verdad del PDF), `ciclo-tdd` (TDD + Definition of Done), `crear-modulo-nest`, `test-unitario-reglas`, `test-integracion-api`, `prisma-migraciones` | `revisor-reglas-negocio`, `revisor-tests-backend`, `auditor-seguridad-roles`, `revisor-codigo` |
+| frontend | `reglas-de-negocio-citas` (vista UI), `ciclo-tdd`, `crear-feature`, `consumo-api`, `test-componente`, `e2e-playwright`                                                         | `revisor-flujos-ui`, `revisor-tests-frontend`, `revisor-accesibilidad-ux`, `revisor-codigo`    |
 
 ## Decisiones confirmadas
 

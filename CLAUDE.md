@@ -14,21 +14,18 @@ Proyecto final de Taller de Actualización V. Monolito: `backend/` (NestJS 11 + 
 - Frontend: organización por features en `src/features/`, red solo en `src/api/`, alias `@/` → `src/`.
 - Seguridad: `JwtAuthGuard` y `RolesGuard` globales; `@Public()` solo en register/login; verificación de propiedad en los services.
 
-## Skills
+## Skills y agentes
 
-Dos niveles, los dos versionados:
+Viven **por carpeta**, en `backend/.claude/` y `frontend/.claude/`; Claude Code los carga al trabajar dentro de cada una. No hay skills en la raíz.
 
-```
-.claude/              → librería genérica: agent-skills (addyosmani) + graphify, comandos /spec /planning /build /test /review /code-simplify /constraints /ship, agentes code-reviewer, test-engineer, security-auditor, referencias (definition-of-done, testing, security...)
-backend/.claude/      → específicos del proyecto: reglas-de-negocio-citas, crear-modulo-nest, test-unitario-reglas, test-integracion-api, prisma-migraciones; agentes revisor-reglas-negocio, revisor-tests-backend, auditor-seguridad-roles
-frontend/.claude/     → específicos del proyecto: reglas-de-negocio-citas, crear-feature, consumo-api, test-componente, e2e-playwright; agentes revisor-flujos-ui, revisor-tests-frontend, revisor-accesibilidad-ux
-```
+| Carpeta | Skills | Agentes |
+|---|---|---|
+| backend | `reglas-de-negocio-citas`, `ciclo-tdd`, `crear-modulo-nest`, `test-unitario-reglas`, `test-integracion-api`, `prisma-migraciones` | `revisor-reglas-negocio`, `revisor-tests-backend`, `auditor-seguridad-roles`, `revisor-codigo` |
+| frontend | `reglas-de-negocio-citas`, `ciclo-tdd`, `crear-feature`, `consumo-api`, `test-componente`, `e2e-playwright` | `revisor-flujos-ui`, `revisor-tests-frontend`, `revisor-accesibilidad-ux`, `revisor-codigo` |
 
-Si una tarea encaja con una skill, invócala antes de empezar. Ante conflicto entre una skill genérica y una del proyecto, gana la del proyecto.
+Flujo por funcionalidad: leer la regla en `reglas-de-negocio-citas` → `ciclo-tdd` (RED → GREEN → REFACTOR, un commit por paso) → skill de la capa que toques → agentes revisores de la carpeta → Definition of Done de `ciclo-tdd` antes de cerrar.
 
-Flujo por funcionalidad: `/spec` → `/planning` → `/build` (TDD: RED → GREEN → REFACTOR) → `/test` → `/review` → `/ship`. Antes de cerrar una tarea, correr los agentes revisores de la carpeta tocada.
-
-graphify: si existe `graphify-out/graph.json`, responder preguntas de arquitectura con `graphify query "<pregunta>"`; reconstruir con `/graphify . --update` tras cambios grandes. `graphify-out/` es artefacto generado.
+Verificar las APIs de NestJS, Prisma, React y Playwright contra la documentación oficial o el código de `node_modules`, no de memoria: las versiones de este repo son recientes.
 
 ## Comandos
 
@@ -55,7 +52,7 @@ npm run lint && npm run build
 ## Reglas
 
 - Ningún código de producción sin un test que falle antes.
-- No marcar una tarea como hecha sin lint y tests en verde (ver `.claude/references/definition-of-done.md`).
+- No marcar una tarea como hecha sin lint y tests en verde ni sin la Definition of Done del skill `ciclo-tdd`.
 - No implementar nada fuera del alcance del PDF (sin pagos, seguros, facturación ni inventario).
 - No commitear `.env` ni secretos. Nunca `console.log` en producción.
 - Valores de enums de negocio exactamente como el PDF: `PACIENTE`, `ODONTOLOGO`, `ADMIN`; `PENDIENTE`, `CONFIRMADA`, `EN_ATENCION`, `FINALIZADA`, `CANCELADA`.

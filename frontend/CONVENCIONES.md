@@ -58,7 +58,11 @@ Reglas de estilo y de trabajo que aplican a todo el código del frontend. Si alg
 - Mismas reglas que el backend: rama `main`, ramas `feat/`, `fix/`, `test/`, `docs/`; Conventional Commits con tipo en inglés y descripción en español:
   `feat(reserva): mostrar solo odontólogos que realizan el servicio elegido`
   `test(e2e): escenario 02 evitar doble reserva`
-- Antes de commitear: `npm run lint && npm run test`.
+- **Commits atómicos**: un commit hace una sola cosa lógica; con TDD cada paso puede ser un commit (`test(...): RED`, `feat(...): GREEN`, `refactor(...)`). Tamaño objetivo 100 a 300 líneas.
+- **Separar refactor de funcionalidad** y formato de comportamiento: nunca en el mismo commit.
+- El cuerpo del commit explica el **por qué**, no lo que ya se ve en el diff.
+- Antes de commitear: `npm run lint && npm run build` (y `npm run test` cuando exista Vitest).
+- `main` siempre en verde; ramas de trabajo cortas.
 
 ## 8. Formato y lint
 
