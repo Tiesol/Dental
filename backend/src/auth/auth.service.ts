@@ -14,7 +14,11 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const passwordHash = await hash(dto.password, 10);
     return this.prisma.user.create({
-      data: { email: dto.email, fullName: dto.fullName, passwordHash },
+      data: {
+        email: dto.email.trim().toLowerCase(),
+        fullName: dto.fullName,
+        passwordHash,
+      },
     });
   }
 }
