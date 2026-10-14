@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '@prisma/client';
+import { JwtPayload } from '../jwt-payload';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()
@@ -21,7 +22,7 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
+    const { user } = context.switchToHttp().getRequest<{ user?: JwtPayload }>();
     if (!user || !required.includes(user.role)) {
       throw new ForbiddenException('No tienes permiso para este recurso');
     }

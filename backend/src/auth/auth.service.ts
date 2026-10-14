@@ -55,6 +55,14 @@ export class AuthService {
     });
     return { accessToken, user: toPublicUser(user) };
   }
+
+  async me(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Usuario no disponible');
+    }
+    return toPublicUser(user);
+  }
 }
 
 function normalizeEmail(email: string) {
