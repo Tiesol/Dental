@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  DENTIST
+  ADMIN
+}
+
+enum AppointmentStatus {
+  PENDIENTE
+  CONFIRMADA
+  EN_ATENCION
+  FINALIZADA
+  CANCELADA
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role     @default(PATIENT)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  patient      Patient?
+  dentist      Dentist?
+}
+
+model Patient {
+  id           String        @id @default(uuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id])
+  phone        String?
+  birthDate    DateTime?
+  appointments Appointment[]
+}
+
+model Dentist {
+  id           String             @id @default(uuid())
+  userId       String             @unique
+  user         User               @relation(fields: [userId], references: [id])
+  specialty    String
+  enabled      Boolean            @default(true)
+  services     DentistService[]
+  schedules    WorkSchedule[]
+  blocks       UnavailableBlock[]
+  appointments Appointment[]
+}
+
+model Service {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  description     String
+  durationMinutes Int
+  referencePrice  Decimal?         @db.Decimal(10, 2)
+  enabled         Boolean          @default(true)
+  dentists        DentistService[]
+  appointments    Appointment[]
+}
+
+model DentistService {
+  dentistId String
+  serviceId String
+  dentist   Dentist @relation(fields: [dentistId], references: [id])
+  service   Service @relation(fields: [serviceId], references: [id])
+
+  @@id([dentistId, serviceId])
+}
+
+// Horario semanal recurrente: dayOfWeek 0=Dom..6=Sáb, minutos desde 00:00
+model WorkSchedule {
+  id          String  @id @default(uuid())
+  dentistId   String
+  dentist     Dentist @relation(fields: [dentistId], references: [id])
+  dayOfWeek   Int
+  startMinute Int
+  endMinute   Int
+}
+
+// Pausas / bloques no disponibles puntuales
+model UnavailableBlock {
+  id        String   @id @default(uuid())
+  dentistId String
+  dentist   Dentist  @relation(fields: [dentistId], references: [id])
+  startsAt  DateTime
+  endsAt    DateTime
+  reason    String?
+}
+
+model Appointment {
+  id          String            @id @default(uuid())
+  patientId   String
+  dentistId   String
+  serviceId   String
+  patient     Patient           @relation(fields: [patientId], references: [id])
+  dentist     Dentist           @relation(fields: [dentistId], references: [id])
+  service     Service           @relation(fields: [serviceId], references: [id])
+  startsAt    DateTime
+  endsAt      DateTime
+  status      AppointmentStatus @default(PENDIENTE)
+  observation String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([dentistId, startsAt])
+}
