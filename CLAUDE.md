@@ -1,7 +1,8 @@
 # cita-dental — Sistema de Citas para Clínica Dental
 
-Backend NestJS + Prisma + PostgreSQL (Docker), con TDD. Frontend React + Vite y E2E con Playwright en avances posteriores.
-La especificación del avance actual está en [docs/PROMPT_CLAUDE_CODE.md](docs/PROMPT_CLAUDE_CODE.md); léela antes de implementar.
+Monolito: `backend/` (NestJS 11 + Prisma 6 + PostgreSQL 16 en Docker) y `frontend/` (React + Vite). TDD obligatorio.
+La especificación del avance actual está en `docs/PROMPT_CLAUDE_CODE.md` (no versionado); léela antes de implementar.
+Código simple: nada de arquitectura hexagonal / clean architecture. Cada módulo de Nest = controller → service → PrismaService.
 
 ## Skills del proyecto
 
@@ -51,14 +52,21 @@ Agentes (subagentes) para revisiones a fondo: `code-reviewer`, `test-engineer`, 
 ## Comandos
 
 ```bash
-docker compose up -d                 # PostgreSQL
+docker compose up -d                 # BD dev (localhost:5434) y test (localhost:5433)
+# en backend/
 npx prisma migrate dev               # migraciones
-npm run seed                         # datos iniciales
-npm run start:dev                    # API en modo desarrollo
+npm run seed                         # admin@clinica.com / Admin12345
+npm run start:dev                    # API en :3000
 npm run test -- --verbose            # unitarios
 npm run test:int -- --verbose        # integración (BD de test)
 npm run test:all                     # ambos
+# en frontend/
+npm run dev                          # :5173
 ```
+
+- Jest 30 compacta la salida cuando detecta un agente (`AI_AGENT`); para ver cada test: `env -u AI_AGENT -u CLAUDECODE npm run test:int`.
+- Prisma bloquea `migrate reset --force` lanzado por un agente: pedir confirmación al usuario antes de usarlo.
+- Mantener `@nestjs/*` en la línea 11 (CommonJS); las versiones 12 son ESM y rompen Jest.
 
 ## Reglas
 
