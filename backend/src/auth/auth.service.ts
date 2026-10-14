@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { hash } from 'bcryptjs';
+import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 
@@ -18,6 +19,8 @@ export class AuthService {
         email: dto.email.trim().toLowerCase(),
         fullName: dto.fullName,
         passwordHash,
+        role: Role.PATIENT,
+        patient: { create: {} },
       },
     });
   }
