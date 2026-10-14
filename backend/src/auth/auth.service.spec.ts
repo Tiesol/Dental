@@ -120,5 +120,12 @@ describe('AuthService', () => {
         service.login({ email: 'nadie@mail.com', password: 'secreta123' }),
       ).rejects.toThrow(new UnauthorizedException('Credenciales inválidas'));
     });
+
+    it('lanza UnauthorizedException si la contraseña es incorrecta', async () => {
+      await expect(
+        service.login({ email: 'ana@mail.com', password: 'incorrecta' }),
+      ).rejects.toThrow(new UnauthorizedException('Credenciales inválidas'));
+      expect(jwt.signAsync).not.toHaveBeenCalled();
+    });
   });
 });
