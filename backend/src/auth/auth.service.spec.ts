@@ -1,3 +1,4 @@
+import { ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { compare } from 'bcryptjs';
@@ -62,6 +63,15 @@ describe('AuthService', () => {
       const data = datosCreados();
       expect(data.role).toBe('PATIENT');
       expect(data.patient).toEqual({ create: {} });
+    });
+
+    it('lanza ConflictException si el email ya existe', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'otro' });
+
+      await expect(service.register(registro)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(prisma.user.create).not.toHaveBeenCalled();
     });
   });
 });
