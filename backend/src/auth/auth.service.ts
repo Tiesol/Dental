@@ -20,7 +20,7 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const email = dto.email.trim().toLowerCase();
+    const email = normalizeEmail(dto.email);
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
       throw new ConflictException('El email ya está registrado');
@@ -40,7 +40,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const email = dto.email.trim().toLowerCase();
+    const email = normalizeEmail(dto.email);
     const user = await this.prisma.user.findUnique({ where: { email } });
     const valid =
       user?.isActive && (await compare(dto.password, user.passwordHash));
@@ -55,6 +55,10 @@ export class AuthService {
     });
     return { accessToken, user: toPublicUser(user) };
   }
+}
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
 }
 
 export function toPublicUser(user: User) {
