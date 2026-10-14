@@ -42,7 +42,9 @@ export class AuthService {
   async login(dto: LoginDto) {
     const email = dto.email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user || !(await compare(dto.password, user.passwordHash))) {
+    const valid =
+      user?.isActive && (await compare(dto.password, user.passwordHash));
+    if (!user || !valid) {
       throw new UnauthorizedException(INVALID_CREDENTIALS);
     }
 
