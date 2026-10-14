@@ -73,5 +73,12 @@ describe('AuthService', () => {
       );
       expect(prisma.user.create).not.toHaveBeenCalled();
     });
+
+    it('el resultado no contiene passwordHash', async () => {
+      const user = await service.register(registro);
+
+      expect(user).not.toHaveProperty('passwordHash');
+      expect(user).toMatchObject({ email: 'ana@mail.com', role: 'PATIENT' });
+    });
   });
 });
