@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { compare, hash } from 'bcryptjs';
@@ -111,6 +111,14 @@ describe('AuthService', () => {
       });
       expect(result.accessToken).toBe('token-firmado');
       expect(result.user).not.toHaveProperty('passwordHash');
+    });
+
+    it('lanza UnauthorizedException si el email no existe', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.login({ email: 'nadie@mail.com', password: 'secreta123' }),
+      ).rejects.toThrow(new UnauthorizedException('Credenciales inválidas'));
     });
   });
 });
