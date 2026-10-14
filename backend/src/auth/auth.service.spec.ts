@@ -49,5 +49,11 @@ describe('AuthService', () => {
       expect(data.passwordHash).not.toBe(registro.password);
       expect(await compare(registro.password, data.passwordHash)).toBe(true);
     });
+
+    it('normaliza el email a minúsculas', async () => {
+      await service.register({ ...registro, email: '  Ana@MAIL.com ' });
+
+      expect(datosCreados().email).toBe('ana@mail.com');
+    });
   });
 });
