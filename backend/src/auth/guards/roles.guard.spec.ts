@@ -27,6 +27,10 @@ describe('RolesGuard', () => {
     expect(guard.canActivate(contexto(rutas.publica, Role.PATIENT))).toBe(true);
   });
 
+  it('permite el acceso si el rol del usuario está en los roles requeridos', () => {
+    expect(guard.canActivate(contexto(rutas.soloAdmin, Role.ADMIN))).toBe(true);
+  });
+
   it('deniega el acceso con ForbiddenException si el rol no coincide', () => {
     expect(() =>
       guard.canActivate(contexto(rutas.soloAdmin, Role.PATIENT)),
