@@ -1,0 +1,16 @@
+# Fin de línea LF en el repositorio para todos los archivos de texto,
+# sin importar si quien commitea usa Windows, macOS o Linux.
+* text=auto eol=lf
+
+# Binarios
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+
+# Los lockfiles se tratan como generados en los diffs
+package-lock.json -diff

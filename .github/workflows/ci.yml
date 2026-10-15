@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  HUSKY: 0
+
+jobs:
+  backend:
+    name: Backend (lint, unit, integración, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: dental
+          POSTGRES_PASSWORD: dental
+          POSTGRES_DB: dental_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dental -d dental_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://dental:dental@localhost:5432/dental_test
+      JWT_SECRET: secreto-solo-para-ci
+      JWT_EXPIRES_IN: 1h
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test -- --coverage
+      - name: Preparar .env.test para la BD de integración
+        run: |
+          printf 'DATABASE_URL=%s\nJWT_SECRET=%s\nJWT_EXPIRES_IN=%s\n' \
+            "$DATABASE_URL" "$JWT_SECRET" "$JWT_EXPIRES_IN" > .env.test
+      - run: npm run test:int
+      - run: npm run build
+
+  frontend:
+    name: Frontend (lint, unit, build, e2e)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test -- --coverage
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7
+
+  commitlint:
+    name: Mensajes de commit
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: >-
+          npx commitlint
+          --from ${{ github.event.pull_request.base.sha }}
+          --to ${{ github.event.pull_request.head.sha }}
+          --verbose

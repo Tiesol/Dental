@@ -1,0 +1,19 @@
+{
+  "name": "citas-dentales",
+  "private": true,
+  "description": "Sistema de Citas para Clínica Dental — tooling compartido (hooks de git, commitlint, lint-staged). El código vive en backend/ y frontend/.",
+  "scripts": {
+    "prepare": "husky",
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
+    "format:check": "npm --prefix backend run format:check && npm --prefix frontend run format:check",
+    "test": "npm --prefix backend run test && npm --prefix frontend run test",
+    "commitlint": "commitlint"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10"
+  }
+}
