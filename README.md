@@ -15,7 +15,7 @@ citas-dentales/
 ├── .env.example              <- variables para compose
 ├── package.json              <- tooling compartido: husky, commitlint, lint-staged
 ├── commitlint.config.mjs     <- tipos y ámbitos de commit permitidos
-├── lint-staged.config.mjs    <- lint y formato de los archivos en stage (pre-commit)
+├── lint-staged.config.mjs    <- lint y formato de los archivos en stage (pre-commit); backend/ y frontend/ tienen su .lintstagedrc.json
 ├── .husky/                   <- hooks de git (pre-commit, commit-msg)
 ├── .github/                  <- workflow de CI y plantilla de pull request
 ├── .editorconfig, .gitattributes <- formato e indentación comunes, fin de línea LF
