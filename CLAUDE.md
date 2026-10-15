@@ -18,18 +18,23 @@ Proyecto final de Taller de Actualización V. Monolito: `backend/` (NestJS 11 + 
 
 Viven **por carpeta**, en `backend/.claude/` y `frontend/.claude/`; Claude Code los carga al trabajar dentro de cada una. No hay skills en la raíz.
 
-| Carpeta | Skills | Agentes |
-|---|---|---|
-| backend | `reglas-de-negocio-citas`, `ciclo-tdd`, `crear-modulo-nest`, `test-unitario-reglas`, `test-integracion-api`, `prisma-migraciones` | `revisor-reglas-negocio`, `revisor-tests-backend`, `auditor-seguridad-roles`, `revisor-codigo` |
-| frontend | `reglas-de-negocio-citas`, `ciclo-tdd`, `crear-feature`, `consumo-api`, `test-componente`, `e2e-playwright` | `revisor-flujos-ui`, `revisor-tests-frontend`, `revisor-accesibilidad-ux`, `revisor-codigo` |
+| Carpeta  | Skills                                                                                                                            | Agentes                                                                                        |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| backend  | `reglas-de-negocio-citas`, `ciclo-tdd`, `crear-modulo-nest`, `test-unitario-reglas`, `test-integracion-api`, `prisma-migraciones` | `revisor-reglas-negocio`, `revisor-tests-backend`, `auditor-seguridad-roles`, `revisor-codigo` |
+| frontend | `reglas-de-negocio-citas`, `ciclo-tdd`, `crear-feature`, `consumo-api`, `test-componente`, `e2e-playwright`                       | `revisor-flujos-ui`, `revisor-tests-frontend`, `revisor-accesibilidad-ux`, `revisor-codigo`    |
 
 Flujo por funcionalidad: leer la regla en `reglas-de-negocio-citas` → `ciclo-tdd` (RED → GREEN → REFACTOR, un commit por paso) → skill de la capa que toques → agentes revisores de la carpeta → Definition of Done de `ciclo-tdd` antes de cerrar.
 
 Verificar las APIs de NestJS, Prisma, React y Playwright contra la documentación oficial o el código de `node_modules`, no de memoria: las versiones de este repo son recientes.
 
+## Flujo de equipo
+
+`CONTRIBUTING.md` define ramas, commits y PRs. Los commits los valida commitlint (`commitlint.config.mjs`: tipos y ámbitos permitidos, 72 caracteres, sin punto final) en el hook `commit-msg`, y `lint-staged` corre ESLint y Prettier en `pre-commit`. Nunca usar `--no-verify`. El CI (`.github/workflows/ci.yml`) debe estar en verde antes de mezclar.
+
 ## Comandos
 
 ```bash
+npm install                          # en la raíz, una vez: activa los hooks de git
 docker compose up -d                 # BD dev (localhost:5434) y test (localhost:5433)
 # en backend/
 npx prisma migrate dev               # migraciones
@@ -41,7 +46,8 @@ npm run test:int -- --verbose        # integración (BD de test)
 npm run test:all                     # ambos
 # en frontend/
 npm run dev                          # :5173
-npm run lint && npm run build
+npm run lint && npm run test && npm run build
+npm run test:e2e                     # Playwright (chromium instalado con npx playwright install chromium)
 ```
 
 - Jest 30 compacta la salida cuando detecta un agente (`AI_AGENT`); para ver cada test: `env -u AI_AGENT -u CLAUDECODE npm run test:int`.

@@ -51,17 +51,22 @@ Reglas de estilo y de trabajo que aplican a todo el código del frontend. Si alg
 - Un `it` por comportamiento, nombre en español: `it('oculta el botón Cancelar cuando la cita está FINALIZADA')`.
 - Asserts específicos (`toBeInTheDocument`, `toBeDisabled`, `toHaveTextContent('CANCELADA')`). Prohibido `toBeTruthy()` como único assert.
 - E2E: Page Objects, un escenario por archivo, datos creados por seed antes de cada test, sin dependencias entre escenarios.
-- Comandos canónicos (cuando se instalen Vitest y Playwright): `npm run test` (Vitest), `npm run test:e2e` (Playwright), `npm run test:e2e:ui`. Mientras tanto, la verificación mínima es `npm run lint && npm run build`.
+- Infraestructura: `vitest.config.ts` (jsdom, setup en `src/test/setup.ts`), `src/test/msw/` (handlers y server), `src/test/factories.ts`, `src/test/utils.tsx` (`renderWithProviders`), `playwright.config.ts` (levanta Vite; `e2e/*.e2e.ts`).
+- Comandos canónicos: `npm run test` (Vitest), `npm run test:watch`, `npm run test:cov`, `npm run test:e2e` (Playwright), `npm run test:e2e:ui`.
 
 ## 7. Git
 
-- Mismas reglas que el backend: rama `main`, ramas `feat/`, `fix/`, `test/`, `docs/`; Conventional Commits con tipo en inglés y descripción en español:
+La guía completa (ramas, formato exacto de commits con tipos y ámbitos permitidos, pull requests, hooks) está en `../CONTRIBUTING.md`. Resumen:
+
+- Rama principal `main`, solo por pull request. Ramas `feat/`, `fix/`, `refactor/`, `test/`, `docs/`, `chore/`.
+- Conventional Commits validados por commitlint en el hook `commit-msg`: `tipo(ámbito): descripción`, tipo en inglés, ámbito de la lista de `../commitlint.config.mjs` (`reserva`, `mis-citas`, `agenda`, `api`, `shared`, `e2e`...), descripción en español en minúscula, sin punto final, máximo 72 caracteres:
   `feat(reserva): mostrar solo odontólogos que realizan el servicio elegido`
   `test(e2e): escenario 02 evitar doble reserva`
+- El hook `pre-commit` corre ESLint y Prettier sobre los archivos en stage; un error de lint cancela el commit.
 - **Commits atómicos**: un commit hace una sola cosa lógica; con TDD cada paso puede ser un commit (`test(...): RED`, `feat(...): GREEN`, `refactor(...)`). Tamaño objetivo 100 a 300 líneas.
 - **Separar refactor de funcionalidad** y formato de comportamiento: nunca en el mismo commit.
 - El cuerpo del commit explica el **por qué**, no lo que ya se ve en el diff.
-- Antes de commitear: `npm run lint && npm run build` (y `npm run test` cuando exista Vitest).
+- Antes de commitear: `npm run lint && npm run test && npm run build`.
 - `main` siempre en verde; ramas de trabajo cortas.
 
 ## 8. Formato y lint

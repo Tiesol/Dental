@@ -20,7 +20,7 @@ Adaptado de la librería agent-skills (test-driven-development, debugging-and-er
 3. **REFACTOR**: extrae componentes, mueve lógica a hooks o a `shared/lib`, mejora nombres. Vuelve a correr los tests.
 4. Repite.
 
-Comandos del repo (no asumir otros): mientras Vitest no esté instalado, la verificación mínima es `npm run lint && npm run build`; cuando esté, `npm run test` (Vitest), `npx vitest ruta/al/archivo.test.tsx` (enfocado), `npm run test:e2e` (Playwright).
+Comandos del repo (no asumir otros): `npm run test` (Vitest), `npx vitest run ruta/al/archivo.test.tsx` (enfocado), `npm run test:e2e` (Playwright), `npm run lint && npm run build`.
 
 Commits: `test(reserva): RED - ...`, `feat(reserva): GREEN - ...`, `refactor(reserva): ...`. Nunca un commit con tests en rojo salvo que su mensaje diga RED.
 

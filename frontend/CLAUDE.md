@@ -16,4 +16,4 @@ Reglas no negociables:
 - Ninguna llamada a la red fuera de `src/api/`.
 - Las acciones visibles por estado y rol salen de `shared/lib/estados-cita.ts`, nunca de `if` sueltos en componentes.
 - Los `data-testid` listados en `CONVENCIONES.md` sección 4 no se renombran sin actualizar los E2E.
-- No se marca una tarea como terminada sin `npm run lint` y `npm run build` (y `npm run test` cuando exista) en verde; si tocó un flujo del PDF, también `npm run test:e2e`. Y sin la Definition of Done del skill `ciclo-tdd`.
+- No se marca una tarea como terminada sin `npm run lint`, `npm run test` y `npm run build` en verde; si tocó un flujo del PDF, también `npm run test:e2e`. Y sin la Definition of Done del skill `ciclo-tdd`.

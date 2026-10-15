@@ -70,10 +70,13 @@ Reglas de estilo y de trabajo que aplican a todo el código del backend. Si algo
 
 ## 8. Git
 
-- Rama principal `main`. Ramas de trabajo `feat/<tema>`, `fix/<tema>`, `test/<tema>`, `docs/<tema>`.
-- Commits en formato **Conventional Commits**, en español en el cuerpo, tipo en inglés:
+La guía completa (ramas, formato exacto de commits con tipos y ámbitos permitidos, pull requests, hooks) está en `../CONTRIBUTING.md`. Resumen:
+
+- Rama principal `main`, solo por pull request. Ramas de trabajo `feat/<tema>`, `fix/<tema>`, `refactor/<tema>`, `test/<tema>`, `docs/<tema>`, `chore/<tema>`.
+- Commits en formato **Conventional Commits**, validados por commitlint en el hook `commit-msg`: `tipo(ámbito): descripción` con tipo en inglés, ámbito de la lista de `../commitlint.config.mjs` (`auth`, `users`, `appointments`, `availability`, `prisma`, `common`...), descripción en español en minúscula, sin punto final, máximo 72 caracteres:
   `feat(appointments): reprogramar cita liberando el horario anterior`
-  `test(availability): cubrir cálculo de slots con bloques no disponibles`
+  `test(availability): RED - cubrir cálculo de slots con bloques no disponibles`
+- El hook `pre-commit` corre ESLint y Prettier sobre los archivos en stage; un error de lint cancela el commit.
 - **Commits atómicos**: un commit hace una sola cosa lógica. Con TDD, cada paso puede ser un commit (`test(...): RED - ...`, `feat(...): GREEN - ...`, `refactor(...): ...`). Tamaño objetivo 100 a 300 líneas; más de 1000 se parte.
 - **Separar refactor de funcionalidad** y formato de comportamiento: nunca en el mismo commit. Pequeñas limpiezas (renombrar una variable) pueden ir con la feature.
 - El cuerpo del commit explica el **por qué**, no lo que ya se ve en el diff.

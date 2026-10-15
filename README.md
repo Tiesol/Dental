@@ -1,5 +1,7 @@
 # Sistema de Citas para Clínica Dental — Proyecto Final Taller de Actualización V
 
+[![CI](https://github.com/Tiesol/Dental/actions/workflows/ci.yml/badge.svg)](https://github.com/Tiesol/Dental/actions/workflows/ci.yml)
+
 Monolito con backend **NestJS 11 + Prisma 6 + PostgreSQL 16** y frontend **React 19 + Vite + TypeScript**. Autenticación JWT con Passport y roles `PACIENTE`, `ODONTOLOGO`, `ADMIN`. Tests con Jest + Supertest (backend), Vitest + React Testing Library (frontend) y Playwright (E2E). El requerimiento del docente es el PDF `proyecto_final_taller_v_citas_dentales.pdf`.
 
 Estado actual: **Avance 1** (registro, login, JWT, roles, listado de usuarios para ADMIN) sobre la arquitectura definitiva del proyecto.
@@ -7,9 +9,16 @@ Estado actual: **Avance 1** (registro, login, JWT, roles, listado de usuarios pa
 ```
 citas-dentales/
 ├── README.md                 <- este archivo: cómo levantar, índice, decisiones
+├── CONTRIBUTING.md           <- ramas, formato de commits, pull requests, hooks
 ├── CLAUDE.md                 <- punto de entrada para Claude Code en la raíz
 ├── compose.yml               <- PostgreSQL de desarrollo (5434) y de test (5433)
 ├── .env.example              <- variables para compose
+├── package.json              <- tooling compartido: husky, commitlint, lint-staged
+├── commitlint.config.mjs     <- tipos y ámbitos de commit permitidos
+├── lint-staged.config.mjs    <- lint y formato de los archivos en stage (pre-commit)
+├── .husky/                   <- hooks de git (pre-commit, commit-msg)
+├── .github/                  <- workflow de CI y plantilla de pull request
+├── .editorconfig, .gitattributes <- formato e indentación comunes, fin de línea LF
 ├── backend/                  <- API NestJS
 │   ├── CLAUDE.md             <- qué leer antes de tocar el backend
 │   ├── ARQUITECTURA.md       <- capas, carpetas, modelo de datos, concurrencia, estados, seguridad, API, testing
@@ -30,6 +39,9 @@ citas-dentales/
 ## Levantar el proyecto
 
 ```bash
+# 0. Hooks de git (una sola vez, en la raíz): commitlint + lint-staged
+npm install
+
 # 1. Bases de datos (desarrollo y test)
 cp .env.example .env              # ajusta la contraseña
 docker compose up -d
@@ -78,43 +90,52 @@ Frontend (desde `frontend/`):
 
 ```bash
 npm run lint                     # ESLint (react-hooks, jsx-a11y, typescript-eslint) + Prettier
+npm run test                     # unitarios y de componentes (Vitest + React Testing Library + MSW)
+npm run test:cov                 # con cobertura
 npm run build                    # type-check + build
+npx playwright install chromium  # una sola vez
+npm run test:e2e                 # E2E con Playwright (levanta Vite solo; hoy: smoke test)
+npm run test:e2e:ui              # modo visual para la demostración
 ```
 
-Vitest, React Testing Library y Playwright están definidos en `frontend/ARQUITECTURA.md` y en los skills, pero todavía no están instalados ni configurados (no hay pantallas de citas que probar aún).
+Los escenarios E2E 01 a 07 del PDF se agregarán en `frontend/e2e/` a medida que existan las pantallas (necesitan backend y base de datos levantados).
+
+## Flujo de trabajo
+
+Ver `CONTRIBUTING.md`: ramas cortas desde `main`, commits en formato Conventional Commits (validados por un hook de git y por el CI), pull request con la plantilla y el CI en verde antes de mezclar. El CI (`.github/workflows/ci.yml`) corre en cada PR: lint, formato, tests unitarios, integración del backend con PostgreSQL, build, E2E y validación de los mensajes de commit.
 
 ## API actual
 
 Prefijo `/api/v1`. Errores con formato uniforme `{ statusCode, error, message, details? }`. Contrato completo previsto en `backend/ARQUITECTURA.md` sección 8.
 
-| Método | Ruta             | Acceso       | Descripción                                    |
-| ------ | ---------------- | ------------ | ---------------------------------------------- |
-| POST   | `/auth/register` | Público      | Registra un paciente (nombre, apellido, email) |
-| POST   | `/auth/login`    | Público      | Devuelve `{ accessToken, user }`               |
-| GET    | `/auth/me`       | Autenticado  | Usuario del token                              |
-| GET    | `/users`         | ADMIN        | Lista de usuarios                              |
+| Método | Ruta             | Acceso      | Descripción                                    |
+| ------ | ---------------- | ----------- | ---------------------------------------------- |
+| POST   | `/auth/register` | Público     | Registra un paciente (nombre, apellido, email) |
+| POST   | `/auth/login`    | Público     | Devuelve `{ accessToken, user }`               |
+| GET    | `/auth/me`       | Autenticado | Usuario del token                              |
+| GET    | `/users`         | ADMIN       | Lista de usuarios                              |
 
 ## Skills y agentes de Claude Code
 
 Viven por carpeta, en `backend/.claude/` y `frontend/.claude/`; son específicos de este proyecto (codifican el PDF del docente y la arquitectura decidida) y Claude Code los carga al trabajar dentro de cada carpeta. Lo que valía la pena de la librería genérica que había en la raíz (ciclo TDD, Definition of Done, checklists de seguridad y accesibilidad, revisión de código en cinco ejes, commits atómicos) quedó adaptado dentro de estos.
 
-| Carpeta  | Skills                                                                                                                                                                       | Agentes                                                                                      |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Carpeta  | Skills                                                                                                                                                                                  | Agentes                                                                                        |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | backend  | `reglas-de-negocio-citas` (fuente de verdad del PDF), `ciclo-tdd` (TDD + Definition of Done), `crear-modulo-nest`, `test-unitario-reglas`, `test-integracion-api`, `prisma-migraciones` | `revisor-reglas-negocio`, `revisor-tests-backend`, `auditor-seguridad-roles`, `revisor-codigo` |
-| frontend | `reglas-de-negocio-citas` (vista UI), `ciclo-tdd`, `crear-feature`, `consumo-api`, `test-componente`, `e2e-playwright`                                                         | `revisor-flujos-ui`, `revisor-tests-frontend`, `revisor-accesibilidad-ux`, `revisor-codigo`    |
+| frontend | `reglas-de-negocio-citas` (vista UI), `ciclo-tdd`, `crear-feature`, `consumo-api`, `test-componente`, `e2e-playwright`                                                                  | `revisor-flujos-ui`, `revisor-tests-frontend`, `revisor-accesibilidad-ux`, `revisor-codigo`    |
 
 ## Decisiones confirmadas
 
-| Tema                          | Decisión                                                                                         |
-| ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| Frontend                      | React + Vite + TypeScript                                                                        |
+| Tema                          | Decisión                                                                                           |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| Frontend                      | React + Vite + TypeScript                                                                          |
 | Backend                       | NestJS + TypeScript, arquitectura por módulos con capas controller → service → domain → repository |
 | Base de datos                 | PostgreSQL + Prisma, modelo con nombres de dominio en español (`PACIENTE`, `horaInicio`, `estado`) |
-| Tests unitarios / integración | Jest + Supertest (backend), Vitest + React Testing Library (frontend)                            |
-| E2E                           | Playwright, en `frontend/e2e/`                                                                   |
-| Autenticación                 | JWT con Passport; roles `PACIENTE`, `ODONTOLOGO`, `ADMIN`                                        |
-| Linters                       | ESLint + Prettier en backend y frontend (`printWidth` 100, comillas simples, trailing commas)    |
-| Skills y agentes              | Formato Claude Code por carpeta                                                                  |
+| Tests unitarios / integración | Jest + Supertest (backend), Vitest + React Testing Library (frontend)                              |
+| E2E                           | Playwright, en `frontend/e2e/`                                                                     |
+| Autenticación                 | JWT con Passport; roles `PACIENTE`, `ODONTOLOGO`, `ADMIN`                                          |
+| Linters                       | ESLint + Prettier en backend y frontend (`printWidth` 100, comillas simples, trailing commas)      |
+| Skills y agentes              | Formato Claude Code por carpeta                                                                    |
 
 ## Decisiones tomadas al redactar (revisar y corregir si no estás de acuerdo)
 

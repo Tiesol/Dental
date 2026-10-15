@@ -70,7 +70,7 @@ frontend/
 │   │   │   ├── dates.ts               # formateo y conversión UTC <-> zona de la clínica
 │   │   │   └── estados-cita.ts        # etiquetas, colores y acciones permitidas por estado y rol
 │   │   └── styles/                    # index.css global (hecho)
-│   └── test/                          # pendiente: se crea al instalar Vitest + RTL + MSW
+│   └── test/                          # setup.ts, msw/ (handlers, server), factories.ts, utils.tsx (hecho)
 │       ├── setup.ts                   # jest-dom, limpieza, MSW
 │       ├── msw/                       # handlers que simulan la API en tests de componentes
 │       └── utils.tsx                  # render con providers, factories de datos
