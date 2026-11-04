@@ -9,7 +9,7 @@ import {
 import { NewPatientUser, UserRecord } from '../users/domain/user';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
-import { PasswordHasher } from './password-hasher';
+import { PasswordHasher } from '../../common/security/password-hasher';
 
 describe('AuthService', () => {
   let service: AuthService;

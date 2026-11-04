@@ -12,7 +12,7 @@ import { normalizeEmail } from './domain/normalize-email';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './jwt-payload';
-import { PasswordHasher } from './password-hasher';
+import { PasswordHasher } from '../../common/security/password-hasher';
 
 export type LoginResult = { accessToken: string; user: PublicUser };
 
