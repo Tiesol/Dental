@@ -29,7 +29,48 @@ async function main() {
     },
   });
 
-  console.log(`Seed listo: ${admin.email}, ${odontologo.email}`);
+  // Catálogo inicial con los ejemplos del PDF (sección 3). Precios referenciales opcionales.
+  const servicios = [
+    {
+      nombre: 'Limpieza dental',
+      descripcion: 'Profilaxis y eliminación de sarro y placa bacteriana.',
+      duracionMin: 30,
+      precioReferencial: 150,
+    },
+    {
+      nombre: 'Consulta y diagnóstico',
+      descripcion: 'Evaluación general de la salud bucal y plan de tratamiento.',
+      duracionMin: 30,
+      precioReferencial: 100,
+    },
+    {
+      nombre: 'Ortodoncia',
+      descripcion: 'Control y ajuste de tratamiento de ortodoncia.',
+      duracionMin: 45,
+      precioReferencial: null,
+    },
+    {
+      nombre: 'Extracción dental',
+      descripcion: 'Extracción simple de una pieza dental.',
+      duracionMin: 60,
+      precioReferencial: 250,
+    },
+    {
+      nombre: 'Blanqueamiento',
+      descripcion: 'Blanqueamiento dental en consultorio.',
+      duracionMin: 90,
+      precioReferencial: 600,
+    },
+  ];
+  for (const servicio of servicios) {
+    await prisma.service.upsert({
+      where: { nombre: servicio.nombre },
+      update: {},
+      create: servicio,
+    });
+  }
+
+  console.log(`Seed listo: ${admin.email}, ${odontologo.email} y ${servicios.length} servicios`);
 }
 
 main()
