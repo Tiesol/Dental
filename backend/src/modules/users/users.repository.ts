@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { NewPatientUser, UserRecord } from './domain/user';
+import { NewPatientUser, NewStaffUser, UserChanges, UserRecord } from './domain/user';
 
 const withProfiles = { patient: true, dentist: true } satisfies Prisma.UserInclude;
 
@@ -44,6 +44,49 @@ export class UsersRepository {
       include: withProfiles,
     });
     return toRecord(row);
+  }
+
+  // Crea un ODONTOLOGO (con su perfil Dentist) o un ADMIN (sin perfil).
+  async createStaff(data: NewStaffUser): Promise<UserRecord> {
+    const row = await this.prisma.user.create({
+      data: {
+        email: data.email,
+        passwordHash: data.passwordHash,
+        role: data.role,
+        ...(data.role === 'ODONTOLOGO'
+          ? { dentist: { create: { nombre: data.nombre, especialidad: data.especialidad } } }
+          : {}),
+      },
+      include: withProfiles,
+    });
+    return toRecord(row);
+  }
+
+  // Actualiza email y/o el perfil en una sola sentencia (Prisma la ejecuta en una transacción).
+  async update(id: string, changes: UserChanges): Promise<UserRecord> {
+    const row = await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(changes.email !== undefined ? { email: changes.email } : {}),
+        ...(changes.patient ? { patient: { update: changes.patient } } : {}),
+        ...(changes.dentist ? { dentist: { update: changes.dentist } } : {}),
+      },
+      include: withProfiles,
+    });
+    return toRecord(row);
+  }
+
+  async setActivo(id: string, activo: boolean): Promise<UserRecord> {
+    const row = await this.prisma.user.update({
+      where: { id },
+      data: { activo },
+      include: withProfiles,
+    });
+    return toRecord(row);
+  }
+
+  async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
+    await this.prisma.user.update({ where: { id }, data: { passwordHash } });
   }
 }
 

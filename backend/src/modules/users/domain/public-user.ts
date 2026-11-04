@@ -1,4 +1,4 @@
-import { PublicUser, UserRecord } from './user';
+import { PublicUser, UserDetail, UserRecord } from './user';
 
 export const NOMBRE_ADMIN = 'Administrador';
 
@@ -25,5 +25,26 @@ export function toPublicUser(user: UserRecord): PublicUser {
     nombre: nombreParaMostrar(user),
     ...(user.patient ? { patientId: user.patient.id } : {}),
     ...(user.dentist ? { dentistId: user.dentist.id } : {}),
+  };
+}
+
+// Usuario público con los datos de su perfil (para "Mi perfil" y la gestión del ADMIN).
+export function toUserDetail(user: UserRecord): UserDetail {
+  return {
+    ...toPublicUser(user),
+    paciente: user.patient
+      ? {
+          nombre: user.patient.nombre,
+          apellido: user.patient.apellido,
+          telefono: user.patient.telefono,
+        }
+      : null,
+    odontologo: user.dentist
+      ? {
+          nombre: user.dentist.nombre,
+          especialidad: user.dentist.especialidad,
+          activo: user.dentist.activo,
+        }
+      : null,
   };
 }

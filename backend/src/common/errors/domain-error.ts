@@ -44,3 +44,30 @@ export class RecursoNoEncontradoError extends DomainError {
     super(404, 'RECURSO_NO_ENCONTRADO', `${recurso} no encontrado`);
   }
 }
+
+// ---- Gestión de usuarios ----
+
+export class OperacionSobrePropiaCuentaError extends DomainError {
+  constructor(message = 'No puedes desactivar tu propia cuenta') {
+    super(409, 'OPERACION_SOBRE_PROPIA_CUENTA', message);
+  }
+}
+
+export class PasswordActualIncorrectaError extends DomainError {
+  constructor() {
+    super(400, 'PASSWORD_ACTUAL_INCORRECTA', 'La contraseña actual es incorrecta');
+  }
+}
+
+export class CampoNoAplicableAlRolError extends DomainError {
+  constructor(campos: string[], rol: string) {
+    super(
+      400,
+      'CAMPO_NO_APLICABLE_AL_ROL',
+      `${campos.length > 1 ? 'Los campos' : 'El campo'} ${campos.join(', ')} no ${
+        campos.length > 1 ? 'aplican' : 'aplica'
+      } a un usuario con rol ${rol}`,
+      { campos },
+    );
+  }
+}
