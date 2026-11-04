@@ -16,6 +16,10 @@ import { PasswordHasher } from '../../common/security/password-hasher';
 
 export type LoginResult = { accessToken: string; user: PublicUser };
 
+// Hash bcrypt (costo 10, igual al real) de un texto aleatorio que nadie conoce. Solo sirve para
+// gastar el mismo tiempo de bcrypt cuando el email no existe.
+const HASH_DE_RELLENO = '$2b$10$FphyStJOYScq5b7s3TgjdewYAgw91JkjyxIC1.hB/BQ3NMfdr69uO';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -44,9 +48,13 @@ export class AuthService {
 
   async login(dto: LoginDto): Promise<LoginResult> {
     const user = await this.users.findByEmail(normalizeEmail(dto.email));
-    const valido =
-      user !== null && user.activo && (await this.hasher.compare(dto.password, user.passwordHash));
-    if (!user || !valido) {
+    // Se compara SIEMPRE contra un hash (el real o uno de relleno) para que la respuesta tarde
+    // lo mismo exista o no el email, y no se pueda averiguar qué cuentas existen midiendo tiempos.
+    const passwordOk = await this.hasher.compare(
+      dto.password,
+      user?.passwordHash ?? HASH_DE_RELLENO,
+    );
+    if (!user || !user.activo || !passwordOk) {
       throw new CredencialesInvalidasError();
     }
 
