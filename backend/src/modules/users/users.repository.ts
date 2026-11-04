@@ -46,7 +46,9 @@ export class UsersRepository {
     return toRecord(row);
   }
 
-  // Crea un ODONTOLOGO (con su perfil Dentist) o un ADMIN (sin perfil).
+  // Crea un ODONTOLOGO (con su perfil Dentist y, si se indican, sus servicios) o un ADMIN (sin
+  // perfil). Es una sola sentencia anidada: Prisma la ejecuta en una transacción, así que no queda
+  // un odontólogo a medio crear si algo falla.
   async createStaff(data: NewStaffUser): Promise<UserRecord> {
     const row = await this.prisma.user.create({
       data: {
@@ -54,7 +56,15 @@ export class UsersRepository {
         passwordHash: data.passwordHash,
         role: data.role,
         ...(data.role === 'ODONTOLOGO'
-          ? { dentist: { create: { nombre: data.nombre, especialidad: data.especialidad } } }
+          ? {
+              dentist: {
+                create: {
+                  nombre: data.nombre,
+                  especialidad: data.especialidad,
+                  services: { create: (data.serviceIds ?? []).map((serviceId) => ({ serviceId })) },
+                },
+              },
+            }
           : {}),
       },
       include: withProfiles,

@@ -67,6 +67,27 @@ export class UsersService {
     return toUserDetail(await this.users.createStaff(data));
   }
 
+  // Alta de un odontólogo junto con los servicios que realiza (lo usa el módulo dentists, que ya
+  // validó que los servicios existen).
+  async createDentist(data: {
+    email: string;
+    password: string;
+    nombre: string;
+    especialidad: string;
+    serviceIds: string[];
+  }): Promise<UserRecord> {
+    const email = normalizeEmail(data.email);
+    await this.assertEmailLibre(email);
+    return this.users.createStaff({
+      role: 'ODONTOLOGO',
+      email,
+      passwordHash: await this.hasher.hash(data.password),
+      nombre: data.nombre.trim(),
+      especialidad: data.especialidad.trim(),
+      serviceIds: data.serviceIds,
+    });
+  }
+
   async update(id: string, dto: UpdateUserDto): Promise<UserDetail> {
     const user = await this.getOrThrow(id);
     const { email, ...perfil } = dto;
