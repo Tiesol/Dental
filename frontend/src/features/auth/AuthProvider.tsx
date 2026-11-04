@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { authApi } from '@/api/endpoints/auth';
+import { onSesionExpirada } from '@/api/http';
 import { tokenStore } from '@/api/token';
 import type { RegisterRequest, UserResponse } from '@/api/types';
 import { AuthContext, type AuthContextValue } from './auth-context';
@@ -9,11 +10,22 @@ import { AuthContext, type AuthContextValue } from './auth-context';
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState(() => tokenStore.get() !== null);
+  const [sesionExpirada, setSesionExpirada] = useState(false);
 
   const logout = useCallback(() => {
     tokenStore.clear();
     setUser(null);
   }, []);
+
+  // Cualquier 401 con token (vencido o cuenta deshabilitada) cierra la sesión en toda la app.
+  useEffect(
+    () =>
+      onSesionExpirada(() => {
+        setUser(null);
+        setSesionExpirada(true);
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (!tokenStore.get()) return;
@@ -37,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login({ email, password });
     tokenStore.set(res.accessToken);
+    setSesionExpirada(false);
     setUser(res.user);
   }, []);
 
@@ -52,6 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await authApi.me());
   }, []);
 
-  const value: AuthContextValue = { user, loading, login, register, logout, refresh };
+  const value: AuthContextValue = {
+    user,
+    loading,
+    sesionExpirada,
+    login,
+    register,
+    logout,
+    refresh,
+  };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -5,6 +5,16 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api/v1';
 
 type Options = { body?: unknown };
 
+// Avisos de "sesión expirada": si el backend rechaza con 401 un token que sí enviamos (venció,
+// o un ADMIN deshabilitó la cuenta), se borra el token y se avisa a quien escuche (AuthProvider),
+// que cierra la sesión para que RequireRole lleve al login.
+const alExpirarSesion = new Set<() => void>();
+
+export function onSesionExpirada(listener: () => void): () => void {
+  alExpirarSesion.add(listener);
+  return () => alExpirarSesion.delete(listener);
+}
+
 // Único punto de acceso a la red. Adjunta el JWT y traduce todo fallo a ApiError.
 async function request<T>(method: string, path: string, options: Options = {}): Promise<T> {
   const token = tokenStore.get();
@@ -24,6 +34,10 @@ async function request<T>(method: string, path: string, options: Options = {}): 
 
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
+    if (res.status === 401 && token) {
+      tokenStore.clear();
+      alExpirarSesion.forEach((listener) => listener());
+    }
     throw new ApiError(res.status, extraerMensaje(data), data);
   }
   return data as T;

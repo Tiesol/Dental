@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../useAuth';
 
 export function LoginPage() {
-  const { user, login } = useAuth();
+  const { user, login, sesionExpirada } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +29,11 @@ export function LoginPage() {
   return (
     <form className="card" onSubmit={onSubmit}>
       <h1>Iniciar sesión</h1>
+      {sesionExpirada && (
+        <p className="muted" role="status">
+          Tu sesión expiró o tu cuenta fue deshabilitada. Vuelve a iniciar sesión.
+        </p>
+      )}
       <label>
         Email
         <input
