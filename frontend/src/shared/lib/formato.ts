@@ -20,3 +20,16 @@ export function formatearPrecio(precio: number | null): string {
     maximumFractionDigits: 2,
   })}`;
 }
+
+// "Ana María Pérez" -> "AP", "Dr. Juan Rojas" -> "JR", "Administrador" -> "A"
+export function iniciales(nombre: string): string {
+  const palabras = nombre
+    .trim()
+    .split(/\s+/)
+    .filter((p) => p !== '' && !/^dra?\.$/i.test(p));
+  if (palabras.length === 0) return '?';
+  const [primera] = palabras;
+  const ultima = palabras[palabras.length - 1];
+  const letras = palabras.length === 1 ? primera[0] : primera[0] + ultima[0];
+  return letras.toUpperCase();
+}
