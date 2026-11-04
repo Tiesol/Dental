@@ -55,8 +55,8 @@ frontend/
 │   │   └── endpoints/                 # funciones por recurso: auth.ts, users.ts (hechos), services.ts, dentists.ts, availability.ts, appointments.ts
 │   ├── features/
 │   │   ├── auth/                      # login, registro, AuthProvider, useAuth, RequireRole (hecho)
-│   │   ├── cuenta/                    # datos del usuario autenticado                      (hecho)
-│   │   ├── admin-usuarios/            # listado de usuarios para ADMIN                     (hecho)
+│   │   ├── cuenta/                    # mis datos, editar perfil, cambiar contraseña       (hecho)
+│   │   ├── admin-usuarios/            # listado, alta de personal, edición, habilitar (ADMIN) (hecho)
 │   │   ├── servicios/                 # catálogo para paciente + CRUD para admin
 │   │   ├── odontologos/               # listado para paciente + CRUD, servicios y horarios para admin
 │   │   ├── reserva/                   # asistente servicio -> odontólogo -> fecha/hora -> confirmar
@@ -102,17 +102,17 @@ reserva/
 
 ## 4. Rutas y control de acceso
 
-| Ruta                                                                                                                   | Rol                   | Contenido                                                                                                  |
-| ---------------------------------------------------------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `/login`, `/registro`                                                                                                  | público               | Autenticación. Registro solo crea PACIENTE.                                                                |
-| `/`                                                                                                                    | autenticado           | Redirige al inicio del rol.                                                                                |
-| `/servicios`                                                                                                           | PACIENTE              | Catálogo de servicios activos.                                                                             |
-| `/reservar`                                                                                                            | PACIENTE              | Asistente de reserva en pasos.                                                                             |
-| `/mis-citas`                                                                                                           | PACIENTE              | Próximas e historial.                                                                                      |
-| `/mis-citas/:id`                                                                                                       | PACIENTE (dueño)      | Detalle, reprogramar, cancelar. Si la API responde 403 se muestra "No tienes acceso a esta cita" (E2E 07). |
-| `/agenda`                                                                                                              | ODONTOLOGO            | Citas de hoy y próximas.                                                                                   |
-| `/agenda/:id`                                                                                                          | ODONTOLOGO (asignado) | Detalle, cambiar estado, registrar observación.                                                            |
-| `/admin/usuarios` (hecho), `/admin/servicios`, `/admin/odontologos`, `/admin/odontologos/:id/horarios`, `/admin/citas` | ADMIN                 | Gestión.                                                                                                   |
+| Ruta                                                                                                                                                                    | Rol                   | Contenido                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `/login`, `/registro`                                                                                                                                                   | público               | Autenticación. Registro solo crea PACIENTE.                                                                |
+| `/`                                                                                                                                                                     | autenticado           | Redirige al inicio del rol.                                                                                |
+| `/servicios`                                                                                                                                                            | PACIENTE              | Catálogo de servicios activos.                                                                             |
+| `/reservar`                                                                                                                                                             | PACIENTE              | Asistente de reserva en pasos.                                                                             |
+| `/mis-citas`                                                                                                                                                            | PACIENTE              | Próximas e historial.                                                                                      |
+| `/mis-citas/:id`                                                                                                                                                        | PACIENTE (dueño)      | Detalle, reprogramar, cancelar. Si la API responde 403 se muestra "No tienes acceso a esta cita" (E2E 07). |
+| `/agenda`                                                                                                                                                               | ODONTOLOGO            | Citas de hoy y próximas.                                                                                   |
+| `/agenda/:id`                                                                                                                                                           | ODONTOLOGO (asignado) | Detalle, cambiar estado, registrar observación.                                                            |
+| `/admin/usuarios`, `/admin/usuarios/nuevo`, `/admin/usuarios/:id` (hechos), `/admin/servicios`, `/admin/odontologos`, `/admin/odontologos/:id/horarios`, `/admin/citas` | ADMIN                 | Gestión.                                                                                                   |
 
 `RequireRole` envuelve cada grupo de rutas: sin sesión redirige a `/login`; con rol incorrecto muestra página 403. Esto es UX; la seguridad real es del backend.
 

@@ -61,8 +61,8 @@ backend/
 │   ├── config/                      # validación de variables de entorno (env.validation.ts)
 │   ├── prisma/                      # PrismaModule + PrismaService
 │   └── modules/
-│       ├── auth/                    # registro, login, JwtStrategy, PasswordHasher   (hecho)
-│       ├── users/                   # usuario base + rol + perfiles                  (hecho)
+│       ├── auth/                    # registro, login, JwtStrategy                    (hecho)
+│       ├── users/                   # usuario base + perfiles, gestión ADMIN, mi cuenta (hecho)
 │       ├── dentists/                # odontólogos + servicios que realizan
 │       ├── services/                # servicios dentales (catálogo)
 │       ├── availability/            # horarios de atención + bloques no disponibles + cálculo de slots
@@ -107,17 +107,17 @@ Entidades mínimas exigidas por el PDF (sección 11, "Persistencia"): usuarios, 
 
 Es exactamente lo que hay en `prisma/schema.prisma`:
 
-| Modelo | Campos clave | Notas |
-|---|---|---|
-| `User` | id, email (único), passwordHash, role (`PACIENTE` / `ODONTOLOGO` / `ADMIN`), activo, createdAt | Usuario base para login. `activo = false` impide iniciar sesión. |
-| `Patient` | id, userId (1:1), nombre, apellido, telefono (opcional) | Datos básicos que ve el odontólogo en su agenda. |
-| `Dentist` | id, userId (1:1), nombre, especialidad, activo | Deshabilitado = no acepta nuevas citas, conserva historial. |
-| `Service` | id, nombre (único), descripcion, duracionMin (>0), precioReferencial (opcional), activo | Deshabilitado = no disponible para nuevas reservas. |
-| `DentistService` | dentistId, serviceId | Tabla puente: qué servicios realiza cada odontólogo. |
-| `AvailabilityRule` | id, dentistId, diaSemana (0 = domingo … 6 = sábado), minutoInicio, minutoFin | Horario recurrente de atención en minutos desde las 00:00 de la zona de la clínica (09:00 = 540). |
-| `UnavailableBlock` | id, dentistId, inicio (timestamptz), fin (timestamptz), motivo (opcional) | Pausas/bloqueos puntuales. |
-| `Appointment` | id, patientId, dentistId, serviceId, horaInicio, horaFin, estado, createdAt, updatedAt | `horaFin` se calcula en el dominio, nunca la manda el cliente. La "fecha" del PDF es la parte de fecha de `horaInicio`. |
-| `Observation` | id, appointmentId (1:1), texto, createdAt | Registrada por el odontólogo al finalizar. |
+| Modelo             | Campos clave                                                                                   | Notas                                                                                                                   |
+| ------------------ | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `User`             | id, email (único), passwordHash, role (`PACIENTE` / `ODONTOLOGO` / `ADMIN`), activo, createdAt | Usuario base para login. `activo = false` impide iniciar sesión.                                                        |
+| `Patient`          | id, userId (1:1), nombre, apellido, telefono (opcional)                                        | Datos básicos que ve el odontólogo en su agenda.                                                                        |
+| `Dentist`          | id, userId (1:1), nombre, especialidad, activo                                                 | Deshabilitado = no acepta nuevas citas, conserva historial.                                                             |
+| `Service`          | id, nombre (único), descripcion, duracionMin (>0), precioReferencial (opcional), activo        | Deshabilitado = no disponible para nuevas reservas.                                                                     |
+| `DentistService`   | dentistId, serviceId                                                                           | Tabla puente: qué servicios realiza cada odontólogo.                                                                    |
+| `AvailabilityRule` | id, dentistId, diaSemana (0 = domingo … 6 = sábado), minutoInicio, minutoFin                   | Horario recurrente de atención en minutos desde las 00:00 de la zona de la clínica (09:00 = 540).                       |
+| `UnavailableBlock` | id, dentistId, inicio (timestamptz), fin (timestamptz), motivo (opcional)                      | Pausas/bloqueos puntuales.                                                                                              |
+| `Appointment`      | id, patientId, dentistId, serviceId, horaInicio, horaFin, estado, createdAt, updatedAt         | `horaFin` se calcula en el dominio, nunca la manda el cliente. La "fecha" del PDF es la parte de fecha de `horaInicio`. |
+| `Observation`      | id, appointmentId (1:1), texto, createdAt                                                      | Registrada por el odontólogo al finalizar.                                                                              |
 
 Decisiones de modelado:
 
@@ -166,13 +166,13 @@ PENDIENTE ──> CONFIRMADA ──> EN_ATENCION ──> FINALIZADA
     └──────────────┴──────────> CANCELADA
 ```
 
-| Transición | Quién puede |
-|---|---|
-| PENDIENTE → CONFIRMADA | ADMIN |
-| CONFIRMADA → EN_ATENCION | ODONTOLOGO (dueño de la cita) |
+| Transición               | Quién puede                                      |
+| ------------------------ | ------------------------------------------------ |
+| PENDIENTE → CONFIRMADA   | ADMIN                                            |
+| CONFIRMADA → EN_ATENCION | ODONTOLOGO (dueño de la cita)                    |
 | EN_ATENCION → FINALIZADA | ODONTOLOGO (dueño de la cita); exige observación |
-| PENDIENTE → CANCELADA | PACIENTE (dueño), ADMIN |
-| CONFIRMADA → CANCELADA | PACIENTE (dueño), ADMIN |
+| PENDIENTE → CANCELADA    | PACIENTE (dueño), ADMIN                          |
+| CONFIRMADA → CANCELADA   | PACIENTE (dueño), ADMIN                          |
 
 Todo lo demás es inválido y devuelve `409 Conflict`. En particular: FINALIZADA no se cancela ni vuelve a PENDIENTE; CANCELADA es terminal. Reprogramar solo se permite desde PENDIENTE o CONFIRMADA.
 
@@ -188,7 +188,8 @@ La máquina de estados es una tabla en `domain/appointment-status.ts` y se prueb
 - **Passport + `JwtStrategy`** (`modules/auth/jwt.strategy.ts`): valida firma y expiración del Bearer token y adjunta `CurrentUserData = { userId, email, role, patientId?, dentistId? }` a `request.user`. Los ids de perfil viajan en el payload para verificar propiedad sin consultar la BD.
 - **`JwtAuthGuard`** registrado como `APP_GUARD` (todas las rutas privadas por defecto) + decorador `@Public()` para register/login y catálogo público.
 - **`RolesGuard`** también global + `@Roles('ADMIN')`: autorización por rol.
-- **`PasswordHasher`**: envoltorio inyectable de bcrypt (coste configurable para tests).
+- **`PasswordHasher`** (`common/security/`): envoltorio inyectable de bcrypt (coste configurable para tests). Vive en `common` porque lo usan `auth` (registro, login) y `users` (alta de personal, cambio de contraseña).
+- **Cuentas deshabilitadas**: `JwtStrategy` relee el usuario en cada petición; si un ADMIN lo deshabilitó (o ya no existe) responde `401` al instante, sin esperar a que expire el token. Un ADMIN no puede deshabilitar su propia cuenta (`409`).
 - **Verificación de propiedad en el service**: `GET /appointments/:id` comprueba que `patientId` corresponde al usuario autenticado (o que es el odontólogo asignado, o ADMIN). Devuelve `403`, no `404`, cuando la cita existe pero no es suya (criterio E2E 07).
 - Contraseñas con `bcrypt`. Nunca se devuelve `passwordHash`.
 - CORS restringido al origen del frontend (`FRONTEND_URL`).
@@ -199,16 +200,17 @@ La máquina de estados es una tabla en `domain/appointment-status.ts` y se prueb
 
 Prefijo `/api/v1`. Respuestas JSON. Errores con formato uniforme `{ statusCode, error, message, details? }`.
 
-| Recurso | Endpoints | Roles |
-|---|---|---|
-| Auth (hecho) | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` | público / público / autenticado |
-| Users (hecho) | `GET /users` | ADMIN |
-| Services | `GET /services` (solo activos para no-admin), `POST /services`, `PATCH /services/:id`, `PATCH /services/:id/estado` | lectura: todos; escritura: ADMIN |
-| Dentists | `GET /dentists`, `GET /dentists/:id`, `POST /dentists`, `PATCH /dentists/:id`, `PATCH /dentists/:id/estado`, `PUT /dentists/:id/services` | lectura: todos; escritura: ADMIN |
-| Availability | `GET /dentists/:id/availability`, `PUT /dentists/:id/availability`, `POST /dentists/:id/blocks`, `DELETE /dentists/:id/blocks/:blockId`, `GET /dentists/:id/slots?serviceId=&fecha=` | escritura: ADMIN; slots: autenticado |
-| Appointments | `POST /appointments`, `GET /appointments/mine`, `GET /appointments/:id`, `PATCH /appointments/:id/reschedule`, `PATCH /appointments/:id/cancel`, `PATCH /appointments/:id/status`, `GET /appointments` (todas) | PACIENTE / propietario / ODONTOLOGO / ADMIN según tabla de transiciones |
-| Agenda | `GET /dentists/me/agenda?fecha=`, `GET /dentists/me/agenda/upcoming` | ODONTOLOGO |
-| Observations | `POST /appointments/:id/observation` | ODONTOLOGO dueño |
+| Recurso           | Endpoints                                                                                                                                                                                                      | Roles                                                                   |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Auth (hecho)      | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`                                                                                                                                                      | público / público / autenticado                                         |
+| Users (hecho)     | `GET /users`, `POST /users` (crea ODONTOLOGO o ADMIN), `GET /users/:id`, `PATCH /users/:id` (email y perfil; el rol no cambia), `PATCH /users/:id/estado` (`{ activo }`, no la propia)                         | ADMIN                                                                   |
+| Mi cuenta (hecho) | `GET /users/me`, `PATCH /users/me` (PACIENTE: nombre, apellido, teléfono; ODONTOLOGO: nombre), `PATCH /users/me/password` (`{ passwordActual, passwordNueva }`, 204)                                           | autenticado                                                             |
+| Services          | `GET /services` (solo activos para no-admin), `POST /services`, `PATCH /services/:id`, `PATCH /services/:id/estado`                                                                                            | lectura: todos; escritura: ADMIN                                        |
+| Dentists          | `GET /dentists`, `GET /dentists/:id`, `POST /dentists`, `PATCH /dentists/:id`, `PATCH /dentists/:id/estado`, `PUT /dentists/:id/services`                                                                      | lectura: todos; escritura: ADMIN                                        |
+| Availability      | `GET /dentists/:id/availability`, `PUT /dentists/:id/availability`, `POST /dentists/:id/blocks`, `DELETE /dentists/:id/blocks/:blockId`, `GET /dentists/:id/slots?serviceId=&fecha=`                           | escritura: ADMIN; slots: autenticado                                    |
+| Appointments      | `POST /appointments`, `GET /appointments/mine`, `GET /appointments/:id`, `PATCH /appointments/:id/reschedule`, `PATCH /appointments/:id/cancel`, `PATCH /appointments/:id/status`, `GET /appointments` (todas) | PACIENTE / propietario / ODONTOLOGO / ADMIN según tabla de transiciones |
+| Agenda            | `GET /dentists/me/agenda?fecha=`, `GET /dentists/me/agenda/upcoming`                                                                                                                                           | ODONTOLOGO                                                              |
+| Observations      | `POST /appointments/:id/observation`                                                                                                                                                                           | ODONTOLOGO dueño                                                        |
 
 Los detalles (DTOs, códigos de error por caso) se definen al implementar cada módulo, siguiendo `CONVENCIONES.md`.
 
@@ -216,11 +218,11 @@ Los detalles (DTOs, códigos de error por caso) se definen al implementar cada m
 
 ## 9. Estrategia de testing
 
-| Nivel | Herramienta | Qué cubre | Dónde |
-|---|---|---|---|
-| Unitario | Jest | Funciones de dominio y services con repositories mockeados. Los 9 puntos de la sección 12 del PDF. | `src/**/*.spec.ts` (junto al código) |
-| Integración | Jest + Supertest + PostgreSQL de test | Endpoints reales con BD real. Los 10 puntos de la sección 13. Incluye prueba de doble reserva concurrente (`Promise.all` de dos POST). | `test/integration/*.int-spec.ts` |
-| E2E | Playwright | Vive en el **frontend**, porque el PDF exige que "los E2E interactúen con la interfaz real". El backend solo aporta un script de seed para dejar datos conocidos. | `frontend/e2e/` |
+| Nivel       | Herramienta                           | Qué cubre                                                                                                                                                         | Dónde                                |
+| ----------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Unitario    | Jest                                  | Funciones de dominio y services con repositories mockeados. Los 9 puntos de la sección 12 del PDF.                                                                | `src/**/*.spec.ts` (junto al código) |
+| Integración | Jest + Supertest + PostgreSQL de test | Endpoints reales con BD real. Los 10 puntos de la sección 13. Incluye prueba de doble reserva concurrente (`Promise.all` de dos POST).                            | `test/integration/*.int-spec.ts`     |
+| E2E         | Playwright                            | Vive en el **frontend**, porque el PDF exige que "los E2E interactúen con la interfaz real". El backend solo aporta un script de seed para dejar datos conocidos. | `frontend/e2e/`                      |
 
 La BD de integración es una base PostgreSQL aparte (`.env.test`, puerto 5433), migrada antes de la suite (`test/integration/global-setup.ts`) y truncada antes de cada test (`resetDb`). Nunca se usan mocks de Prisma en integración.
 

@@ -108,12 +108,19 @@ Ver `CONTRIBUTING.md`: ramas cortas desde `main`, commits en formato Conventiona
 
 Prefijo `/api/v1`. Errores con formato uniforme `{ statusCode, error, message, details? }`. Contrato completo previsto en `backend/ARQUITECTURA.md` sección 8.
 
-| Método | Ruta             | Acceso      | Descripción                                    |
-| ------ | ---------------- | ----------- | ---------------------------------------------- |
-| POST   | `/auth/register` | Público     | Registra un paciente (nombre, apellido, email) |
-| POST   | `/auth/login`    | Público     | Devuelve `{ accessToken, user }`               |
-| GET    | `/auth/me`       | Autenticado | Usuario del token                              |
-| GET    | `/users`         | ADMIN       | Lista de usuarios                              |
+| Método | Ruta                 | Acceso      | Descripción                                    |
+| ------ | -------------------- | ----------- | ---------------------------------------------- |
+| POST   | `/auth/register`     | Público     | Registra un paciente (nombre, apellido, email) |
+| POST   | `/auth/login`        | Público     | Devuelve `{ accessToken, user }`               |
+| GET    | `/auth/me`           | Autenticado | Usuario del token                              |
+| GET    | `/users`             | ADMIN       | Lista de usuarios con su perfil                |
+| POST   | `/users`             | ADMIN       | Crea un ODONTOLOGO o un ADMIN                  |
+| GET    | `/users/:id`         | ADMIN       | Detalle de un usuario                          |
+| PATCH  | `/users/:id`         | ADMIN       | Edita email y perfil (el rol no cambia)        |
+| PATCH  | `/users/:id/estado`  | ADMIN       | Habilita/deshabilita una cuenta (no la propia) |
+| GET    | `/users/me`          | Autenticado | Mi perfil                                      |
+| PATCH  | `/users/me`          | Autenticado | Edito mi perfil                                |
+| PATCH  | `/users/me/password` | Autenticado | Cambio mi contraseña (verifica la actual)      |
 
 ## Skills y agentes de Claude Code
 
@@ -154,3 +161,8 @@ No están en el PDF ni fueron confirmadas explícitamente; se eligió la opción
 11. **Swagger** en `/api/docs`.
 12. **Git**: rama `main`, ramas `feat/`, `fix/`, `test/`, `docs/`, `refactor/`; Conventional Commits.
 13. **Cobertura mínima**: 90% en dominio y services del backend y en `shared/lib/` y hooks del frontend.
+14. **Gestión de usuarios (confirmado)**: el ADMIN crea cuentas ODONTOLOGO (con nombre y especialidad) y ADMIN; los pacientes solo se registran solos. El **rol no se puede cambiar** después de creado (un PACIENTE tiene citas en su perfil y un ODONTOLOGO necesita perfil con especialidad). El ADMIN edita email y datos de perfil, y habilita/deshabilita cuentas, salvo la suya.
+15. **Mi cuenta (confirmado)**: el PACIENTE edita nombre, apellido y teléfono; el ODONTOLOGO solo su nombre (especialidad y email los gestiona el ADMIN); el ADMIN no tiene perfil. Cambiar la contraseña exige la actual. Un campo que no aplica al rol se rechaza con `400`, no se ignora.
+16. **Cuenta deshabilitada = sin acceso inmediato**: la estrategia JWT consulta el usuario en cada petición (una lectura por id) para que deshabilitar surta efecto al instante y no a las 8 h, cuando expira el token.
+17. **`User.activo` ≠ `Dentist.activo`**: el primero impide iniciar sesión (gestión de usuarios); el segundo, que el odontólogo reciba nuevas citas (lo gestionará el módulo `dentists`, "habilitar/deshabilitar profesionales" del PDF).
+18. **Tests de gestión de usuarios pendientes**: por decisión del equipo, los tests nuevos (unitarios, integración y E2E) se escribirán al final del proyecto. Los existentes siguen en verde.
