@@ -46,7 +46,10 @@ export function NuevoUsuarioPage() {
   return (
     <form className="card" onSubmit={onSubmit}>
       <h1>Nuevo usuario</h1>
-      <p className="muted">Los pacientes crean su propia cuenta desde el registro.</p>
+      <p className="muted">
+        Los pacientes crean su propia cuenta desde el registro. Para registrar un odontólogo junto
+        con los servicios que realiza, usa <Link to="/admin/odontologos/nuevo">Odontólogos</Link>.
+      </p>
       <label>
         Rol
         <select value={form.role} onChange={(e) => update('role')(e.target.value)}>
