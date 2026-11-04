@@ -48,6 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [login],
   );
 
-  const value: AuthContextValue = { user, loading, login, register, logout };
+  const refresh = useCallback(async () => {
+    setUser(await authApi.me());
+  }, []);
+
+  const value: AuthContextValue = { user, loading, login, register, logout, refresh };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
