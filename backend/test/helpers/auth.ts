@@ -5,13 +5,15 @@ import { API_PREFIX } from '../../src/app.setup';
 export const ruta = (path: string) => `/${API_PREFIX}${path}`;
 
 // Obtiene un JWT real haciendo login contra la app.
+// Recibe lo que devuelven las factories (usuario completo + password) y envía solo email y
+// password: la API rechaza con 400 cualquier campo extra (forbidNonWhitelisted).
 export async function loginComo(
   app: INestApplication,
-  credenciales: { email: string; password: string },
+  { email, password }: { email: string; password: string },
 ): Promise<string> {
   const res = await request(app.getHttpServer())
     .post(ruta('/auth/login'))
-    .send(credenciales)
+    .send({ email, password })
     .expect(200);
   return (res.body as { accessToken: string }).accessToken;
 }
