@@ -63,6 +63,26 @@ export class NombreDeServicioDuplicadoError extends DomainError {
   }
 }
 
+// ---- Odontólogos ----
+
+export class OdontologoDeshabilitadoError extends DomainError {
+  constructor() {
+    super(409, 'ODONTOLOGO_DESHABILITADO', 'El odontólogo no está aceptando nuevas citas');
+  }
+}
+
+export class OdontologoNoRealizaServicioError extends DomainError {
+  constructor() {
+    super(409, 'ODONTOLOGO_NO_REALIZA_SERVICIO', 'El odontólogo no realiza el servicio solicitado');
+  }
+}
+
+export class ServiciosInexistentesError extends DomainError {
+  constructor(ids: string[]) {
+    super(400, 'SERVICIOS_INEXISTENTES', 'Uno o más servicios indicados no existen', { ids });
+  }
+}
+
 // ---- Gestión de usuarios ----
 
 export class OperacionSobrePropiaCuentaError extends DomainError {

@@ -63,6 +63,12 @@ export class ServicesService {
     return this.services.setActivo(id, activo);
   }
 
+  // Ids de la lista que no corresponden a ningún servicio (lo usa dentists al asignar servicios).
+  async findMissingIds(ids: string[]): Promise<string[]> {
+    const existentes = new Set((await this.services.findByIds(ids)).map((s) => s.id));
+    return ids.filter((id) => !existentes.has(id));
+  }
+
   private async getOrThrow(id: string): Promise<ServiceRecord> {
     const service = await this.services.findById(id);
     if (!service) {

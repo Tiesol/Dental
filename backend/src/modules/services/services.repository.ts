@@ -21,6 +21,11 @@ export class ServicesRepository {
     return row ? toRecord(row) : null;
   }
 
+  async findByIds(ids: string[]): Promise<ServiceRecord[]> {
+    const rows = await this.prisma.service.findMany({ where: { id: { in: ids } } });
+    return rows.map(toRecord);
+  }
+
   // Búsqueda sin distinguir mayúsculas, para no permitir "Limpieza" y "limpieza" a la vez.
   async findByNombre(nombre: string): Promise<ServiceRecord | null> {
     const row = await this.prisma.service.findFirst({
