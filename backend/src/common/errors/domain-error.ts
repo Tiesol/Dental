@@ -45,6 +45,24 @@ export class RecursoNoEncontradoError extends DomainError {
   }
 }
 
+// ---- Servicios ----
+
+export class ServicioDeshabilitadoError extends DomainError {
+  constructor() {
+    super(
+      409,
+      'SERVICIO_DESHABILITADO',
+      'El servicio está deshabilitado y no admite nuevas reservas',
+    );
+  }
+}
+
+export class NombreDeServicioDuplicadoError extends DomainError {
+  constructor() {
+    super(409, 'NOMBRE_DE_SERVICIO_DUPLICADO', 'Ya existe un servicio con ese nombre');
+  }
+}
+
 // ---- Gestión de usuarios ----
 
 export class OperacionSobrePropiaCuentaError extends DomainError {
