@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 
 export function Header() {
@@ -10,8 +10,16 @@ export function Header() {
       </Link>
       {user && (
         <nav aria-label="Principal">
-          <Link to="/">Mi cuenta</Link>
-          {user.role === 'ADMIN' && <Link to="/admin/usuarios">Usuarios</Link>}
+          <NavLink to="/" end>
+            Mi cuenta
+          </NavLink>
+          {user.role === 'PACIENTE' && <NavLink to="/servicios">Servicios</NavLink>}
+          {user.role === 'ADMIN' && (
+            <>
+              <NavLink to="/admin/usuarios">Usuarios</NavLink>
+              <NavLink to="/admin/servicios">Servicios</NavLink>
+            </>
+          )}
           <button type="button" className="link" onClick={logout} data-testid="btn-logout">
             Cerrar sesión
           </button>

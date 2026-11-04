@@ -3,6 +3,12 @@ import type { Role } from '@/api/types';
 import { EditarUsuarioPage, NuevoUsuarioPage, UsuariosPage } from '@/features/admin-usuarios';
 import { LoginPage, RegistroPage, RequireRole } from '@/features/auth';
 import { MiCuentaPage } from '@/features/cuenta';
+import {
+  AdminServiciosPage,
+  CatalogoServiciosPage,
+  EditarServicioPage,
+  NuevoServicioPage,
+} from '@/features/servicios';
 
 // Grupo de rutas protegido: todas sus rutas hijas exigen sesión y, si se indica, uno de los roles.
 function Protegidas({ roles }: { roles?: Role[] }) {
@@ -24,10 +30,17 @@ export function AppRoutes() {
         <Route path="/" element={<MiCuentaPage />} />
       </Route>
 
+      <Route element={<Protegidas roles={['PACIENTE']} />}>
+        <Route path="/servicios" element={<CatalogoServiciosPage />} />
+      </Route>
+
       <Route element={<Protegidas roles={['ADMIN']} />}>
         <Route path="/admin/usuarios" element={<UsuariosPage />} />
         <Route path="/admin/usuarios/nuevo" element={<NuevoUsuarioPage />} />
         <Route path="/admin/usuarios/:id" element={<EditarUsuarioPage />} />
+        <Route path="/admin/servicios" element={<AdminServiciosPage />} />
+        <Route path="/admin/servicios/nuevo" element={<NuevoServicioPage />} />
+        <Route path="/admin/servicios/:id" element={<EditarServicioPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
