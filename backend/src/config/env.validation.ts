@@ -23,6 +23,12 @@ export class EnvVars {
   @IsOptional()
   @IsString()
   FRONTEND_URL: string = 'http://localhost:5173';
+
+  // Intentos permitidos por minuto y por IP en POST /auth/login y /auth/register (anti fuerza bruta).
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  AUTH_THROTTLE_LIMIT: number = 10;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvVars {

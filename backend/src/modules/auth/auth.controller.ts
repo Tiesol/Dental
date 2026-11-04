@@ -1,5 +1,6 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiTooManyRequestsResponse } from '@nestjs/swagger';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import type { CurrentUserData } from '../../common/types/current-user';
@@ -13,6 +14,8 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @UseGuards(ThrottlerGuard)
+  @ApiTooManyRequestsResponse({ description: 'Demasiados intentos desde la misma IP' })
   @Post('register')
   @ApiOperation({ summary: 'Registra un paciente' })
   register(@Body() dto: RegisterDto) {
@@ -20,6 +23,8 @@ export class AuthController {
   }
 
   @Public()
+  @UseGuards(ThrottlerGuard)
+  @ApiTooManyRequestsResponse({ description: 'Demasiados intentos desde la misma IP' })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Inicia sesión y devuelve un JWT' })
