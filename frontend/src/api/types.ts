@@ -31,3 +31,38 @@ export type LoginResponse = {
   accessToken: string;
   user: UserResponse;
 };
+
+// ---- Gestión de usuarios (/users) ----
+
+// Usuario con los datos de su perfil. Lo devuelven todos los endpoints de /users.
+export type UserDetail = UserResponse & {
+  paciente: { nombre: string; apellido: string; telefono: string | null } | null;
+  odontologo: { nombre: string; especialidad: string; activo: boolean } | null;
+};
+
+// Roles que crea el ADMIN; los pacientes se registran solos.
+export type StaffRole = 'ODONTOLOGO' | 'ADMIN';
+
+export type CreateUserRequest =
+  | { role: 'ADMIN'; email: string; password: string }
+  | { role: 'ODONTOLOGO'; email: string; password: string; nombre: string; especialidad: string };
+
+// El rol no se puede cambiar. Solo se envían los campos que aplican al rol del usuario.
+export type UpdateUserRequest = {
+  email?: string;
+  nombre?: string;
+  apellido?: string;
+  telefono?: string;
+  especialidad?: string;
+};
+
+export type UpdateMyProfileRequest = {
+  nombre?: string;
+  apellido?: string;
+  telefono?: string;
+};
+
+export type ChangePasswordRequest = {
+  passwordActual: string;
+  passwordNueva: string;
+};
