@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { UsuariosPage } from '@/features/admin-usuarios';
+import { EditarUsuarioPage, NuevoUsuarioPage, UsuariosPage } from '@/features/admin-usuarios';
 import { LoginPage, RegistroPage, RequireRole } from '@/features/auth';
 import { MiCuentaPage } from '@/features/cuenta';
 
@@ -22,6 +22,22 @@ export function AppRoutes() {
         element={
           <RequireRole roles={['ADMIN']}>
             <UsuariosPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/admin/usuarios/nuevo"
+        element={
+          <RequireRole roles={['ADMIN']}>
+            <NuevoUsuarioPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/admin/usuarios/:id"
+        element={
+          <RequireRole roles={['ADMIN']}>
+            <EditarUsuarioPage />
           </RequireRole>
         }
       />
