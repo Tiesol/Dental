@@ -66,3 +66,25 @@ export type ChangePasswordRequest = {
   passwordActual: string;
   passwordNueva: string;
 };
+
+// ---- Servicios (/services) ----
+
+export type ServiceResponse = {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  duracionMin: number;
+  precioReferencial: number | null;
+  activo: boolean;
+};
+
+export type CreateServiceRequest = {
+  nombre: string;
+  descripcion: string;
+  duracionMin: number;
+  precioReferencial?: number | null;
+  activo?: boolean;
+};
+
+// El estado se cambia aparte, con PATCH /services/:id/estado. null en el precio lo quita.
+export type UpdateServiceRequest = Partial<Omit<CreateServiceRequest, 'activo'>>;
