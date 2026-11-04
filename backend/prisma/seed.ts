@@ -70,7 +70,38 @@ async function main() {
     });
   }
 
-  console.log(`Seed listo: ${admin.email}, ${odontologo.email} y ${servicios.length} servicios`);
+  // Segundo odontólogo, para tener con quién comparar al filtrar por servicio.
+  const ortodoncista = await prisma.user.upsert({
+    where: { email: 'ortodoncista@clinica.com' },
+    update: {},
+    create: {
+      email: 'ortodoncista@clinica.com',
+      role: 'ODONTOLOGO',
+      passwordHash: await hash('Odontologo12345', 10),
+      dentist: { create: { nombre: 'Dr. Carlos Rojas', especialidad: 'Ortodoncia' } },
+    },
+  });
+
+  // Servicios que realiza cada odontólogo (PDF sección 4). upsert: el seed se puede repetir.
+  const asignaciones: Record<string, string[]> = {
+    [odontologo.id]: ['Limpieza dental', 'Consulta y diagnóstico', 'Extracción dental'],
+    [ortodoncista.id]: ['Consulta y diagnóstico', 'Ortodoncia', 'Blanqueamiento'],
+  };
+  for (const [userId, nombres] of Object.entries(asignaciones)) {
+    const dentist = await prisma.dentist.findUniqueOrThrow({ where: { userId } });
+    for (const nombre of nombres) {
+      const service = await prisma.service.findUniqueOrThrow({ where: { nombre } });
+      await prisma.dentistService.upsert({
+        where: { dentistId_serviceId: { dentistId: dentist.id, serviceId: service.id } },
+        update: {},
+        create: { dentistId: dentist.id, serviceId: service.id },
+      });
+    }
+  }
+
+  console.log(
+    `Seed listo: ${admin.email}, ${odontologo.email}, ${ortodoncista.email} y ${servicios.length} servicios`,
+  );
 }
 
 main()
