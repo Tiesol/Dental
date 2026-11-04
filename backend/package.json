@@ -20,6 +20,7 @@
     "test:int": "dotenv -e .env.test -- jest --config ./test/jest-int.json --runInBand",
     "test:all": "npm run test && npm run test:int",
     "seed": "ts-node prisma/seed.ts",
+    "postinstall": "prisma generate",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.ts\"",
     "lint:fix": "eslint \"{src,test,prisma}/**/*.ts\" --fix",
     "prisma:migrate:test": "dotenv -e .env.test -- prisma migrate deploy",
