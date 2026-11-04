@@ -13,11 +13,17 @@ export function Header() {
           <NavLink to="/" end>
             Mi cuenta
           </NavLink>
-          {user.role === 'PACIENTE' && <NavLink to="/servicios">Servicios</NavLink>}
+          {user.role === 'PACIENTE' && (
+            <>
+              <NavLink to="/servicios">Servicios</NavLink>
+              <NavLink to="/odontologos">Odontólogos</NavLink>
+            </>
+          )}
           {user.role === 'ADMIN' && (
             <>
               <NavLink to="/admin/usuarios">Usuarios</NavLink>
               <NavLink to="/admin/servicios">Servicios</NavLink>
+              <NavLink to="/admin/odontologos">Odontólogos</NavLink>
             </>
           )}
           <button type="button" className="link" onClick={logout} data-testid="btn-logout">

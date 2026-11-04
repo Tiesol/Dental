@@ -4,6 +4,12 @@ import { EditarUsuarioPage, NuevoUsuarioPage, UsuariosPage } from '@/features/ad
 import { LoginPage, RegistroPage, RequireRole } from '@/features/auth';
 import { MiCuentaPage } from '@/features/cuenta';
 import {
+  AdminOdontologosPage,
+  EditarOdontologoPage,
+  NuevoOdontologoPage,
+  OdontologosPage,
+} from '@/features/odontologos';
+import {
   AdminServiciosPage,
   CatalogoServiciosPage,
   EditarServicioPage,
@@ -32,6 +38,7 @@ export function AppRoutes() {
 
       <Route element={<Protegidas roles={['PACIENTE']} />}>
         <Route path="/servicios" element={<CatalogoServiciosPage />} />
+        <Route path="/odontologos" element={<OdontologosPage />} />
       </Route>
 
       <Route element={<Protegidas roles={['ADMIN']} />}>
@@ -41,6 +48,9 @@ export function AppRoutes() {
         <Route path="/admin/servicios" element={<AdminServiciosPage />} />
         <Route path="/admin/servicios/nuevo" element={<NuevoServicioPage />} />
         <Route path="/admin/servicios/:id" element={<EditarServicioPage />} />
+        <Route path="/admin/odontologos" element={<AdminOdontologosPage />} />
+        <Route path="/admin/odontologos/nuevo" element={<NuevoOdontologoPage />} />
+        <Route path="/admin/odontologos/:id" element={<EditarOdontologoPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
