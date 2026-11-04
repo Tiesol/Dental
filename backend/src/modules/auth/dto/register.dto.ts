@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, MaxLength } from 'class-validator';
 
 // Registro público: siempre crea un PACIENTE. El rol nunca viene del cliente.
 export class RegisterDto {
@@ -10,6 +10,7 @@ export class RegisterDto {
   @ApiProperty({ example: 'secreta123', minLength: 8 })
   @IsString()
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+  @MaxLength(72, { message: 'La contraseña admite hasta 72 caracteres' })
   password: string;
 
   @ApiProperty({ example: 'Ana' })

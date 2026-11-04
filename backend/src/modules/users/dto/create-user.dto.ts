@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsIn, IsNotEmpty, IsString, MinLength, ValidateIf } from 'class-validator';
+import {
+  IsEmail,
+  IsIn,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  ValidateIf,
+  MaxLength,
+} from 'class-validator';
 import { STAFF_ROLES, type StaffRole } from '../domain/user';
 
 // Alta de personal por el ADMIN. Los pacientes no se crean aquí: se registran solos.
@@ -11,6 +19,7 @@ export class CreateUserDto {
   @ApiProperty({ example: 'secreta123', minLength: 8 })
   @IsString()
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+  @MaxLength(72, { message: 'La contraseña admite hasta 72 caracteres' })
   password: string;
 
   @ApiProperty({ enum: STAFF_ROLES, example: 'ODONTOLOGO' })
