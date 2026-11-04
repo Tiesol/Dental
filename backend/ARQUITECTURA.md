@@ -190,6 +190,8 @@ La máquina de estados es una tabla en `domain/appointment-status.ts` y se prueb
 - **`RolesGuard`** también global + `@Roles('ADMIN')`: autorización por rol.
 - **`PasswordHasher`** (`common/security/`): envoltorio inyectable de bcrypt (coste configurable para tests). Vive en `common` porque lo usan `auth` (registro, login) y `users` (alta de personal, cambio de contraseña).
 - **Cuentas deshabilitadas**: `JwtStrategy` relee el usuario en cada petición; si un ADMIN lo deshabilitó (o ya no existe) responde `401` al instante, sin esperar a que expire el token. Un ADMIN no puede deshabilitar su propia cuenta (`409`).
+- **Login endurecido**: `ThrottlerGuard` limita `POST /auth/login` y `/auth/register` a `AUTH_THROTTLE_LIMIT` intentos por minuto e IP (10 por defecto; `429` en español; desactivado con `NODE_ENV=test`). El login siempre ejecuta bcrypt (contra un hash de relleno si el email no existe) para no revelar por tiempo qué cuentas existen. Las contraseñas aceptan de 8 a 72 caracteres (límite de bcrypt).
+- **Frontend**: cualquier `401` con token (vencido o cuenta deshabilitada) borra la sesión y lleva al login con el aviso "Tu sesión expiró".
 - **Verificación de propiedad en el service**: `GET /appointments/:id` comprueba que `patientId` corresponde al usuario autenticado (o que es el odontólogo asignado, o ADMIN). Devuelve `403`, no `404`, cuando la cita existe pero no es suya (criterio E2E 07).
 - Contraseñas con `bcrypt`. Nunca se devuelve `passwordHash`.
 - CORS restringido al origen del frontend (`FRONTEND_URL`).
@@ -205,7 +207,7 @@ Prefijo `/api/v1`. Respuestas JSON. Errores con formato uniforme `{ statusCode, 
 | Auth (hecho)      | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`                                                                                                                                                      | público / público / autenticado                                         |
 | Users (hecho)     | `GET /users`, `POST /users` (crea ODONTOLOGO o ADMIN), `GET /users/:id`, `PATCH /users/:id` (email y perfil; el rol no cambia), `PATCH /users/:id/estado` (`{ activo }`, no la propia)                         | ADMIN                                                                   |
 | Mi cuenta (hecho) | `GET /users/me`, `PATCH /users/me` (PACIENTE: nombre, apellido, teléfono; ODONTOLOGO: nombre), `PATCH /users/me/password` (`{ passwordActual, passwordNueva }`, 204)                                           | autenticado                                                             |
-| Services          | `GET /services` (solo activos para no-admin), `POST /services`, `PATCH /services/:id`, `PATCH /services/:id/estado`                                                                                            | lectura: todos; escritura: ADMIN                                        |
+| Services (hecho)  | `GET /services` y `GET /services/:id` (no-admin: solo habilitados, deshabilitado = 404), `POST /services`, `PATCH /services/:id`, `PATCH /services/:id/estado`                                                 | lectura: todos; escritura: ADMIN                                        |
 | Dentists          | `GET /dentists`, `GET /dentists/:id`, `POST /dentists`, `PATCH /dentists/:id`, `PATCH /dentists/:id/estado`, `PUT /dentists/:id/services`                                                                      | lectura: todos; escritura: ADMIN                                        |
 | Availability      | `GET /dentists/:id/availability`, `PUT /dentists/:id/availability`, `POST /dentists/:id/blocks`, `DELETE /dentists/:id/blocks/:blockId`, `GET /dentists/:id/slots?serviceId=&fecha=`                           | escritura: ADMIN; slots: autenticado                                    |
 | Appointments      | `POST /appointments`, `GET /appointments/mine`, `GET /appointments/:id`, `PATCH /appointments/:id/reschedule`, `PATCH /appointments/:id/cancel`, `PATCH /appointments/:id/status`, `GET /appointments` (todas) | PACIENTE / propietario / ODONTOLOGO / ADMIN según tabla de transiciones |
@@ -237,6 +239,7 @@ Variables de entorno, validadas al arrancar en `src/config/env.validation.ts` (l
 DATABASE_URL=postgresql://dental:...@localhost:5434/dental
 JWT_SECRET=
 JWT_EXPIRES_IN=8h
+AUTH_THROTTLE_LIMIT=10   # opcional: intentos por minuto e IP en login y registro
 PORT=3000
 FRONTEND_URL=http://localhost:5173
 

@@ -108,19 +108,26 @@ Ver `CONTRIBUTING.md`: ramas cortas desde `main`, commits en formato Conventiona
 
 Prefijo `/api/v1`. Errores con formato uniforme `{ statusCode, error, message, details? }`. Contrato completo previsto en `backend/ARQUITECTURA.md` sección 8.
 
-| Método | Ruta                 | Acceso      | Descripción                                    |
-| ------ | -------------------- | ----------- | ---------------------------------------------- |
-| POST   | `/auth/register`     | Público     | Registra un paciente (nombre, apellido, email) |
-| POST   | `/auth/login`        | Público     | Devuelve `{ accessToken, user }`               |
-| GET    | `/auth/me`           | Autenticado | Usuario del token                              |
-| GET    | `/users`             | ADMIN       | Lista de usuarios con su perfil                |
-| POST   | `/users`             | ADMIN       | Crea un ODONTOLOGO o un ADMIN                  |
-| GET    | `/users/:id`         | ADMIN       | Detalle de un usuario                          |
-| PATCH  | `/users/:id`         | ADMIN       | Edita email y perfil (el rol no cambia)        |
-| PATCH  | `/users/:id/estado`  | ADMIN       | Habilita/deshabilita una cuenta (no la propia) |
-| GET    | `/users/me`          | Autenticado | Mi perfil                                      |
-| PATCH  | `/users/me`          | Autenticado | Edito mi perfil                                |
-| PATCH  | `/users/me/password` | Autenticado | Cambio mi contraseña (verifica la actual)      |
+| Método | Ruta                   | Acceso      | Descripción                                    |
+| ------ | ---------------------- | ----------- | ---------------------------------------------- |
+| POST   | `/auth/register`       | Público     | Registra un paciente (nombre, apellido, email) |
+| POST   | `/auth/login`          | Público     | Devuelve `{ accessToken, user }`               |
+| GET    | `/auth/me`             | Autenticado | Usuario del token                              |
+| GET    | `/users`               | ADMIN       | Lista de usuarios con su perfil                |
+| POST   | `/users`               | ADMIN       | Crea un ODONTOLOGO o un ADMIN                  |
+| GET    | `/users/:id`           | ADMIN       | Detalle de un usuario                          |
+| PATCH  | `/users/:id`           | ADMIN       | Edita email y perfil (el rol no cambia)        |
+| PATCH  | `/users/:id/estado`    | ADMIN       | Habilita/deshabilita una cuenta (no la propia) |
+| GET    | `/users/me`            | Autenticado | Mi perfil                                      |
+| PATCH  | `/users/me`            | Autenticado | Edito mi perfil                                |
+| PATCH  | `/users/me/password`   | Autenticado | Cambio mi contraseña (verifica la actual)      |
+| GET    | `/services`            | Autenticado | Catálogo (no-ADMIN: solo habilitados)          |
+| GET    | `/services/:id`        | Autenticado | Detalle (deshabilitado: solo ADMIN)            |
+| POST   | `/services`            | ADMIN       | Crea un servicio                               |
+| PATCH  | `/services/:id`        | ADMIN       | Edita nombre, descripción, duración o precio   |
+| PATCH  | `/services/:id/estado` | ADMIN       | Habilita/deshabilita un servicio               |
+
+`POST /auth/login` y `POST /auth/register` admiten 10 intentos por minuto e IP (`AUTH_THROTTLE_LIMIT`); al pasarse responden `429`.
 
 ## Skills y agentes de Claude Code
 
@@ -165,4 +172,7 @@ No están en el PDF ni fueron confirmadas explícitamente; se eligió la opción
 15. **Mi cuenta (confirmado)**: el PACIENTE edita nombre, apellido y teléfono; el ODONTOLOGO solo su nombre (especialidad y email los gestiona el ADMIN); el ADMIN no tiene perfil. Cambiar la contraseña exige la actual. Un campo que no aplica al rol se rechaza con `400`, no se ignora.
 16. **Cuenta deshabilitada = sin acceso inmediato**: la estrategia JWT consulta el usuario en cada petición (una lectura por id) para que deshabilitar surta efecto al instante y no a las 8 h, cuando expira el token.
 17. **`User.activo` ≠ `Dentist.activo`**: el primero impide iniciar sesión (gestión de usuarios); el segundo, que el odontólogo reciba nuevas citas (lo gestionará el módulo `dentists`, "habilitar/deshabilitar profesionales" del PDF).
-18. **Tests de gestión de usuarios pendientes**: por decisión del equipo, los tests nuevos (unitarios, integración y E2E) se escribirán al final del proyecto. Los existentes siguen en verde.
+18. **Tests pendientes (confirmado)**: por decisión del equipo, los tests nuevos de gestión de usuarios, servicios y endurecimiento del login (unitarios, integración y E2E) se escribirán al final del proyecto. Los existentes siguen en verde.
+19. **Login endurecido**: 10 intentos por minuto e IP en login y registro (`AUTH_THROTTLE_LIMIT`); el login tarda lo mismo exista o no el email; contraseñas de 8 a 72 caracteres (límite de bcrypt). En el frontend, un `401` con token cierra la sesión y lleva al login.
+20. **Servicios**: duración entera de 1 a 480 minutos; nombre único sin distinguir mayúsculas; precio referencial opcional con hasta 2 decimales. Un servicio deshabilitado no aparece para PACIENTE/ODONTOLOGO (su detalle responde `404`) y conserva las citas existentes. El seed carga los 5 ejemplos del PDF.
+21. **Moneda**: los precios se muestran en bolivianos (`Bs`), deducido de los teléfonos `+591` del proyecto; se cambia en `frontend/src/shared/lib/formato.ts`.
