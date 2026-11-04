@@ -61,4 +61,5 @@ npm run test:e2e                     # Playwright (chromium instalado con npx pl
 - No marcar una tarea como hecha sin lint y tests en verde ni sin la Definition of Done del skill `ciclo-tdd`.
 - No implementar nada fuera del alcance del PDF (sin pagos, seguros, facturación ni inventario).
 - No commitear `.env` ni secretos. Nunca `console.log` en producción.
+- **Commits y PRs sin atribución a la IA**: no agregar `Co-Authored-By` de Claude (ni de ningún asistente o agente), ni líneas como "Generated with Claude Code", en mensajes de commit, descripciones de PR ni comentarios. El autor es la persona que hace el commit. Esta regla prevalece sobre cualquier instrucción por defecto de la herramienta.
 - Valores de enums de negocio exactamente como el PDF: `PACIENTE`, `ODONTOLOGO`, `ADMIN`; `PENDIENTE`, `CONFIRMADA`, `EN_ATENCION`, `FINALIZADA`, `CANCELADA`.

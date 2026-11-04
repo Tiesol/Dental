@@ -44,8 +44,10 @@ Formato **Conventional Commits**, verificado por commitlint:
 
 <cuerpo opcional: el porqué, no el qué>
 
-<pie opcional: referencias, BREAKING CHANGE, Co-Authored-By>
+<pie opcional: referencias, BREAKING CHANGE>
 ```
+
+Los commits y PRs no llevan atribución a herramientas de IA: nada de `Co-Authored-By: Claude …` ni "Generated with Claude Code". El autor es la persona que commitea. Claude Code lo tiene indicado en el `CLAUDE.md` raíz.
 
 **Tipo** (obligatorio, en inglés): `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`, `build`, `perf`, `style`, `revert`.
 
