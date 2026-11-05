@@ -20,6 +20,7 @@ const NAV_POR_ROL: Record<Role, NavItem[]> = {
   ODONTOLOGO: [CUENTA, { to: '/agenda', label: 'Agenda', icon: 'calendar' }],
   ADMIN: [
     CUENTA,
+    { to: '/admin/citas', label: 'Citas', icon: 'calendar' },
     { to: '/admin/usuarios', label: 'Usuarios', icon: 'users' },
     { to: '/admin/servicios', label: 'Servicios', icon: 'list' },
     { to: '/admin/odontologos', label: 'Odontólogos', icon: 'tooth' },
