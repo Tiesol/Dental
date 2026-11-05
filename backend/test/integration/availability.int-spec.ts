@@ -398,7 +398,11 @@ describe('Disponibilidad (integración)', () => {
       ['un campo extra en el horario', { horarios: [{ ...tramo(1, 540, 720), id: 'x' }] }],
       ['listas anidadas', { horarios: [[tramo(1, 540, 720)]] }],
       ['un campo extra en el cuerpo', { horarios: [], dentistId: 'x' }],
-      ['más de 100 tramos', { horarios: Array(101).fill(tramo(1, 540, 720)) }],
+      // Sin solapar entre sí: lo único que los rechaza es el límite de la lista.
+      [
+        'más de 100 tramos',
+        { horarios: Array.from({ length: 101 }, (_, i) => tramo(1, i, i + 1)) },
+      ],
     ])('responde 400 con un cuerpo mal formado: %s', async (_caso, body) => {
       const dentistId = await nuevoOdontologoId();
       const token = await tokenDeAdmin();

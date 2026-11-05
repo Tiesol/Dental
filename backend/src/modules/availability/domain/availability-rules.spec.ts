@@ -88,7 +88,13 @@ describe('assertHorariosValidos', () => {
     });
 
     it('detecta el solapamiento aunque los tramos lleguen desordenados', () => {
-      const horarios = [tramo(700, 900, LUNES), tramo(540, 720, MARTES), tramo(540, 720, LUNES)];
+      const horarios = [tramo(700, 900), tramo(100, 200), tramo(540, 720)];
+
+      expect(() => assertHorariosValidos(horarios)).toThrow(HorarioInvalidoError);
+    });
+
+    it('detecta el solapamiento aunque otro día tenga un tramo a una hora intermedia', () => {
+      const horarios = [tramo(540, 720, LUNES), tramo(600, 660, MARTES), tramo(700, 900, LUNES)];
 
       expect(() => assertHorariosValidos(horarios)).toThrow(HorarioInvalidoError);
     });
