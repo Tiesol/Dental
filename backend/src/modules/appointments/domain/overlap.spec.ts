@@ -21,6 +21,13 @@ describe('seSolapan', () => {
       expect(seSolapan(cita, intervalo('09:45', '10:15'))).toBe(true);
     });
 
+    it('sin importar el orden de los argumentos', () => {
+      const otra = intervalo('10:15', '10:45');
+
+      expect(seSolapan(otra, cita)).toBe(true);
+      expect(seSolapan(cita, otra)).toBe(true);
+    });
+
     it('cuando el segundo está contenido en el primero', () => {
       expect(seSolapan(cita, intervalo('10:10', '10:20'))).toBe(true);
     });
@@ -43,12 +50,6 @@ describe('seSolapan', () => {
   describe('no detecta solapamiento', () => {
     it('cuando los intervalos están separados', () => {
       expect(seSolapan(cita, intervalo('14:00', '14:30'))).toBe(false);
-    });
-
-    it('da el mismo resultado sin importar el orden de los argumentos', () => {
-      const otra = intervalo('10:15', '10:45');
-
-      expect(seSolapan(otra, cita)).toBe(seSolapan(cita, otra));
     });
   });
 });

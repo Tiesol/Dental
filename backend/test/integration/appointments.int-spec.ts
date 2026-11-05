@@ -151,6 +151,27 @@ describe('Citas (integración)', () => {
       expect(await prisma.appointment.count()).toBe(1);
     });
 
+    it('rechaza una reserva que se solapa solo en parte con otra cita', async () => {
+      const { dentistId, servicio } = await escenario();
+      const uno = await nuevoPaciente();
+      const dos = await nuevoPaciente();
+      await reservar(uno.token, {
+        dentistId,
+        serviceId: servicio.id,
+        horaInicio: LAS_NUEVE,
+      }).expect(201);
+
+      const res = await reservar(dos.token, {
+        dentistId,
+        serviceId: servicio.id,
+        horaInicio: '2026-11-10T13:15:00.000Z',
+      });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBe('HORARIO_NO_DISPONIBLE');
+      expect(await prisma.appointment.count()).toBe(1);
+    });
+
     it('permite reservar un horario consecutivo a otra cita', async () => {
       const { dentistId, servicio } = await escenario();
       const uno = await nuevoPaciente();
