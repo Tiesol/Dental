@@ -1,23 +1,29 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import type { UpdateUserRequest, UserDetail } from '@/api/types';
 import { useAuth } from '@/features/auth';
+import { ActiveBadge } from '@/shared/components/ActiveBadge';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { LoadingState } from '@/shared/components/LoadingState';
+import { PageHeader } from '@/shared/components/PageHeader';
+import { SuccessMessage } from '@/shared/components/SuccessMessage';
+import { useConfirm } from '@/shared/hooks/useConfirm';
 import { CAMPOS_PERFIL_POR_ROL, ROLE_LABEL } from '@/shared/lib/roles';
 import { useUsuario } from '../hooks/useUsuario';
+
+const VOLVER = { to: '/admin/usuarios', label: 'Volver al listado' };
 
 export function EditarUsuarioPage() {
   const { id = '' } = useParams();
   const { estado, guardar, cambiarEstado } = useUsuario(id);
 
-  if (estado.status === 'cargando') return <p className="muted">Cargando…</p>;
+  if (estado.status === 'cargando') return <LoadingState />;
   if (estado.status === 'error') {
     return (
-      <section className="card">
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {estado.mensaje}
-        </p>
-        <Link to="/admin/usuarios">Volver al listado</Link>
-      </section>
+      <div className="page page-narrow">
+        <PageHeader title="Editar usuario" back={VOLVER} />
+        <ErrorMessage>{estado.mensaje}</ErrorMessage>
+      </div>
     );
   }
   return (
@@ -38,6 +44,7 @@ type Props = {
 
 function FormularioUsuario({ usuario, guardar, cambiarEstado }: Props) {
   const { user: yo } = useAuth();
+  const { confirm, dialog } = useConfirm();
   const campos = CAMPOS_PERFIL_POR_ROL[usuario.role];
   const [form, setForm] = useState({
     email: usuario.email,
@@ -76,8 +83,15 @@ function FormularioUsuario({ usuario, guardar, cambiarEstado }: Props) {
     void ejecutar(() => guardar(cambios), 'Cambios guardados');
   };
 
-  const alternarEstado = () => {
-    if (usuario.activo && !window.confirm('¿Deshabilitar esta cuenta? No podrá iniciar sesión.')) {
+  const alternarEstado = async () => {
+    if (
+      usuario.activo &&
+      !(await confirm({
+        title: '¿Deshabilitar esta cuenta?',
+        message: 'No podrá iniciar sesión hasta que vuelvas a habilitarla.',
+        confirmLabel: 'Deshabilitar cuenta',
+      }))
+    ) {
       return;
     }
     void ejecutar(
@@ -87,92 +101,103 @@ function FormularioUsuario({ usuario, guardar, cambiarEstado }: Props) {
   };
 
   return (
-    <form className="card" onSubmit={onSubmit}>
-      <h1>Editar usuario</h1>
-      <dl>
-        <dt>Rol</dt>
-        <dd>{ROLE_LABEL[usuario.role]}</dd>
-        <dt>Estado</dt>
-        <dd>
-          <span className={usuario.activo ? 'badge ok' : 'badge off'}>
-            {usuario.activo ? 'Habilitado' : 'Deshabilitado'}
-          </span>
-        </dd>
-        <dt>Creado</dt>
-        <dd>{new Date(usuario.createdAt).toLocaleDateString('es')}</dd>
-      </dl>
+    <div className="page page-narrow">
+      <PageHeader title="Editar usuario" description={usuario.nombre} back={VOLVER} />
 
-      <label>
-        Email
-        <input
-          type="email"
-          value={form.email}
-          onChange={(e) => update('email')(e.target.value)}
-          required
-        />
-      </label>
-      {campos.includes('nombre') && (
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+      {exito && <SuccessMessage>{exito}</SuccessMessage>}
+
+      <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-datos">
+        <h2 id="titulo-datos">Datos</h2>
+        <dl className="details">
+          <dt>Rol</dt>
+          <dd>{ROLE_LABEL[usuario.role]}</dd>
+          <dt>Creado</dt>
+          <dd>{new Date(usuario.createdAt).toLocaleDateString('es')}</dd>
+        </dl>
+
         <label>
-          Nombre
-          <input value={form.nombre} onChange={(e) => update('nombre')(e.target.value)} required />
-        </label>
-      )}
-      {campos.includes('apellido') && (
-        <label>
-          Apellido
+          Email
           <input
-            value={form.apellido}
-            onChange={(e) => update('apellido')(e.target.value)}
+            type="email"
+            value={form.email}
+            onChange={(e) => update('email')(e.target.value)}
             required
           />
         </label>
-      )}
-      {campos.includes('telefono') && (
-        <label>
-          Teléfono (opcional)
-          <input
-            type="tel"
-            value={form.telefono}
-            onChange={(e) => update('telefono')(e.target.value)}
-          />
-        </label>
-      )}
-      {campos.includes('especialidad') && (
-        <label>
-          Especialidad
-          <input
-            value={form.especialidad}
-            onChange={(e) => update('especialidad')(e.target.value)}
-            required
-          />
-        </label>
-      )}
+        {campos.includes('nombre') && (
+          <label>
+            Nombre
+            <input
+              value={form.nombre}
+              onChange={(e) => update('nombre')(e.target.value)}
+              required
+            />
+          </label>
+        )}
+        {campos.includes('apellido') && (
+          <label>
+            Apellido
+            <input
+              value={form.apellido}
+              onChange={(e) => update('apellido')(e.target.value)}
+              required
+            />
+          </label>
+        )}
+        {campos.includes('telefono') && (
+          <label>
+            Teléfono (opcional)
+            <input
+              type="tel"
+              value={form.telefono}
+              onChange={(e) => update('telefono')(e.target.value)}
+            />
+          </label>
+        )}
+        {campos.includes('especialidad') && (
+          <label>
+            Especialidad
+            <input
+              value={form.especialidad}
+              onChange={(e) => update('especialidad')(e.target.value)}
+              required
+            />
+          </label>
+        )}
 
-      {error && (
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {error}
-        </p>
-      )}
-      {exito && (
-        <p className="success" role="status">
-          {exito}
-        </p>
-      )}
+        <div className="form-actions">
+          <button type="submit" disabled={enviando} data-testid="btn-guardar-usuario">
+            {enviando ? 'Guardando…' : 'Guardar cambios'}
+          </button>
+        </div>
+      </form>
 
-      <button type="submit" disabled={enviando} data-testid="btn-guardar-usuario">
-        {enviando ? 'Guardando…' : 'Guardar cambios'}
-      </button>
-      <button
-        type="button"
-        className={usuario.activo ? 'secondary danger' : 'secondary'}
-        disabled={enviando || esYo}
-        title={esYo ? 'No puedes deshabilitar tu propia cuenta' : undefined}
-        onClick={alternarEstado}
-        data-testid="btn-cambiar-estado"
-      >
-        {usuario.activo ? 'Deshabilitar cuenta' : 'Habilitar cuenta'}
-      </button>
-      <Link to="/admin/usuarios">Volver al listado</Link>
-    </form>
+      <section className="card" aria-labelledby="titulo-estado">
+        <div className="card-section">
+          <h2 id="titulo-estado">Estado de la cuenta</h2>
+          <div>
+            <ActiveBadge active={usuario.activo} />
+          </div>
+          <p className="muted">
+            {esYo
+              ? 'No puedes deshabilitar tu propia cuenta.'
+              : 'Una cuenta deshabilitada no puede iniciar sesión.'}
+          </p>
+        </div>
+        <div className="form-actions">
+          <button
+            type="button"
+            className={usuario.activo ? 'secondary danger' : 'secondary'}
+            disabled={enviando || esYo}
+            onClick={() => void alternarEstado()}
+            data-testid="btn-cambiar-estado"
+          >
+            {usuario.activo ? 'Deshabilitar cuenta' : 'Habilitar cuenta'}
+          </button>
+        </div>
+      </section>
+      {dialog}
+    </div>
   );
 }
