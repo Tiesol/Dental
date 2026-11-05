@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, http } from 'msw';
+import { HttpResponse, http, type RequestHandler } from 'msw';
 import { Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { AppointmentResponse, EstadoCita } from '@/api/types';
@@ -10,7 +10,7 @@ import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
 import { DetalleAtencionPage } from './DetalleAtencionPage';
 
-function renderPagina(inicial: Partial<AppointmentResponse>) {
+function renderPagina(inicial: Partial<AppointmentResponse>, extras: RequestHandler[] = []) {
   let cita = citaDePrueba(inicial);
   const cambios: unknown[] = [];
   const observaciones: unknown[] = [];
@@ -30,6 +30,7 @@ function renderPagina(inicial: Partial<AppointmentResponse>) {
       return HttpResponse.json(observacion, { status: 201 });
     }),
   );
+  server.use(...extras);
   renderWithProviders(
     <Routes>
       <Route path="/agenda/:id" element={<DetalleAtencionPage />} />
@@ -163,8 +164,7 @@ describe('DetalleAtencionPage', () => {
   });
 
   it('muestra que no hay acceso si la cita es de otro odontólogo', async () => {
-    renderPagina({});
-    server.use(
+    renderPagina({}, [
       http.get(`${API}/appointments/c1`, () =>
         HttpResponse.json(
           {
@@ -175,7 +175,7 @@ describe('DetalleAtencionPage', () => {
           { status: 403 },
         ),
       ),
-    );
+    ]);
 
     expect(await screen.findByTestId('error-mensaje')).toHaveTextContent(
       'No tienes acceso a esta cita',

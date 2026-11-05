@@ -30,6 +30,7 @@ test('E2E 07 - un odontólogo no entra a las pantallas de paciente', async ({ pa
 
   await page.goto(`/mis-citas/${cita.id}`);
 
+  await expect(page.getByRole('heading', { name: 'Acceso denegado' })).toBeVisible();
   await expect(page.getByTestId('datos-cita')).toHaveCount(0);
   await expect(page.getByText('Limpieza dental')).toHaveCount(0);
 });

@@ -1,6 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import { AppointmentStatus, PrismaClient } from '@prisma/client';
 import request from 'supertest';
+import { HorarioNoDisponibleError } from '../../src/common/errors/domain-error';
+import { AppointmentsRepository } from '../../src/modules/appointments/appointments.repository';
 import { createTestApp } from '../helpers/app';
 import { conToken, loginComo, ruta } from '../helpers/auth';
 import { resetDb } from '../helpers/db';
@@ -267,6 +269,46 @@ describe('Reprogramar y cancelar (integración)', () => {
 
       expect(res.status).toBe(409);
       expect(res.body.error).toBe('HORARIO_NO_DISPONIBLE');
+      const enBd = await prisma.appointment.findUnique({ where: { id: cita.id } });
+      expect(enBd!.horaInicio).toEqual(new Date(LAS_NUEVE));
+    });
+
+    it('al competir con una reserva por el mismo horario, solo una gana', async () => {
+      const { cita, dentistId, servicio, token } = await escenario();
+      const otroToken = await loginComo(app, await crearPaciente(prisma));
+
+      const [reprogramacion, reserva] = await Promise.all([
+        reprogramar(cita.id, token, LAS_DIEZ),
+        conToken(http().post(ruta('/appointments')), otroToken).send({
+          dentistId,
+          serviceId: servicio.id,
+          horaInicio: LAS_DIEZ,
+        }),
+      ]);
+
+      expect([reprogramacion.status, reserva.status].sort()).toEqual(
+        reprogramacion.status === 200 ? [200, 409] : [201, 409],
+      );
+      expect(await prisma.appointment.count({ where: { horaInicio: new Date(LAS_DIEZ) } })).toBe(1);
+    });
+
+    it('el repository traduce appointment_no_overlap al actualizar el horario', async () => {
+      const { cita, dentistId } = await escenario();
+      await crearCita(prisma, {
+        dentistId,
+        horaInicio: new Date(LAS_DIEZ),
+        horaFin: new Date('2026-11-10T14:30:00.000Z'),
+      });
+      const repository = app.get(AppointmentsRepository);
+
+      const intento = repository.withDentistLock(dentistId, (tx) =>
+        repository.updateHorario(tx, cita.id, {
+          horaInicio: new Date(LAS_DIEZ),
+          horaFin: new Date('2026-11-10T14:30:00.000Z'),
+        }),
+      );
+
+      await expect(intento).rejects.toThrow(HorarioNoDisponibleError);
       const enBd = await prisma.appointment.findUnique({ where: { id: cita.id } });
       expect(enBd!.horaInicio).toEqual(new Date(LAS_NUEVE));
     });

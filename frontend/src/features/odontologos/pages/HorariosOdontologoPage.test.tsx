@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, http } from 'msw';
+import { HttpResponse, http, type RequestHandler } from 'msw';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import type { AvailabilityResponse } from '@/api/types';
@@ -22,7 +22,10 @@ const CON_DATOS: AvailabilityResponse = {
   ],
 };
 
-function renderPagina(disponibilidad: AvailabilityResponse = CON_DATOS) {
+function renderPagina(
+  disponibilidad: AvailabilityResponse = CON_DATOS,
+  extras: RequestHandler[] = [],
+) {
   const guardados: unknown[] = [];
   const bloquesCreados: unknown[] = [];
   const bloquesBorrados: string[] = [];
@@ -52,6 +55,7 @@ function renderPagina(disponibilidad: AvailabilityResponse = CON_DATOS) {
       return new HttpResponse(null, { status: 204 });
     }),
   );
+  server.use(...extras);
   renderWithProviders(
     <Routes>
       <Route path="/admin/odontologos/:id/horarios" element={<HorariosOdontologoPage />} />
@@ -229,8 +233,7 @@ describe('HorariosOdontologoPage', () => {
   });
 
   it('muestra el error si no se puede cargar la disponibilidad', async () => {
-    renderPagina();
-    server.use(
+    renderPagina(undefined, [
       http.get(`${API}/dentists/d1/availability`, () =>
         HttpResponse.json(
           { statusCode: 404, error: 'X', message: 'Odontólogo no encontrado' },
@@ -239,7 +242,7 @@ describe('HorariosOdontologoPage', () => {
           },
         ),
       ),
-    );
+    ]);
 
     expect(await screen.findByTestId('error-mensaje')).toHaveTextContent(
       'Odontólogo no encontrado',

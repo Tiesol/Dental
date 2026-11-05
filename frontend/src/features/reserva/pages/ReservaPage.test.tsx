@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, http } from 'msw';
+import { HttpResponse, http, type RequestHandler } from 'msw';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { citaDePrueba, odontologoPublicoDePrueba, servicioDePrueba } from '@/test/factories';
@@ -14,7 +14,7 @@ const SLOTS = [
   { inicio: '2026-11-10T13:15:00.000Z', fin: '2026-11-10T13:45:00.000Z' },
 ];
 
-function renderPagina() {
+function renderPagina(extras: RequestHandler[] = []) {
   const reservas: unknown[] = [];
   const consultasDeSlots = vi.fn();
   const consultasDeOdontologos = vi.fn();
@@ -39,6 +39,7 @@ function renderPagina() {
       return HttpResponse.json(citaDePrueba(), { status: 201 });
     }),
   );
+  server.use(...extras);
   renderWithProviders(
     <Routes>
       <Route path="/reservar" element={<ReservaPage />} />
@@ -76,8 +77,7 @@ describe('ReservaPage', () => {
   });
 
   it('avisa si ningún odontólogo realiza el servicio', async () => {
-    renderPagina();
-    server.use(http.get(`${API}/dentists`, () => HttpResponse.json([])));
+    renderPagina([http.get(`${API}/dentists`, () => HttpResponse.json([]))]);
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: 'Elegir Ortodoncia' }));
@@ -97,8 +97,7 @@ describe('ReservaPage', () => {
   });
 
   it('avisa si no hay horarios para la fecha', async () => {
-    renderPagina();
-    server.use(http.get(`${API}/dentists/d1/slots`, () => HttpResponse.json([])));
+    renderPagina([http.get(`${API}/dentists/d1/slots`, () => HttpResponse.json([]))]);
     const user = userEvent.setup();
 
     await hastaLaFecha(user);
@@ -199,12 +198,11 @@ describe('ReservaPage', () => {
   });
 
   it('muestra el error si no se puede cargar el catálogo', async () => {
-    renderPagina();
-    server.use(
+    renderPagina([
       http.get(`${API}/services`, () =>
         HttpResponse.json({ statusCode: 500, message: 'Falló el servidor' }, { status: 500 }),
       ),
-    );
+    ]);
 
     const error = await screen.findByTestId('error-mensaje');
 

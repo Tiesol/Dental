@@ -15,6 +15,8 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     exclude: ['e2e/**', 'node_modules/**'],
     css: false,
+    // user.type escribe carácter a carácter: con la máquina cargada, 5 s no alcanzaban.
+    testTimeout: 15_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

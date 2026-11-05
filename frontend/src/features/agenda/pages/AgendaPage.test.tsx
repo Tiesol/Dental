@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react';
-import { HttpResponse, http } from 'msw';
+import { HttpResponse, http, type RequestHandler } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { AppointmentResponse } from '@/api/types';
 import { citaDePrueba } from '@/test/factories';
@@ -8,11 +8,16 @@ import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
 import { AgendaPage } from './AgendaPage';
 
-function renderPagina(hoy: AppointmentResponse[], proximas: AppointmentResponse[]) {
+function renderPagina(
+  hoy: AppointmentResponse[],
+  proximas: AppointmentResponse[],
+  extras: RequestHandler[] = [],
+) {
   server.use(
     http.get(`${API}/dentists/me/agenda`, () => HttpResponse.json(hoy)),
     http.get(`${API}/dentists/me/agenda/upcoming`, () => HttpResponse.json(proximas)),
   );
+  server.use(...extras);
   renderWithProviders(<AgendaPage />, { route: '/agenda' });
 }
 
@@ -104,11 +109,14 @@ describe('AgendaPage', () => {
   });
 
   it('muestra el error si no se puede cargar', async () => {
-    renderPagina([], []);
-    server.use(
-      http.get(`${API}/dentists/me/agenda`, () =>
-        HttpResponse.json({ statusCode: 500, message: 'Falló el servidor' }, { status: 500 }),
-      ),
+    renderPagina(
+      [],
+      [],
+      [
+        http.get(`${API}/dentists/me/agenda`, () =>
+          HttpResponse.json({ statusCode: 500, message: 'Falló el servidor' }, { status: 500 }),
+        ),
+      ],
     );
 
     expect(await screen.findByTestId('error-mensaje')).toHaveTextContent('Falló el servidor');

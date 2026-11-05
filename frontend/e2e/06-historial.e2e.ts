@@ -18,6 +18,7 @@ test('E2E 06 - historial: el paciente abre una cita finalizada y ve sus datos', 
   const detalle = new DetalleCitaPage(page);
 
   await misCitas.abrir();
+  await expect(page.getByText('No tienes citas próximas')).toBeVisible();
   await expect(misCitas.fila(cita.id)).toHaveCount(0);
   await misCitas.verHistorial();
   await expect(misCitas.fila(cita.id).getByTestId('estado-cita')).toHaveText('FINALIZADA');

@@ -149,16 +149,25 @@ describe('AppointmentsService', () => {
     });
 
     it.each(['EN_ATENCION', 'FINALIZADA', 'CANCELADA'])(
-      'no reprograma ni cancela una cita %s',
+      'no reprograma una cita %s',
       async (estado) => {
         repository.findById.mockResolvedValue(cita(estado));
 
         await expect(service.reprogramar('c1', horaInicio, dueno)).rejects.toThrow(
           CitaNoModificableError,
         );
-        await expect(service.cancelar('c1', dueno)).rejects.toThrow(CitaNoModificableError);
 
         expect(repository.updateHorario).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(['EN_ATENCION', 'FINALIZADA', 'CANCELADA'])(
+      'no cancela una cita %s',
+      async (estado) => {
+        repository.findById.mockResolvedValue(cita(estado));
+
+        await expect(service.cancelar('c1', dueno)).rejects.toThrow(CitaNoModificableError);
+
         expect(repository.updateEstado).not.toHaveBeenCalled();
       },
     );

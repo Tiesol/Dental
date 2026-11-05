@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, http } from 'msw';
+import { HttpResponse, http, type RequestHandler } from 'msw';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import type { AppointmentResponse } from '@/api/types';
@@ -12,7 +12,7 @@ import { DetalleCitaPage } from './DetalleCitaPage';
 
 const SLOTS = [{ inicio: '2026-11-10T14:00:00.000Z', fin: '2026-11-10T14:30:00.000Z' }];
 
-function renderPagina(inicial: Partial<AppointmentResponse> = {}) {
+function renderPagina(inicial: Partial<AppointmentResponse> = {}, extras: RequestHandler[] = []) {
   let cita = citaDePrueba(inicial);
   const reprogramaciones: unknown[] = [];
   const cancelaciones = vi.fn();
@@ -36,6 +36,7 @@ function renderPagina(inicial: Partial<AppointmentResponse> = {}) {
       return HttpResponse.json(cita);
     }),
   );
+  server.use(...extras);
   renderWithProviders(
     <Routes>
       <Route path="/mis-citas/:id" element={<DetalleCitaPage />} />
@@ -96,8 +97,7 @@ describe('DetalleCitaPage', () => {
   );
 
   it('una cita ajena muestra que no hay acceso y ningún dato', async () => {
-    renderPagina();
-    server.use(
+    renderPagina(undefined, [
       http.get(`${API}/appointments/c1`, () =>
         HttpResponse.json(
           {
@@ -108,7 +108,7 @@ describe('DetalleCitaPage', () => {
           { status: 403 },
         ),
       ),
-    );
+    ]);
 
     expect(await screen.findByTestId('error-mensaje')).toHaveTextContent(
       'No tienes acceso a esta cita',
