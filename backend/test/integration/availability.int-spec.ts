@@ -4,7 +4,13 @@ import request from 'supertest';
 import { createTestApp } from '../helpers/app';
 import { conToken, loginComo, ruta } from '../helpers/auth';
 import { resetDb } from '../helpers/db';
-import { crearAdmin, crearCita, crearOdontologo, crearPaciente } from '../helpers/factories';
+import {
+  crearAdmin,
+  crearCita,
+  crearOdontologo,
+  crearPaciente,
+  crearServicio,
+} from '../helpers/factories';
 
 const ID_INEXISTENTE = '00000000-0000-4000-8000-000000000000';
 
@@ -730,6 +736,55 @@ describe('Disponibilidad (integración)', () => {
 
       expect(res.status).toBe(404);
       expect(await existe(bloque.id)).toBe(true);
+    });
+  });
+
+  describe('concurrencia', () => {
+    it('un bloque espera a la reserva en curso y responde 409 si esa cita choca con él', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const paciente = await crearPaciente(prisma);
+      const servicio = await crearServicio(prisma);
+      const token = await tokenDeAdmin();
+      let respuesta!: Promise<request.Response>;
+
+      // Reproduce una reserva en curso: tiene al odontólogo bloqueado y su cita aún no se ve.
+      await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Dentist" WHERE id = ${dentistId} FOR UPDATE`;
+        respuesta = conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token)
+          .send({ inicio: '2026-11-10T14:00:00.000Z', fin: '2026-11-10T15:00:00.000Z' })
+          .then((res) => res);
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        await tx.appointment.create({
+          data: {
+            dentistId,
+            patientId: paciente.patient!.id,
+            serviceId: servicio.id,
+            horaInicio: new Date('2026-11-10T14:00:00.000Z'),
+            horaFin: new Date('2026-11-10T14:30:00.000Z'),
+          },
+        });
+      });
+
+      const res = await respuesta;
+      expect(res.status).toBe(409);
+      expect(await prisma.unavailableBlock.count({ where: { dentistId } })).toBe(0);
+    });
+
+    it('varios reemplazos simultáneos terminan bien y queda uno de ellos completo', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const token = await tokenDeAdmin();
+      const reemplazar = (horarios: ReturnType<typeof tramo>[]) =>
+        conToken(http().put(ruta(`/dentists/${dentistId}/availability`)), token).send({ horarios });
+      // Cada conjunto se solapa con los demás: mezclados violarían availability_no_overlap.
+      const conjuntos = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [
+        tramo(1, 540 + i, 720),
+        tramo(2, 540 + i, 720),
+      ]);
+
+      const respuestas = await Promise.all(conjuntos.map(reemplazar));
+
+      expect(respuestas.map((res) => res.status)).toEqual(conjuntos.map(() => 200));
+      expect(conjuntos).toContainEqual(await horariosEnBd(dentistId));
     });
   });
 });
