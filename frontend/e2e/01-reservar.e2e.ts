@@ -17,6 +17,7 @@ test('E2E 01 - reservar cita: el paciente la ve en Mis citas', async ({ page }) 
   await reserva.confirmar();
 
   await expect(page).toHaveURL(/\/mis-citas$/);
+  await expect(page.getByRole('status').filter({ hasText: 'Cita reservada' })).toBeVisible();
   const citas = new MisCitasPage(page).filas();
   await expect(citas).toHaveCount(1);
   await expect(citas.first()).toContainText('Limpieza dental');

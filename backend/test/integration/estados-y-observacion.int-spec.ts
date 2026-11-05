@@ -150,6 +150,7 @@ describe('Estados y observación (integración)', () => {
 
       expect(res.status).toBe(409);
       expect(res.body.error).toBe('TRANSICION_DE_ESTADO_INVALIDA');
+      expect(res.body.message).not.toContain('_');
       expect(await estadoEnBd(cita.id)).toBe(desde);
     });
 

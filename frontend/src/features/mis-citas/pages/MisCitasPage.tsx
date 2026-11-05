@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useRef, useState, type KeyboardEvent } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { appointmentsApi } from '@/api/endpoints/appointments';
 import type { CuandoCitas } from '@/api/types';
 import { EmptyState } from '@/shared/components/EmptyState';
@@ -7,6 +7,7 @@ import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { EstadoCitaBadge } from '@/shared/components/EstadoCitaBadge';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
+import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { useCarga } from '@/shared/hooks/useCarga';
 import { formatearFecha, formatearRangoHora } from '@/shared/lib/dates';
 
@@ -20,6 +21,16 @@ export function MisCitasPage() {
   const [cuando, setCuando] = useState<CuandoCitas>('proximas');
   const cargar = useCallback(() => appointmentsApi.mias(cuando), [cuando]);
   const { estado } = useCarga(cargar);
+  const { state } = useLocation() as { state: { exito?: string } | null };
+  const pestanias = useRef<Partial<Record<CuandoCitas, HTMLButtonElement | null>>>({});
+
+  // Patrón de pestañas: las flechas cambian de pestaña y solo la activa está en el orden de Tab.
+  const alPulsarTecla = (e: KeyboardEvent) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const otra = cuando === 'proximas' ? 'historial' : 'proximas';
+    setCuando(otra);
+    pestanias.current[otra]?.focus();
+  };
 
   return (
     <div className="page">
@@ -33,13 +44,22 @@ export function MisCitasPage() {
         }
       />
 
+      {state?.exito && <SuccessMessage>{state.exito}</SuccessMessage>}
+
       <div className="tabs" role="tablist" aria-label="Mis citas">
         {PESTANIAS.map(({ valor, etiqueta }) => (
           <button
             key={valor}
             type="button"
             role="tab"
+            id={`pestania-${valor}`}
+            ref={(boton) => {
+              pestanias.current[valor] = boton;
+            }}
             aria-selected={cuando === valor}
+            aria-controls="panel-mis-citas"
+            tabIndex={cuando === valor ? 0 : -1}
+            onKeyDown={alPulsarTecla}
             className={cuando === valor ? 'tab tab-active' : 'tab'}
             onClick={() => setCuando(valor)}
           >
@@ -48,7 +68,12 @@ export function MisCitasPage() {
         ))}
       </div>
 
-      <section className="card card-flush">
+      <section
+        className="card card-flush"
+        id="panel-mis-citas"
+        role="tabpanel"
+        aria-labelledby={`pestania-${cuando}`}
+      >
         {estado.status === 'cargando' && <LoadingState />}
         {estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
         {estado.status === 'ok' && estado.datos.length === 0 && cuando === 'proximas' && (

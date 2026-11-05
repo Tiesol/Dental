@@ -153,6 +153,28 @@ describe('AdminCitasPage', () => {
     );
   });
 
+  it('si una acción falla, vuelve a consultar y muestra el estado real', async () => {
+    let cambiada = false;
+    renderPagina(undefined, [
+      http.patch(`${API}/appointments/:id/status`, () => {
+        cambiada = true;
+        return HttpResponse.json(
+          { statusCode: 409, error: 'TRANSICION_DE_ESTADO_INVALIDA', message: 'No se puede' },
+          { status: 409 },
+        );
+      }),
+      http.get(`${API}/appointments`, () =>
+        HttpResponse.json([citaDePrueba({ estado: cambiada ? 'CANCELADA' : 'PENDIENTE' })]),
+      ),
+    ]);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('btn-confirmar'));
+
+    await waitFor(() => expect(screen.getByTestId('estado-cita')).toHaveTextContent('CANCELADA'));
+    expect(screen.getByTestId('error-mensaje')).toHaveTextContent('No se puede');
+  });
+
   it('filtra por fecha, estado y odontólogo', async () => {
     const { consultas } = renderPagina();
     const user = userEvent.setup();

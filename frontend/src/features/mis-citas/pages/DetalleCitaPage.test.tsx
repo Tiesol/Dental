@@ -53,6 +53,77 @@ const error409 = {
 };
 
 describe('DetalleCitaPage', () => {
+  // La cita cambió por otro lado: la acción responde 409 y la siguiente consulta trae el estado real.
+  function conCitaCambiada(metodo: 'cancel' | 'reschedule') {
+    let cambiada = false;
+    return [
+      http.patch(`${API}/appointments/c1/${metodo}`, () => {
+        cambiada = true;
+        return HttpResponse.json(
+          { statusCode: 409, error: 'CITA_NO_MODIFICABLE', message: 'Ya no se puede modificar' },
+          { status: 409 },
+        );
+      }),
+      http.get(`${API}/appointments/c1`, () =>
+        HttpResponse.json(citaDePrueba({ estado: cambiada ? 'CANCELADA' : 'PENDIENTE' })),
+      ),
+    ];
+  }
+
+  it('si no se pudo cancelar, avisa y muestra el estado real de la cita', async () => {
+    renderPagina({}, conCitaCambiada('cancel'));
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('btn-cancelar'));
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar cita' }),
+    );
+
+    await waitFor(() => expect(screen.getByTestId('estado-cita')).toHaveTextContent('CANCELADA'));
+    expect(screen.getByTestId('error-mensaje')).toHaveTextContent('Ya no se puede modificar');
+    expect(screen.queryByTestId('btn-cancelar')).not.toBeInTheDocument();
+  });
+
+  it('si no se pudo reprogramar porque la cita cambió, cierra el panel y muestra su estado real', async () => {
+    renderPagina({}, conCitaCambiada('reschedule'));
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('btn-reprogramar'));
+    await user.click(await screen.findByTestId('slot-10:00'));
+    await user.click(await screen.findByTestId('btn-confirmar-reprogramacion'));
+
+    await waitFor(() => expect(screen.getByTestId('estado-cita')).toHaveTextContent('CANCELADA'));
+    expect(screen.getByTestId('error-mensaje')).toHaveTextContent('Ya no se puede modificar');
+    expect(screen.queryByTestId('slot-10:00')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('btn-confirmar-reprogramacion')).not.toBeInTheDocument();
+  });
+
+  it('confirma con un mensaje que la cita se canceló', async () => {
+    renderPagina();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('btn-cancelar'));
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar cita' }),
+    );
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Cita cancelada');
+  });
+
+  it('confirma con un mensaje que la cita se reprogramó', async () => {
+    renderPagina();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('btn-reprogramar'));
+    await user.click(await screen.findByTestId('slot-10:00'));
+    await user.click(await screen.findByTestId('btn-confirmar-reprogramacion'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('datos-cita')).toHaveTextContent('10:00 - 10:30'),
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Cita reprogramada');
+  });
+
   it('muestra servicio, odontólogo, fecha, horario y estado', async () => {
     renderPagina();
 

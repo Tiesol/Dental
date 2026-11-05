@@ -55,6 +55,31 @@ describe('MisCitasPage', () => {
     expect(screen.getByRole('tab', { name: 'Historial' })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('la lista queda en un panel asociado a la pestaña activa', async () => {
+    renderPagina();
+    await screen.findByTestId('cita-proxima');
+
+    const pestania = screen.getByRole('tab', { name: 'Próximas' });
+    const panel = screen.getByRole('tabpanel', { name: 'Próximas' });
+
+    expect(pestania).toHaveAttribute('aria-controls', panel.id);
+  });
+
+  it('las flechas cambian de pestaña y solo la activa recibe el foco con Tab', async () => {
+    renderPagina();
+    const user = userEvent.setup();
+    await screen.findByTestId('cita-proxima');
+    screen.getByRole('tab', { name: 'Próximas' }).focus();
+
+    await user.keyboard('{ArrowRight}');
+
+    const historial = screen.getByRole('tab', { name: 'Historial' });
+    expect(historial).toHaveFocus();
+    expect(historial).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('tab', { name: 'Próximas' })).toHaveAttribute('tabindex', '-1');
+    expect(await screen.findByTestId('cita-pasada')).toBeInTheDocument();
+  });
+
   it('cada cita enlaza a su detalle', async () => {
     renderPagina();
 

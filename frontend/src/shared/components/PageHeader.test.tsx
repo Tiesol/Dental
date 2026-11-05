@@ -26,4 +26,14 @@ describe('PageHeader', () => {
 
     expect(screen.getByRole('button', { name: 'Nuevo' })).toBeInTheDocument();
   });
+
+  it('pone el título de la página en la pestaña del navegador', () => {
+    render(
+      <MemoryRouter>
+        <PageHeader title="Mis citas" />
+      </MemoryRouter>,
+    );
+
+    expect(document.title).toBe('Mis citas · Clínica Dental');
+  });
 });

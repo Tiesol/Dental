@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, http, type RequestHandler } from 'msw';
 import { Route, Routes } from 'react-router-dom';
@@ -83,6 +83,39 @@ describe('HorariosOdontologoPage', () => {
     expect(within(tramo).getByLabelText('Día')).toHaveValue('1');
     expect(within(tramo).getByLabelText('Desde')).toHaveValue('09:00');
     expect(within(tramo).getByLabelText('Hasta')).toHaveValue('12:00');
+  });
+
+  it('cada tramo es un grupo con nombre, para distinguir sus campos', async () => {
+    renderPagina();
+
+    expect(await screen.findByRole('group', { name: 'Tramo 1' })).toBe(
+      screen.getByTestId('tramo-0'),
+    );
+  });
+
+  it('no permite repetir el borrado de un bloque mientras se envía', async () => {
+    let liberar: () => void = () => undefined;
+    renderPagina();
+    server.use(
+      http.delete(`${API}/dentists/d1/blocks/:blockId`, async () => {
+        await new Promise<void>((resolve) => {
+          liberar = resolve;
+        });
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Quitar bloque' }));
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Quitar bloque' }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Quitar bloque' })).toBeDisabled(),
+    );
+    liberar();
+    expect(await screen.findByText('No hay bloques no disponibles')).toBeInTheDocument();
   });
 
   it('avisa cuando el odontólogo no tiene horarios', async () => {

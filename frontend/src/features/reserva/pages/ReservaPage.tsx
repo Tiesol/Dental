@@ -43,7 +43,7 @@ export function ReservaPage() {
         serviceId: servicio.id,
         horaInicio: slot.inicio,
       });
-      navigate('/mis-citas');
+      navigate('/mis-citas', { state: { exito: 'Cita reservada' } });
     } catch (err) {
       setError((err as Error).message);
       setEnviando(false);

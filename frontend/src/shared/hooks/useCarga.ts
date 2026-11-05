@@ -30,8 +30,9 @@ export function useCarga<T>(cargar: () => Promise<T>) {
   }, [cargar, version]);
 
   const recargar = useCallback(() => setVersion((actual) => actual + 1), []);
-  const estaAlDia = resultado?.cargar === cargar && resultado.version === version;
-  const estado: Carga<T> = estaAlDia ? resultado.carga : { status: 'cargando' };
+  // Al recargar la misma consulta se sigue mostrando lo anterior: así no se pierde la pantalla ni el
+  // foco. Con una consulta distinta (otro filtro, otra fecha) sí se muestra "cargando".
+  const estado: Carga<T> = resultado?.cargar === cargar ? resultado.carga : { status: 'cargando' };
 
   return { estado, recargar };
 }

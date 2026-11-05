@@ -17,6 +17,7 @@ export function SeccionBloques({ bloques, crear, borrar }: Props) {
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
+  const [quitando, setQuitando] = useState<string | null>(null);
   const { confirm, dialog } = useConfirm();
 
   const onSubmit = async (e: FormEvent) => {
@@ -47,10 +48,13 @@ export function SeccionBloques({ bloques, crear, borrar }: Props) {
     });
     if (!ok) return;
     setError('');
+    setQuitando(bloque.id);
     try {
       await borrar(bloque.id);
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setQuitando(null);
     }
   };
 
@@ -75,6 +79,7 @@ export function SeccionBloques({ bloques, crear, borrar }: Props) {
               <button
                 type="button"
                 className="secondary danger"
+                disabled={quitando === bloque.id}
                 onClick={() => void quitar(bloque)}
               >
                 Quitar bloque

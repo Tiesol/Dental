@@ -49,6 +49,57 @@ describe('DetalleAtencionPage', () => {
     );
   });
 
+  it('si el cambio de estado falla, avisa y muestra el estado real de la cita', async () => {
+    let cambiada = false;
+    renderPagina({ estado: 'CONFIRMADA' }, [
+      http.patch(`${API}/appointments/c1/status`, () => {
+        cambiada = true;
+        return HttpResponse.json(
+          { statusCode: 409, error: 'TRANSICION_DE_ESTADO_INVALIDA', message: 'No se puede' },
+          { status: 409 },
+        );
+      }),
+      http.get(`${API}/appointments/c1`, () =>
+        HttpResponse.json(citaDePrueba({ estado: cambiada ? 'CANCELADA' : 'CONFIRMADA' })),
+      ),
+    ]);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('btn-iniciar-atencion'));
+
+    await waitFor(() => expect(screen.getByTestId('estado-cita')).toHaveTextContent('CANCELADA'));
+    expect(screen.getByTestId('error-mensaje')).toHaveTextContent('No se puede');
+    expect(screen.queryByTestId('btn-iniciar-atencion')).not.toBeInTheDocument();
+  });
+
+  it('al guardar la observación, Finalizar no dice que está finalizando', async () => {
+    let liberar: () => void = () => undefined;
+    renderPagina({ estado: 'EN_ATENCION' }, [
+      http.post(`${API}/appointments/c1/observation`, async () => {
+        await new Promise<void>((resolve) => {
+          liberar = resolve;
+        });
+        return HttpResponse.json(
+          { texto: 'Bien', createdAt: '2026-11-09T14:00:00.000Z' },
+          { status: 201 },
+        );
+      }),
+    ]);
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText('Observación'), 'Bien');
+    await user.click(screen.getByTestId('btn-registrar-observacion'));
+
+    expect(screen.getByTestId('btn-registrar-observacion')).toHaveTextContent('Guardando…');
+    expect(screen.getByTestId('btn-finalizar')).toHaveTextContent('Finalizar');
+    liberar();
+    await waitFor(() =>
+      expect(screen.getByTestId('btn-registrar-observacion')).toHaveTextContent(
+        'Registrar observación',
+      ),
+    );
+  });
+
   it('muestra los datos del paciente y de la cita', async () => {
     renderPagina({ estado: 'CONFIRMADA' });
 

@@ -139,7 +139,11 @@ export class CitaNoModificableError extends DomainError {
 
 export class TransicionDeEstadoInvalidaError extends DomainError {
   constructor(desde: string, hacia: string) {
-    super(409, 'TRANSICION_DE_ESTADO_INVALIDA', `Una cita ${desde} no puede pasar a ${hacia}`);
+    super(
+      409,
+      'TRANSICION_DE_ESTADO_INVALIDA',
+      `Una cita ${desde.replace('_', ' ')} no puede pasar a ${hacia.replace('_', ' ')}`,
+    );
   }
 }
 

@@ -50,6 +50,8 @@ export function AdminCitasPage() {
       recargar();
     } catch (err) {
       setErrorAccion((err as Error).message);
+      // La cita pudo haber cambiado por otro lado: se muestra su estado real.
+      recargar();
     } finally {
       setProcesando(null);
     }
