@@ -14,7 +14,7 @@ Al terminar una tarea: marcarla como hecha en esta tabla y agregar `(hecho)` a s
 | T4    | Reprogramar y cancelar (2 endpoints)                        | `appointments` | T3                 | Hecho     |
 | T5    | Estados de la cita y observación (2 endpoints)              | `observations` | T3                 | Hecho     |
 | T6    | Agenda del odontólogo (2 endpoints)                         | `appointments` | T3                 | Hecho     |
-| T7    | Tests pendientes de lo ya construido                        | varios         | —                  | Pendiente |
+| T7    | Tests pendientes de lo ya construido                        | varios         | —                  | Hecho     |
 | T8    | Entorno para los E2E: seed, reloj fijo, Playwright y CI     | `e2e`          | T3                 | Pendiente |
 | F1    | Pantalla de horarios y bloques (ADMIN)                      | frontend       | T1                 | Pendiente |
 | F2    | Reserva, con E2E 01 y 02                                    | frontend       | T3, T8             | Pendiente |
