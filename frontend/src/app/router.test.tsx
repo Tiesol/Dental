@@ -53,6 +53,7 @@ describe('AppRoutes', () => {
     renderWithProviders(<AppRoutes />, { route: '/admin/usuarios', conSesion: true });
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Acceso denegado');
+    expect(screen.getByRole('heading', { level: 1, name: 'Acceso denegado' })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Principal' })).toBeInTheDocument();
   });
 
