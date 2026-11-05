@@ -406,4 +406,330 @@ describe('Disponibilidad (integración)', () => {
       expect(await horariosEnBd(dentistId)).toEqual([]);
     });
   });
+
+  describe('POST /dentists/:id/blocks', () => {
+    const cuerpo = {
+      inicio: '2026-11-10T14:00:00.000Z',
+      fin: '2026-11-10T15:00:00.000Z',
+      motivo: 'Congreso',
+    };
+    // Cita de 10:00 a 10:30 en La Paz, el día del bloque.
+    const horaInicio = new Date('2026-11-10T14:00:00.000Z');
+    const horaFin = new Date('2026-11-10T14:30:00.000Z');
+
+    const bloquesEnBd = (dentistId: string) =>
+      prisma.unavailableBlock.count({ where: { dentistId } });
+
+    it('responde 401 sin token', async () => {
+      const dentistId = await nuevoOdontologoId();
+
+      const res = await http()
+        .post(ruta(`/dentists/${dentistId}/blocks`))
+        .send(cuerpo);
+
+      expect(res.status).toBe(401);
+    });
+
+    it.each([
+      ['PACIENTE', tokenDePaciente],
+      ['ODONTOLOGO', tokenDeOdontologo],
+    ])('responde 403 con el rol %s y no guarda nada', async (_rol, obtenerToken) => {
+      const dentistId = await nuevoOdontologoId();
+      const token = await obtenerToken();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send(
+        cuerpo,
+      );
+
+      expect(res.status).toBe(403);
+      expect(await bloquesEnBd(dentistId)).toBe(0);
+    });
+
+    it('crea el bloque, lo persiste y aparece en la disponibilidad', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send(
+        cuerpo,
+      );
+
+      const creado = { id: expect.any(String), ...cuerpo };
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual(creado);
+      const enBd = await prisma.unavailableBlock.findUnique({ where: { id: res.body.id } });
+      expect(enBd).toMatchObject({
+        dentistId,
+        inicio: new Date(cuerpo.inicio),
+        fin: new Date(cuerpo.fin),
+        motivo: 'Congreso',
+      });
+      const consulta = await conToken(
+        http().get(ruta(`/dentists/${dentistId}/availability`)),
+        token,
+      );
+      expect(consulta.body.bloques).toEqual([creado]);
+    });
+
+    it('sin motivo lo guarda como null', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send({
+        inicio: cuerpo.inicio,
+        fin: cuerpo.fin,
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body.motivo).toBeNull();
+    });
+
+    it('acepta fechas con otra zona horaria y las devuelve en UTC', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send({
+        inicio: '2026-11-10T10:00:00-04:00',
+        fin: '2026-11-10T11:00:00-04:00',
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ inicio: cuerpo.inicio, fin: cuerpo.fin });
+    });
+
+    it('responde 404 si el odontólogo no existe', async () => {
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(
+        http().post(ruta(`/dentists/${ID_INEXISTENTE}/blocks`)),
+        token,
+      ).send(cuerpo);
+
+      expect(res.status).toBe(404);
+    });
+
+    it.each([
+      ['termina antes de empezar', '2026-11-10T15:00:00.000Z', '2026-11-10T14:00:00.000Z'],
+      ['termina cuando empieza', '2026-11-10T14:00:00.000Z', '2026-11-10T14:00:00.000Z'],
+      ['ya terminó', '2026-11-08T14:00:00.000Z', '2026-11-08T15:00:00.000Z'],
+      ['termina justo ahora', '2026-11-09T13:00:00.000Z', '2026-11-09T14:00:00.000Z'],
+    ])('responde 400 FECHA_INVALIDA si el bloque %s', async (_caso, inicio, fin) => {
+      const dentistId = await nuevoOdontologoId();
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send({
+        inicio,
+        fin,
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('FECHA_INVALIDA');
+      expect(await bloquesEnBd(dentistId)).toBe(0);
+    });
+
+    it.each([
+      ['sin inicio', { fin: cuerpo.fin }],
+      ['sin fin', { inicio: cuerpo.inicio }],
+      ['una fecha que no existe', { ...cuerpo, inicio: '2026-02-30T14:00:00.000Z' }],
+      ['un texto en vez de fecha', { ...cuerpo, fin: 'mañana' }],
+      ['una fecha sin hora', { ...cuerpo, inicio: '2026-11-10' }],
+      ['una fecha sin zona horaria', { ...cuerpo, inicio: '2026-11-10T14:00:00' }],
+      ['una fecha en formato de semana', { ...cuerpo, inicio: '2026-W46-2T14:00:00Z' }],
+      ['un número en vez de fecha', { ...cuerpo, inicio: 1794000000000 }],
+      ['un motivo que no es texto', { ...cuerpo, motivo: 5 }],
+      ['un motivo de más de 200 caracteres', { ...cuerpo, motivo: 'x'.repeat(201) }],
+      ['un campo extra', { ...cuerpo, dentistId: 'x' }],
+    ])('responde 400 con un cuerpo mal formado: %s', async (_caso, body) => {
+      const dentistId = await nuevoOdontologoId();
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send(
+        body,
+      );
+
+      expect(res.status).toBe(400);
+      expect(await bloquesEnBd(dentistId)).toBe(0);
+    });
+
+    it.each(['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'FINALIZADA'] as const)(
+      'responde 409 si choca con una cita %s y no guarda el bloque',
+      async (estado) => {
+        const dentistId = await nuevoOdontologoId();
+        await crearCita(prisma, { dentistId, horaInicio, horaFin, estado });
+        const token = await tokenDeAdmin();
+
+        const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send(
+          cuerpo,
+        );
+
+        expect(res.status).toBe(409);
+        expect(res.body.error).toBe('BLOQUE_CON_CITAS');
+        expect(await bloquesEnBd(dentistId)).toBe(0);
+      },
+    );
+
+    it.each([
+      ['la cita empieza antes y termina dentro', '2026-11-10T13:45:00Z', '2026-11-10T14:15:00Z'],
+      ['la cita empieza dentro y termina después', '2026-11-10T14:45:00Z', '2026-11-10T15:15:00Z'],
+      ['el bloque está contenido en la cita', '2026-11-10T13:00:00Z', '2026-11-10T16:00:00Z'],
+    ])('responde 409 con un solapamiento parcial: %s', async (_caso, inicioCita, finCita) => {
+      const dentistId = await nuevoOdontologoId();
+      await crearCita(prisma, {
+        dentistId,
+        horaInicio: new Date(inicioCita),
+        horaFin: new Date(finCita),
+      });
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send(
+        cuerpo,
+      );
+
+      expect(res.status).toBe(409);
+    });
+
+    it('permite el bloque sobre una cita CANCELADA, que no ocupa el horario', async () => {
+      const dentistId = await nuevoOdontologoId();
+      await crearCita(prisma, { dentistId, horaInicio, horaFin, estado: 'CANCELADA' });
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send(
+        cuerpo,
+      );
+
+      expect(res.status).toBe(201);
+    });
+
+    it.each([
+      ['termina cuando empieza el bloque', '2026-11-10T13:30:00Z', '2026-11-10T14:00:00Z'],
+      ['empieza cuando termina el bloque', '2026-11-10T15:00:00Z', '2026-11-10T15:30:00Z'],
+    ])('permite el bloque consecutivo a una cita que %s', async (_caso, inicioCita, finCita) => {
+      const dentistId = await nuevoOdontologoId();
+      await crearCita(prisma, {
+        dentistId,
+        horaInicio: new Date(inicioCita),
+        horaFin: new Date(finCita),
+      });
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send(
+        cuerpo,
+      );
+
+      expect(res.status).toBe(201);
+    });
+
+    it('permite el bloque en el horario de una cita de otro odontólogo', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const otroId = await nuevoOdontologoId();
+      await crearCita(prisma, { dentistId: otroId, horaInicio, horaFin });
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send(
+        cuerpo,
+      );
+
+      expect(res.status).toBe(201);
+    });
+  });
+
+  describe('DELETE /dentists/:id/blocks/:blockId', () => {
+    const crearBloque = (dentistId: string) =>
+      prisma.unavailableBlock.create({
+        data: {
+          dentistId,
+          inicio: new Date('2026-11-12T14:00:00.000Z'),
+          fin: new Date('2026-11-12T15:00:00.000Z'),
+        },
+      });
+    const existe = async (blockId: string) =>
+      (await prisma.unavailableBlock.count({ where: { id: blockId } })) === 1;
+
+    it('responde 401 sin token y conserva el bloque', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const bloque = await crearBloque(dentistId);
+
+      const res = await http().delete(ruta(`/dentists/${dentistId}/blocks/${bloque.id}`));
+
+      expect(res.status).toBe(401);
+      expect(await existe(bloque.id)).toBe(true);
+    });
+
+    it.each([
+      ['PACIENTE', tokenDePaciente],
+      ['ODONTOLOGO', tokenDeOdontologo],
+    ])('responde 403 con el rol %s y conserva el bloque', async (_rol, obtenerToken) => {
+      const dentistId = await nuevoOdontologoId();
+      const bloque = await crearBloque(dentistId);
+      const token = await obtenerToken();
+
+      const res = await conToken(
+        http().delete(ruta(`/dentists/${dentistId}/blocks/${bloque.id}`)),
+        token,
+      );
+
+      expect(res.status).toBe(403);
+      expect(await existe(bloque.id)).toBe(true);
+    });
+
+    it('borra el bloque y deja de aparecer en la disponibilidad', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const bloque = await crearBloque(dentistId);
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(
+        http().delete(ruta(`/dentists/${dentistId}/blocks/${bloque.id}`)),
+        token,
+      );
+
+      expect(res.status).toBe(204);
+      expect(res.body).toEqual({});
+      expect(await existe(bloque.id)).toBe(false);
+      const consulta = await conToken(
+        http().get(ruta(`/dentists/${dentistId}/availability`)),
+        token,
+      );
+      expect(consulta.body.bloques).toEqual([]);
+    });
+
+    it('responde 404 con un bloque de otro odontólogo y no lo borra', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const otroId = await nuevoOdontologoId();
+      const ajeno = await crearBloque(otroId);
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(
+        http().delete(ruta(`/dentists/${dentistId}/blocks/${ajeno.id}`)),
+        token,
+      );
+
+      expect(res.status).toBe(404);
+      expect(await existe(ajeno.id)).toBe(true);
+    });
+
+    it('responde 404 si el bloque no existe', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(
+        http().delete(ruta(`/dentists/${dentistId}/blocks/${ID_INEXISTENTE}`)),
+        token,
+      );
+
+      expect(res.status).toBe(404);
+    });
+
+    it('responde 404 si el odontólogo no existe y no borra el bloque', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const bloque = await crearBloque(dentistId);
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(
+        http().delete(ruta(`/dentists/${ID_INEXISTENTE}/blocks/${bloque.id}`)),
+        token,
+      );
+
+      expect(res.status).toBe(404);
+      expect(await existe(bloque.id)).toBe(true);
+    });
+  });
 });
