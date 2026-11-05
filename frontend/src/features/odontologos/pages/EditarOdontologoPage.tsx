@@ -1,29 +1,36 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { DentistAdminResponse, UpdateDentistRequest } from '@/api/types';
+import { ActiveBadge } from '@/shared/components/ActiveBadge';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { LoadingState } from '@/shared/components/LoadingState';
+import { PageHeader } from '@/shared/components/PageHeader';
+import { SuccessMessage } from '@/shared/components/SuccessMessage';
+import { useConfirm } from '@/shared/hooks/useConfirm';
 import { SelectorServicios } from '../components/SelectorServicios';
 import { useOdontologoAdmin } from '../hooks/useOdontologoAdmin';
 import { useServiciosParaElegir } from '../hooks/useServiciosParaElegir';
+
+const VOLVER = { to: '/admin/odontologos', label: 'Volver al listado' };
 
 export function EditarOdontologoPage() {
   const { id = '' } = useParams();
   const { estado, guardarDatos, guardarServicios, cambiarEstado } = useOdontologoAdmin(id);
 
-  if (estado.status === 'cargando') return <p className="muted">Cargando…</p>;
+  if (estado.status === 'cargando') return <LoadingState />;
   if (estado.status === 'error') {
     return (
-      <section className="card">
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {estado.mensaje}
-        </p>
-        <Link to="/admin/odontologos">Volver al listado</Link>
-      </section>
+      <div className="page page-narrow">
+        <PageHeader title="Editar odontólogo" back={VOLVER} />
+        <ErrorMessage>{estado.mensaje}</ErrorMessage>
+      </div>
     );
   }
 
   const { odontologo } = estado;
   return (
-    <div className="stack">
+    <div className="page page-narrow">
+      <PageHeader title="Editar odontólogo" description={odontologo.nombre} back={VOLVER} />
       <DatosProfesionales
         key={`datos-${odontologo.id}`}
         odontologo={odontologo}
@@ -35,9 +42,6 @@ export function EditarOdontologoPage() {
         guardar={guardarServicios}
       />
       <EstadoProfesional odontologo={odontologo} cambiarEstado={cambiarEstado} />
-      <p className="centrado">
-        <Link to="/admin/odontologos">Volver al listado</Link>
-      </p>
     </div>
   );
 }
@@ -64,16 +68,8 @@ function useAccion() {
 
   const mensajes = (
     <>
-      {error && (
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {error}
-        </p>
-      )}
-      {exito && (
-        <p className="success" role="status">
-          {exito}
-        </p>
-      )}
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+      {exito && <SuccessMessage>{exito}</SuccessMessage>}
     </>
   );
 
@@ -97,9 +93,9 @@ function DatosProfesionales({
   };
 
   return (
-    <form className="card" onSubmit={onSubmit}>
-      <h1>Editar odontólogo</h1>
-      <dl>
+    <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-datos-profesionales">
+      <h2 id="titulo-datos-profesionales">Datos profesionales</h2>
+      <dl className="details">
         <dt>Email</dt>
         <dd>{odontologo.email}</dd>
         <dt>Cuenta</dt>
@@ -108,28 +104,32 @@ function DatosProfesionales({
           <Link to={`/admin/usuarios/${odontologo.userId}`}>Gestionar cuenta</Link>
         </dd>
       </dl>
-      <label>
-        Nombre
-        <input
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-          maxLength={100}
-        />
-      </label>
-      <label>
-        Especialidad
-        <input
-          value={especialidad}
-          onChange={(e) => setEspecialidad(e.target.value)}
-          required
-          maxLength={100}
-        />
-      </label>
+      <div className="form-row">
+        <label>
+          Nombre
+          <input
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            required
+            maxLength={100}
+          />
+        </label>
+        <label>
+          Especialidad
+          <input
+            value={especialidad}
+            onChange={(e) => setEspecialidad(e.target.value)}
+            required
+            maxLength={100}
+          />
+        </label>
+      </div>
       {mensajes}
-      <button type="submit" disabled={enviando} data-testid="btn-guardar-odontologo">
-        {enviando ? 'Guardando…' : 'Guardar datos'}
-      </button>
+      <div className="form-actions">
+        <button type="submit" disabled={enviando} data-testid="btn-guardar-odontologo">
+          {enviando ? 'Guardando…' : 'Guardar datos'}
+        </button>
+      </div>
     </form>
   );
 }
@@ -158,11 +158,13 @@ function ServiciosQueRealiza({
         onChange={setSeleccionados}
         disabled={enviando}
       />
-      {errorServicios && <p className="error">{errorServicios}</p>}
+      {errorServicios && <ErrorMessage>{errorServicios}</ErrorMessage>}
       {mensajes}
-      <button type="submit" disabled={enviando} data-testid="btn-guardar-servicios-odontologo">
-        {enviando ? 'Guardando…' : 'Guardar servicios'}
-      </button>
+      <div className="form-actions">
+        <button type="submit" disabled={enviando} data-testid="btn-guardar-servicios-odontologo">
+          {enviando ? 'Guardando…' : 'Guardar servicios'}
+        </button>
+      </div>
     </form>
   );
 }
@@ -175,11 +177,16 @@ function EstadoProfesional({
   cambiarEstado: (activo: boolean) => Promise<void>;
 }) {
   const { enviando, ejecutar, mensajes } = useAccion();
+  const { confirm, dialog } = useConfirm();
 
-  const alternar = () => {
+  const alternar = async () => {
     if (
       odontologo.activo &&
-      !window.confirm('¿Deshabilitar? No recibirá nuevas citas; sus citas existentes se conservan.')
+      !(await confirm({
+        title: `¿Deshabilitar a ${odontologo.nombre}?`,
+        message: 'No recibirá nuevas citas; sus citas existentes se conservan.',
+        confirmLabel: 'Deshabilitar odontólogo',
+      }))
     ) {
       return;
     }
@@ -190,27 +197,30 @@ function EstadoProfesional({
   };
 
   return (
-    <section className="card">
-      <h2>Estado profesional</h2>
-      <p>
-        <span className={odontologo.activo ? 'badge ok' : 'badge off'}>
-          {odontologo.activo ? 'Acepta citas' : 'Deshabilitado'}
-        </span>
-      </p>
-      <p className="muted">
-        Deshabilitado no recibe nuevas citas ni aparece para los pacientes; su historial se
-        conserva.
-      </p>
+    <section className="card" aria-labelledby="titulo-estado-profesional">
+      <div className="card-section">
+        <h2 id="titulo-estado-profesional">Estado profesional</h2>
+        <div>
+          <ActiveBadge active={odontologo.activo} activeLabel="Acepta citas" />
+        </div>
+        <p className="muted">
+          Deshabilitado no recibe nuevas citas ni aparece para los pacientes; su historial se
+          conserva.
+        </p>
+      </div>
       {mensajes}
-      <button
-        type="button"
-        className={odontologo.activo ? 'secondary danger' : 'secondary'}
-        disabled={enviando}
-        onClick={alternar}
-        data-testid="btn-cambiar-estado-odontologo"
-      >
-        {odontologo.activo ? 'Deshabilitar odontólogo' : 'Habilitar odontólogo'}
-      </button>
+      <div className="form-actions">
+        <button
+          type="button"
+          className={odontologo.activo ? 'secondary danger' : 'secondary'}
+          disabled={enviando}
+          onClick={() => void alternar()}
+          data-testid="btn-cambiar-estado-odontologo"
+        >
+          {odontologo.activo ? 'Deshabilitar odontólogo' : 'Habilitar odontólogo'}
+        </button>
+      </div>
+      {dialog}
     </section>
   );
 }

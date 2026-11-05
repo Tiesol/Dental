@@ -1,4 +1,9 @@
 import { useState } from 'react';
+import { Avatar } from '@/shared/components/Avatar';
+import { EmptyState } from '@/shared/components/EmptyState';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { LoadingState } from '@/shared/components/LoadingState';
+import { PageHeader } from '@/shared/components/PageHeader';
 import { formatearDuracion } from '@/shared/lib/formato';
 import { useOdontologos } from '../hooks/useOdontologos';
 import { useServiciosParaElegir } from '../hooks/useServiciosParaElegir';
@@ -10,56 +15,64 @@ export function OdontologosPage() {
   const { servicios } = useServiciosParaElegir();
 
   return (
-    <section className="card wide">
-      <h1>Odontólogos</h1>
-      <div className="filters">
-        <label>
-          Servicio
-          <select value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-            <option value="">Todos los servicios</option>
-            {servicios.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+    <div className="page">
+      <PageHeader
+        title="Odontólogos"
+        description="Conoce a los profesionales de la clínica y los servicios que realizan."
+      />
+      <section className="card card-flush">
+        <div className="filters">
+          <label>
+            Servicio
+            <select value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+              <option value="">Todos los servicios</option>
+              {servicios.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-      {estado.status === 'cargando' && <p className="muted">Cargando…</p>}
-      {estado.status === 'error' && (
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {estado.mensaje}
-        </p>
-      )}
-      {estado.status === 'ok' && estado.odontologos.length === 0 && (
-        <p className="muted">
-          {serviceId
-            ? 'Ningún odontólogo realiza este servicio por ahora.'
-            : 'Por ahora no hay odontólogos disponibles.'}
-        </p>
-      )}
-      {estado.status === 'ok' && estado.odontologos.length > 0 && (
-        <ul className="grid-servicios">
-          {estado.odontologos.map((d) => (
-            <li key={d.id} className="servicio" data-testid={`odontologo-${d.id}`}>
-              <h2>{d.nombre}</h2>
-              <p>{d.especialidad}</p>
-              {d.servicios.length > 0 ? (
-                <ul className="chips" aria-label={`Servicios de ${d.nombre}`}>
-                  {d.servicios.map((s) => (
-                    <li key={s.id}>
-                      {s.nombre} · {formatearDuracion(s.duracionMin)}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted">Sin servicios asignados.</p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+        {estado.status === 'cargando' && <LoadingState />}
+        {estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
+        {estado.status === 'ok' && estado.odontologos.length === 0 && (
+          <EmptyState
+            title={
+              serviceId
+                ? 'Ningún odontólogo realiza este servicio por ahora'
+                : 'Por ahora no hay odontólogos disponibles'
+            }
+          />
+        )}
+        {estado.status === 'ok' && estado.odontologos.length > 0 && (
+          <ul className="service-list">
+            {estado.odontologos.map((d) => (
+              <li key={d.id} className="service" data-testid={`odontologo-${d.id}`}>
+                <div className="cell-person">
+                  <Avatar name={d.nombre} />
+                  <div className="service-text">
+                    <h2>{d.nombre}</h2>
+                    <p className="muted">{d.especialidad}</p>
+                  </div>
+                </div>
+                {d.servicios.length > 0 ? (
+                  <ul className="chips" aria-label={`Servicios de ${d.nombre}`}>
+                    {d.servicios.map((s) => (
+                      <li key={s.id}>
+                        {s.nombre} · {formatearDuracion(s.duracionMin)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted">Sin servicios asignados.</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

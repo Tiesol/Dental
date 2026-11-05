@@ -1,19 +1,30 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ActiveBadge } from '@/shared/components/ActiveBadge';
+import { Avatar } from '@/shared/components/Avatar';
+import { EmptyState } from '@/shared/components/EmptyState';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { Icon } from '@/shared/components/Icon';
+import { LoadingState } from '@/shared/components/LoadingState';
+import { PageHeader } from '@/shared/components/PageHeader';
+import { useConfirm } from '@/shared/hooks/useConfirm';
 import { useOdontologosAdmin } from '../hooks/useOdontologosAdmin';
 
 // Gestión de odontólogos (ADMIN): todos, con su estado profesional y el de su cuenta.
 export function AdminOdontologosPage() {
   const { estado, cambiarEstado } = useOdontologosAdmin();
+  const { confirm, dialog } = useConfirm();
   const [procesando, setProcesando] = useState<string | null>(null);
   const [errorAccion, setErrorAccion] = useState('');
 
   const alternarEstado = async (id: string, nombre: string, activo: boolean) => {
     if (
       activo &&
-      !window.confirm(
-        `¿Deshabilitar a ${nombre}? No recibirá nuevas citas; sus citas existentes se conservan.`,
-      )
+      !(await confirm({
+        title: `¿Deshabilitar a ${nombre}?`,
+        message: 'No recibirá nuevas citas; sus citas existentes se conservan.',
+        confirmLabel: 'Deshabilitar',
+      }))
     ) {
       return;
     }
@@ -25,80 +36,91 @@ export function AdminOdontologosPage() {
   };
 
   return (
-    <section className="card wide">
-      <div className="toolbar">
-        <h1>Odontólogos</h1>
-        <Link to="/admin/odontologos/nuevo" className="button" data-testid="btn-nuevo-odontologo">
-          Nuevo odontólogo
-        </Link>
-      </div>
+    <div className="page">
+      <PageHeader
+        title="Odontólogos"
+        description="Profesionales de la clínica y los servicios que realizan."
+        actions={
+          <Link to="/admin/odontologos/nuevo" className="button" data-testid="btn-nuevo-odontologo">
+            <Icon name="plus" />
+            Nuevo odontólogo
+          </Link>
+        }
+      />
 
-      {estado.status === 'cargando' && <p className="muted">Cargando…</p>}
-      {(estado.status === 'error' || errorAccion) && (
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {estado.status === 'error' ? estado.mensaje : errorAccion}
-        </p>
-      )}
-      {estado.status === 'ok' && estado.odontologos.length === 0 && (
-        <p className="muted">Todavía no hay odontólogos registrados.</p>
-      )}
-      {estado.status === 'ok' && estado.odontologos.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Especialidad</th>
-              <th>Servicios</th>
-              <th>Estado</th>
-              <th>
-                <span className="sr-only">Acciones</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {estado.odontologos.map((d) => (
-              <tr key={d.id} data-testid={`odontologo-${d.id}`}>
-                <td>
-                  {d.nombre}
-                  <br />
-                  <small className="muted">{d.email}</small>
-                </td>
-                <td>{d.especialidad}</td>
-                <td>
-                  {d.servicios.length === 0 ? (
-                    <span className="muted">Ninguno</span>
-                  ) : (
-                    d.servicios.map((s) => s.nombre).join(', ')
-                  )}
-                </td>
-                <td>
-                  <span className={d.activo ? 'badge ok' : 'badge off'}>
-                    {d.activo ? 'Acepta citas' : 'Deshabilitado'}
-                  </span>
-                  {!d.cuentaActiva && (
-                    <>
-                      <br />
-                      <small className="error">Cuenta deshabilitada</small>
-                    </>
-                  )}
-                </td>
-                <td className="actions">
-                  <Link to={`/admin/odontologos/${d.id}`}>Editar</Link>
-                  <button
-                    type="button"
-                    className={d.activo ? 'secondary danger' : 'secondary'}
-                    disabled={procesando === d.id}
-                    onClick={() => void alternarEstado(d.id, d.nombre, d.activo)}
-                    data-testid="btn-cambiar-estado-odontologo"
-                  >
-                    {d.activo ? 'Deshabilitar' : 'Habilitar'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
+      <section className="card card-flush">
+        {estado.status === 'cargando' && <LoadingState />}
+        {(estado.status === 'error' || errorAccion) && (
+          <ErrorMessage>{estado.status === 'error' ? estado.mensaje : errorAccion}</ErrorMessage>
+        )}
+        {estado.status === 'ok' && estado.odontologos.length === 0 && (
+          <EmptyState
+            title="Todavía no hay odontólogos registrados"
+            description="Registra el primero con el botón Nuevo odontólogo."
+          />
+        )}
+        {estado.status === 'ok' && estado.odontologos.length > 0 && (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Odontólogo</th>
+                  <th>Especialidad</th>
+                  <th>Servicios</th>
+                  <th>Estado</th>
+                  <th>
+                    <span className="sr-only">Acciones</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {estado.odontologos.map((d) => (
+                  <tr key={d.id} data-testid={`odontologo-${d.id}`}>
+                    <td>
+                      <div className="cell-person">
+                        <Avatar name={d.nombre} />
+                        <div>
+                          <span className="cell-primary">{d.nombre}</span>
+                          <small>{d.email}</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{d.especialidad}</td>
+                    <td>
+                      {d.servicios.length === 0 ? (
+                        <span className="muted">Sin servicios</span>
+                      ) : (
+                        d.servicios.map((s) => s.nombre).join(', ')
+                      )}
+                    </td>
+                    <td>
+                      <ActiveBadge active={d.activo} activeLabel="Acepta citas" />
+                      {!d.cuentaActiva && (
+                        <small className="text-error">Cuenta deshabilitada</small>
+                      )}
+                    </td>
+                    <td>
+                      <div className="actions">
+                        <Link to={`/admin/odontologos/${d.id}`}>Editar</Link>
+                        <button
+                          type="button"
+                          className={d.activo ? 'secondary danger' : 'secondary'}
+                          disabled={procesando === d.id}
+                          onClick={() => void alternarEstado(d.id, d.nombre, d.activo)}
+                          data-testid="btn-cambiar-estado-odontologo"
+                        >
+                          {d.activo ? 'Deshabilitar' : 'Habilitar'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+      {dialog}
+    </div>
   );
 }

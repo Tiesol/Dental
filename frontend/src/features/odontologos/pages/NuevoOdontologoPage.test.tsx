@@ -26,7 +26,7 @@ async function llenarFormulario() {
   await user.type(screen.getByLabelText('Especialidad'), 'Ortodoncia');
   await user.click(await screen.findByRole('checkbox', { name: /Limpieza dental/ }));
   await user.type(screen.getByLabelText('Email (para iniciar sesión)'), 'juan@clinica.com');
-  await user.type(screen.getByLabelText('Contraseña inicial'), 'Secreta12345');
+  await user.type(screen.getByLabelText(/Contraseña inicial/), 'Secreta12345');
   return user;
 }
 
