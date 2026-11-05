@@ -161,6 +161,14 @@ export class ObservacionYaRegistradaError extends DomainError {
   }
 }
 
+// ---- Entorno de E2E ----
+
+export class BaseNoEsDeTestError extends DomainError {
+  constructor(nombre: string) {
+    super(500, 'BASE_NO_ES_DE_TEST', `El seed de E2E no vacía la base "${nombre}"`);
+  }
+}
+
 // ---- Gestión de usuarios ----
 
 export class OperacionSobrePropiaCuentaError extends DomainError {

@@ -7,6 +7,10 @@ import { AppointmentStatus } from '../appointments/domain/appointment';
 export class E2eRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  nombreDeLaBase(): Promise<string> {
+    throw new Error('sin implementar');
+  }
+
   async vaciar(): Promise<void> {
     const tablas = await this.prisma.$queryRaw<{ tablename: string }[]>`
       SELECT tablename FROM pg_tables
