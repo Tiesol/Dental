@@ -19,6 +19,14 @@
   --success: #1b6e33;
   --success-soft: #e6f4e9;
 
+  /* Estados de la cita. FINALIZADA y CANCELADA reutilizan success y muted. */
+  --estado-pendiente: #7f5200;
+  --estado-pendiente-soft: #fdf1d8;
+  --estado-confirmada: #135a9e;
+  --estado-confirmada-soft: #e4effa;
+  --estado-en-atencion: #65409c;
+  --estado-en-atencion-soft: #f0eafa;
+
   /* La marca es igual en claro y oscuro: barra lateral y panel de acceso. */
   --brand-bg: #0c3a44;
   --brand-text: #e3eff1;
@@ -70,6 +78,12 @@
     --on-error: #3a0d08;
     --success: #84dc9e;
     --success-soft: #15301e;
+    --estado-pendiente: #f2c86a;
+    --estado-pendiente-soft: #3a2c10;
+    --estado-confirmada: #93c5f5;
+    --estado-confirmada-soft: #14304c;
+    --estado-en-atencion: #cbb2f1;
+    --estado-en-atencion-soft: #2d2246;
     --brand-bg: #0b252c;
     --brand-line: #1e3f48;
     --brand-hover: #143740;
@@ -746,6 +760,21 @@ tbody tr:last-child td {
 .badge-off {
   background: var(--surface-sunken);
   color: var(--muted);
+}
+
+.badge-pendiente {
+  background: var(--estado-pendiente-soft);
+  color: var(--estado-pendiente);
+}
+
+.badge-confirmada {
+  background: var(--estado-confirmada-soft);
+  color: var(--estado-confirmada);
+}
+
+.badge-en-atencion {
+  background: var(--estado-en-atencion-soft);
+  color: var(--estado-en-atencion);
 }
 
 .avatar {
