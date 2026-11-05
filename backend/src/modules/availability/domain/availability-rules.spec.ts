@@ -29,6 +29,10 @@ describe('assertHorariosValidos', () => {
       expect(() => assertHorariosValidos([tramo(540, 720), tramo(720, 900)])).not.toThrow();
     });
 
+    it('acepta tramos válidos aunque lleguen desordenados', () => {
+      expect(() => assertHorariosValidos([tramo(840, 1080), tramo(480, 720)])).not.toThrow();
+    });
+
     it('acepta el mismo tramo en días distintos', () => {
       const horarios = [tramo(540, 720, LUNES), tramo(540, 720, MARTES)];
 

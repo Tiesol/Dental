@@ -320,9 +320,28 @@ describe('Disponibilidad (integración)', () => {
       await prisma.availabilityRule.create({ data: { dentistId: otroId, ...tramo(1, 540, 720) } });
       const token = await tokenDeAdmin();
 
-      await conToken(http().put(ruta(`/dentists/${dentistId}/availability`)), token).send(cuerpo);
+      const res = await conToken(
+        http().put(ruta(`/dentists/${dentistId}/availability`)),
+        token,
+      ).send({ horarios: [tramo(5, 600, 660)] });
 
+      expect(res.status).toBe(200);
+      expect(await horariosEnBd(dentistId)).toEqual([tramo(5, 600, 660)]);
       expect(await horariosEnBd(otroId)).toEqual([tramo(1, 540, 720)]);
+    });
+
+    it('acepta hasta 100 tramos', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const horarios = Array.from({ length: 100 }, (_, i) => tramo(1, i, i + 1));
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(
+        http().put(ruta(`/dentists/${dentistId}/availability`)),
+        token,
+      ).send({ horarios });
+
+      expect(res.status).toBe(200);
+      expect(await horariosEnBd(dentistId)).toHaveLength(100);
     });
 
     it('conserva los bloques y los incluye en la respuesta', async () => {
@@ -546,6 +565,45 @@ describe('Disponibilidad (integración)', () => {
       expect(res.body).toMatchObject({ inicio: cuerpo.inicio, fin: cuerpo.fin });
     });
 
+    it('acepta fechas sin segundos', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send({
+        inicio: '2026-11-10T14:00Z',
+        fin: '2026-11-10T15:00Z',
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ inicio: cuerpo.inicio, fin: cuerpo.fin });
+    });
+
+    it('acepta un motivo de 200 caracteres', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const motivo = 'x'.repeat(200);
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send({
+        ...cuerpo,
+        motivo,
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body.motivo).toBe(motivo);
+    });
+
+    it('permite al ADMIN bloquear a un odontólogo deshabilitado', async () => {
+      const dentistId = await nuevoOdontologoId();
+      await prisma.dentist.update({ where: { id: dentistId }, data: { activo: false } });
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send(
+        cuerpo,
+      );
+
+      expect(res.status).toBe(201);
+    });
+
     it('responde 404 si el odontólogo no existe', async () => {
       const token = await tokenDeAdmin();
 
@@ -753,7 +811,23 @@ describe('Disponibilidad (integración)', () => {
       );
 
       expect(res.status).toBe(404);
+      expect(res.body.error).toBe('RECURSO_NO_ENCONTRADO');
       expect(await existe(ajeno.id)).toBe(true);
+    });
+
+    it('permite al ADMIN borrar un bloque de un odontólogo deshabilitado', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const bloque = await crearBloque(dentistId);
+      await prisma.dentist.update({ where: { id: dentistId }, data: { activo: false } });
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(
+        http().delete(ruta(`/dentists/${dentistId}/blocks/${bloque.id}`)),
+        token,
+      );
+
+      expect(res.status).toBe(204);
+      expect(await existe(bloque.id)).toBe(false);
     });
 
     it('responde 404 si el bloque no existe', async () => {
@@ -783,6 +857,83 @@ describe('Disponibilidad (integración)', () => {
     });
   });
 
+  describe('el odontólogo dueño de la agenda', () => {
+    const bloque = { inicio: '2026-11-12T14:00:00.000Z', fin: '2026-11-12T15:00:00.000Z' };
+
+    it('no puede cambiar sus propios horarios', async () => {
+      const odontologo = await crearOdontologo(prisma);
+      const dentistId = odontologo.dentist!.id;
+      const token = await loginComo(app, odontologo);
+
+      const res = await conToken(
+        http().put(ruta(`/dentists/${dentistId}/availability`)),
+        token,
+      ).send({ horarios: [tramo(1, 540, 720)] });
+
+      expect(res.status).toBe(403);
+      expect(await horariosEnBd(dentistId)).toEqual([]);
+    });
+
+    it('no puede crear sus propios bloques', async () => {
+      const odontologo = await crearOdontologo(prisma);
+      const dentistId = odontologo.dentist!.id;
+      const token = await loginComo(app, odontologo);
+
+      const res = await conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token).send(
+        bloque,
+      );
+
+      expect(res.status).toBe(403);
+      expect(await prisma.unavailableBlock.count({ where: { dentistId } })).toBe(0);
+    });
+
+    it('no puede borrar sus propios bloques', async () => {
+      const odontologo = await crearOdontologo(prisma);
+      const dentistId = odontologo.dentist!.id;
+      const creado = await prisma.unavailableBlock.create({
+        data: { dentistId, inicio: new Date(bloque.inicio), fin: new Date(bloque.fin) },
+      });
+      const token = await loginComo(app, odontologo);
+
+      const res = await conToken(
+        http().delete(ruta(`/dentists/${dentistId}/blocks/${creado.id}`)),
+        token,
+      );
+
+      expect(res.status).toBe(403);
+      expect(await prisma.unavailableBlock.count({ where: { id: creado.id } })).toBe(1);
+    });
+  });
+
+  describe('ids mal formados', () => {
+    // Los cuerpos son válidos: lo único que puede dar 400 es el id.
+    const bloque = { inicio: '2026-11-12T14:00:00.000Z', fin: '2026-11-12T15:00:00.000Z' };
+
+    it.each([
+      ['GET availability', 'get', '/dentists/no-es-uuid/availability', undefined],
+      ['PUT availability', 'put', '/dentists/no-es-uuid/availability', { horarios: [] }],
+      ['POST blocks', 'post', '/dentists/no-es-uuid/blocks', bloque],
+      [
+        'DELETE blocks, odontólogo',
+        'delete',
+        `/dentists/no-es-uuid/blocks/${ID_INEXISTENTE}`,
+        undefined,
+      ],
+      [
+        'DELETE blocks, bloque',
+        'delete',
+        `/dentists/${ID_INEXISTENTE}/blocks/no-es-uuid`,
+        undefined,
+      ],
+    ] as const)('responde 400 en %s', async (_caso, metodo, path, body) => {
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(http()[metodo](ruta(path)), token).send(body);
+
+      expect(res.status).toBe(400);
+    });
+  });
+
   describe('concurrencia', () => {
     it('un bloque espera a la reserva en curso y responde 409 si esa cita choca con él', async () => {
       const dentistId = await nuevoOdontologoId();
@@ -796,7 +947,7 @@ describe('Disponibilidad (integración)', () => {
         await tx.$queryRaw`SELECT id FROM "Dentist" WHERE id = ${dentistId} FOR UPDATE`;
         respuesta = conToken(http().post(ruta(`/dentists/${dentistId}/blocks`)), token)
           .send({ inicio: '2026-11-10T14:00:00.000Z', fin: '2026-11-10T15:00:00.000Z' })
-          .then((res) => res);
+          .then((res) => res); // supertest envía la petición recién al llamar a then.
         await new Promise((resolve) => setTimeout(resolve, 300));
         await tx.appointment.create({
           data: {

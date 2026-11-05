@@ -84,6 +84,7 @@ describe('AvailabilityService', () => {
       const resultado = await service.replaceHorarios('d1', [lunes]);
 
       expect(repository.replaceRules).toHaveBeenCalledWith('d1', [lunes]);
+      expect(repository.findByDentist).toHaveBeenCalledWith('d1', ahora);
       expect(resultado).toEqual(vista);
     });
 
