@@ -19,6 +19,7 @@ describe('assertFechaValida', () => {
     ['que no existe', '2026-02-30'],
     ['de un año no bisiesto', '2026-02-29'],
     ['con mes inválido', '2026-13-01'],
+    ['de un año fuera de rango', '9999-12-31'],
     ['con otro formato', '10/11/2026'],
     ['sin ceros a la izquierda', '2026-1-5'],
     ['con hora', '2026-11-10T10:00:00Z'],
