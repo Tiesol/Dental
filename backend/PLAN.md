@@ -8,7 +8,7 @@ Al terminar una tarea: marcarla como hecha en esta tabla y agregar `(hecho)` a s
 
 | Tarea | Qué entrega                                                 | Módulo         | Empezar después de | Estado    |
 | ----- | ----------------------------------------------------------- | -------------- | ------------------ | --------- |
-| T1    | Horarios de atención y bloques no disponibles (4 endpoints) | `availability` | —                  | Pendiente |
+| T1    | Horarios de atención y bloques no disponibles (4 endpoints) | `availability` | —                  | Hecho     |
 | T2    | Cálculo de horarios disponibles (1 endpoint)                | `availability` | T1                 | Pendiente |
 | T3    | Reservar y consultar citas (4 endpoints)                    | `appointments` | T2                 | Pendiente |
 | T4    | Reprogramar y cancelar (2 endpoints)                        | `appointments` | T3                 | Pendiente |
@@ -89,7 +89,7 @@ Rama `feat/horarios-y-bloques`. Ámbito de commits: `availability`. Crea `src/mo
 | `POST /dentists/:id/blocks`            | ADMIN       | `{ inicio, fin, motivo? }`                               | `201` `{ id, inicio, fin, motivo }` |
 | `DELETE /dentists/:id/blocks/:blockId` | ADMIN       | —                                                        | `204`                               |
 
-`horarios` son `{ id, diaSemana, minutoInicio, minutoFin }`, ordenados por día y hora. `bloques` son los que aún no terminan.
+`horarios` son `{ id, diaSemana, minutoInicio, minutoFin }`, ordenados por día y hora. `bloques` son los que aún no terminan, ordenados por inicio; `motivo` solo se devuelve al ADMIN.
 
 **Reglas**
 

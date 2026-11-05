@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { AppointmentStatus, PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
 // Factories para tests de integración: crean filas reales con valores por defecto sensatos.
@@ -63,4 +63,38 @@ export async function crearAdmin(
     },
   });
   return { ...user, password };
+}
+
+export async function crearServicio(
+  prisma: PrismaClient,
+  overrides: { nombre?: string; duracionMin?: number } = {},
+) {
+  return prisma.service.create({
+    data: {
+      nombre: overrides.nombre ?? `Servicio ${siguiente()}`,
+      descripcion: 'Servicio de prueba',
+      duracionMin: overrides.duracionMin ?? 30,
+    },
+  });
+}
+
+// Crea una cita directamente en la BD, con un paciente y un servicio nuevos.
+export async function crearCita(
+  prisma: PrismaClient,
+  datos: {
+    dentistId: string;
+    horaInicio: Date;
+    horaFin: Date;
+    estado?: AppointmentStatus;
+  },
+) {
+  const paciente = await crearPaciente(prisma);
+  const servicio = await crearServicio(prisma);
+  return prisma.appointment.create({
+    data: {
+      ...datos,
+      patientId: paciente.patient!.id,
+      serviceId: servicio.id,
+    },
+  });
 }
