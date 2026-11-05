@@ -153,17 +153,18 @@ describe('Estados y observación (integración)', () => {
       expect(await estadoEnBd(cita.id)).toBe(desde);
     });
 
-    it('una cita FINALIZADA no vuelve a PENDIENTE: el estado no se acepta en este endpoint', async () => {
+    it('una cita FINALIZADA no vuelve a PENDIENTE: responde 409 y no cambia', async () => {
       const { cita } = await escenario('FINALIZADA');
       const token = await tokenDeAdmin();
 
       const res = await cambiarEstado(cita.id, token, 'PENDIENTE');
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBe('TRANSICION_DE_ESTADO_INVALIDA');
       expect(await estadoEnBd(cita.id)).toBe('FINALIZADA');
     });
 
-    it.each(['CANCELADA', 'PENDIENTE', 'PERDIDA'])('responde 400 con estado %s', async (estado) => {
+    it.each(['CANCELADA', 'PERDIDA'])('responde 400 con estado %s', async (estado) => {
       const { cita } = await escenario();
       const token = await tokenDeAdmin();
 

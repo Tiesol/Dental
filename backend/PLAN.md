@@ -211,7 +211,7 @@ Rama `feat/estados-y-observacion`. Ámbitos: `appointments` y `observations`. Cr
 **Reglas**
 
 - La máquina de estados va en `appointments/domain/appointment-status.ts`, con la tabla de `ARQUITECTURA.md` sección 6 (D2).
-- `estado` acepta `CONFIRMADA`, `EN_ATENCION` o `FINALIZADA`. `CANCELADA` da `400`: se cancela con `/cancel`.
+- `estado` acepta `CONFIRMADA`, `EN_ATENCION` o `FINALIZADA`. `CANCELADA` da `400`: se cancela con `/cancel`. `PENDIENTE` llega a la máquina de estados y da `409`.
 - Transición inválida: `TransicionDeEstadoInvalidaError` (`409`). Rol correcto pero no es su cita: `403`.
 - Finalizar exige una observación registrada (`409` si no existe).
 - La observación solo se registra en `EN_ATENCION` (`409` en otro estado), con `texto` de 1 a 2000 caracteres (D5).

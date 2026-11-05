@@ -1,10 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsInt,
-  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -16,14 +16,14 @@ export class UpdateServiceDto {
   @ApiPropertyOptional({ example: 'Limpieza dental' })
   @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'El nombre no puede estar vacío' })
+  @Matches(/\S/, { message: 'El nombre no puede estar vacío' })
   @MaxLength(100, { message: 'El nombre admite hasta 100 caracteres' })
   nombre?: string;
 
   @ApiPropertyOptional({ example: 'Profilaxis y eliminación de sarro' })
   @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'La descripción no puede estar vacía' })
+  @Matches(/\S/, { message: 'La descripción no puede estar vacía' })
   @MaxLength(500, { message: 'La descripción admite hasta 500 caracteres' })
   descripcion?: string;
 
