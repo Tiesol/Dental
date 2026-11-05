@@ -4,7 +4,7 @@
 
 Monolito con backend **NestJS 11 + Prisma 6 + PostgreSQL 16** y frontend **React 19 + Vite + TypeScript**. Autenticación JWT con Passport y roles `PACIENTE`, `ODONTOLOGO`, `ADMIN`. Tests con Jest + Supertest (backend), Vitest + React Testing Library (frontend) y Playwright (E2E). El requerimiento del docente es el PDF `proyecto_final_taller_v_citas_dentales.pdf`.
 
-Estado actual: **Avance 1** (registro, login, JWT, roles, listado de usuarios para ADMIN) sobre la arquitectura definitiva del proyecto.
+Estado actual: **funcionalidad completa del PDF**: registro y login, roles, servicios, odontólogos, horarios y bloques, disponibilidad, reservas sin dobles reservas, reprogramación, cancelación, estados de la cita, agenda del odontólogo y observación, con tests unitarios, de integración y E2E.
 
 ```
 citas-dentales/
@@ -130,30 +130,45 @@ Ver `CONTRIBUTING.md`: ramas cortas desde `main`, commits en formato Conventiona
 
 Prefijo `/api/v1`. Errores con formato uniforme `{ statusCode, error, message, details? }`. Contrato completo previsto en `backend/ARQUITECTURA.md` sección 8.
 
-| Método | Ruta                     | Acceso      | Descripción                                        |
-| ------ | ------------------------ | ----------- | -------------------------------------------------- |
-| POST   | `/auth/register`         | Público     | Registra un paciente (nombre, apellido, email)     |
-| POST   | `/auth/login`            | Público     | Devuelve `{ accessToken, user }`                   |
-| GET    | `/auth/me`               | Autenticado | Usuario del token                                  |
-| GET    | `/users`                 | ADMIN       | Lista de usuarios con su perfil                    |
-| POST   | `/users`                 | ADMIN       | Crea un ODONTOLOGO o un ADMIN                      |
-| GET    | `/users/:id`             | ADMIN       | Detalle de un usuario                              |
-| PATCH  | `/users/:id`             | ADMIN       | Edita email y perfil (el rol no cambia)            |
-| PATCH  | `/users/:id/estado`      | ADMIN       | Habilita/deshabilita una cuenta (no la propia)     |
-| GET    | `/users/me`              | Autenticado | Mi perfil                                          |
-| PATCH  | `/users/me`              | Autenticado | Edito mi perfil                                    |
-| PATCH  | `/users/me/password`     | Autenticado | Cambio mi contraseña (verifica la actual)          |
-| GET    | `/services`              | Autenticado | Catálogo (no-ADMIN: solo habilitados)              |
-| GET    | `/services/:id`          | Autenticado | Detalle (deshabilitado: solo ADMIN)                |
-| POST   | `/services`              | ADMIN       | Crea un servicio                                   |
-| PATCH  | `/services/:id`          | ADMIN       | Edita nombre, descripción, duración o precio       |
-| PATCH  | `/services/:id/estado`   | ADMIN       | Habilita/deshabilita un servicio                   |
-| GET    | `/dentists?serviceId=`   | Autenticado | Odontólogos (no-ADMIN: solo los que aceptan citas) |
-| GET    | `/dentists/:id`          | Autenticado | Detalle (deshabilitado: solo ADMIN)                |
-| POST   | `/dentists`              | ADMIN       | Registra odontólogo: cuenta + perfil + servicios   |
-| PATCH  | `/dentists/:id`          | ADMIN       | Edita nombre y especialidad                        |
-| PATCH  | `/dentists/:id/estado`   | ADMIN       | Habilita/deshabilita al profesional                |
-| PUT    | `/dentists/:id/services` | ADMIN       | Reemplaza los servicios que realiza                |
+| Método | Ruta                                    | Acceso                             | Descripción                                            |
+| ------ | --------------------------------------- | ---------------------------------- | ------------------------------------------------------ |
+| POST   | `/auth/register`                        | Público                            | Registra un paciente (nombre, apellido, email)         |
+| POST   | `/auth/login`                           | Público                            | Devuelve `{ accessToken, user }`                       |
+| GET    | `/auth/me`                              | Autenticado                        | Usuario del token                                      |
+| GET    | `/users`                                | ADMIN                              | Lista de usuarios con su perfil                        |
+| POST   | `/users`                                | ADMIN                              | Crea un ODONTOLOGO o un ADMIN                          |
+| GET    | `/users/:id`                            | ADMIN                              | Detalle de un usuario                                  |
+| PATCH  | `/users/:id`                            | ADMIN                              | Edita email y perfil (el rol no cambia)                |
+| PATCH  | `/users/:id/estado`                     | ADMIN                              | Habilita/deshabilita una cuenta (no la propia)         |
+| GET    | `/users/me`                             | Autenticado                        | Mi perfil                                              |
+| PATCH  | `/users/me`                             | Autenticado                        | Edito mi perfil                                        |
+| PATCH  | `/users/me/password`                    | Autenticado                        | Cambio mi contraseña (verifica la actual)              |
+| GET    | `/services`                             | Autenticado                        | Catálogo (no-ADMIN: solo habilitados)                  |
+| GET    | `/services/:id`                         | Autenticado                        | Detalle (deshabilitado: solo ADMIN)                    |
+| POST   | `/services`                             | ADMIN                              | Crea un servicio                                       |
+| PATCH  | `/services/:id`                         | ADMIN                              | Edita nombre, descripción, duración o precio           |
+| PATCH  | `/services/:id/estado`                  | ADMIN                              | Habilita/deshabilita un servicio                       |
+| GET    | `/dentists?serviceId=`                  | Autenticado                        | Odontólogos (no-ADMIN: solo los que aceptan citas)     |
+| GET    | `/dentists/:id`                         | Autenticado                        | Detalle (deshabilitado: solo ADMIN)                    |
+| POST   | `/dentists`                             | ADMIN                              | Registra odontólogo: cuenta + perfil + servicios       |
+| PATCH  | `/dentists/:id`                         | ADMIN                              | Edita nombre y especialidad                            |
+| PATCH  | `/dentists/:id/estado`                  | ADMIN                              | Habilita/deshabilita al profesional                    |
+| PUT    | `/dentists/:id/services`                | ADMIN                              | Reemplaza los servicios que realiza                    |
+| GET    | `/dentists/:id/availability`            | Autenticado                        | Horarios y bloques vigentes (`motivo` solo para ADMIN) |
+| PUT    | `/dentists/:id/availability`            | ADMIN                              | Reemplaza todos los horarios                           |
+| POST   | `/dentists/:id/blocks`                  | ADMIN                              | Crea un bloque no disponible                           |
+| DELETE | `/dentists/:id/blocks/:blockId`         | ADMIN                              | Borra un bloque                                        |
+| GET    | `/dentists/:id/slots?serviceId=&fecha=` | Autenticado                        | Horarios disponibles de un día                         |
+| POST   | `/appointments`                         | PACIENTE                           | Reserva una cita                                       |
+| GET    | `/appointments/mine?cuando=`            | PACIENTE                           | Mis citas: próximas o historial                        |
+| GET    | `/appointments`                         | ADMIN                              | Todas las citas, con filtros y paginación              |
+| GET    | `/appointments/:id`                     | Dueño, odontólogo asignado o ADMIN | Detalle (ajena: `403`)                                 |
+| PATCH  | `/appointments/:id/reschedule`          | Dueño o ADMIN                      | Reprograma; si falla, la cita no cambia                |
+| PATCH  | `/appointments/:id/cancel`              | Dueño o ADMIN                      | Cancela y libera el horario                            |
+| PATCH  | `/appointments/:id/status`              | ADMIN u ODONTOLOGO                 | Cambia el estado según la transición                   |
+| POST   | `/appointments/:id/observation`         | Odontólogo asignado                | Registra la observación                                |
+| GET    | `/dentists/me/agenda?fecha=`            | ODONTOLOGO                         | Mis citas de un día, hoy por defecto                   |
+| GET    | `/dentists/me/agenda/upcoming?limit=`   | ODONTOLOGO                         | Mis próximas citas                                     |
 
 `POST /auth/login` y `POST /auth/register` admiten 10 intentos por minuto e IP (`AUTH_THROTTLE_LIMIT`); al pasarse responden `429`.
 
@@ -206,3 +221,5 @@ No están en el PDF ni fueron confirmadas explícitamente; se eligió la opción
 21. **Moneda**: los precios se muestran en bolivianos (`Bs`), deducido de los teléfonos `+591` del proyecto; se cambia en `frontend/src/shared/lib/formato.ts`.
 22. **Odontólogos**: acepta nuevas citas solo si está habilitado como profesional (`Dentist.activo`) **y** su cuenta también (`User.activo`); si no, desaparece para pacientes (su detalle responde `404`) pero conserva su historial. `POST /dentists` crea cuenta, perfil y servicios en una sola operación atómica; `POST /users` con rol ODONTOLOGO sigue existiendo, pero sin servicios. Se pueden asignar servicios deshabilitados (el paciente no los ve hasta que se habiliten). El seed agrega a la Dra. Laura Gómez y al Dr. Carlos Rojas (`ortodoncista@clinica.com` / `Odontologo12345`) con sus servicios.
 23. **Horarios y bloques**: `PUT /dentists/:id/availability` admite hasta 100 tramos y, con la lista vacía, deja al odontólogo sin horarios. Los bloques vigentes se devuelven ordenados por inicio, y su `motivo` solo lo ve el ADMIN: es texto libre sobre la ausencia de un odontólogo y el registro de pacientes es público. Se permiten bloques que ya empezaron y bloques que se solapan entre sí. Cualquier cita que no esté `CANCELADA`, incluso `FINALIZADA`, impide bloquear su horario. El `motivo` admite hasta 200 caracteres y las fechas deben indicar su zona horaria (`Z` o `-04:00`). Crear un bloque y reemplazar horarios toman el mismo bloqueo del odontólogo que las reservas, para no cruzarse con una reserva en curso.
+24. **Citas (T3 a T6)**: `GET /appointments` va de la más reciente a la más antigua y filtra por el inicio de la cita. `limit` por encima de 100 responde `400`. Una transición que existe pero que el rol no puede hacer responde `403`; una que no existe, `409`. Las fechas con año fuera de 1000 a 2999 se rechazan. `upcoming` no incluye una cita que ya empezó aunque siga `EN_ATENCION`; sí aparece en la agenda del día.
+25. **Pantallas (F1 a F5)**: el listado de Mis citas se entregó con la reserva porque el E2E 01 termina verificando la cita ahí. Al reprogramar, la lista de horarios sale de `/slots`, que no excluye la propia cita: el backend acepta mover una cita a un horario que se cruza con el suyo, pero la pantalla no lo ofrece. Los datos del servidor usan hooks simples (`useCarga`), sin TanStack Query.
