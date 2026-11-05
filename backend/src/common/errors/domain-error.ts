@@ -137,6 +137,30 @@ export class CitaNoModificableError extends DomainError {
   }
 }
 
+export class TransicionDeEstadoInvalidaError extends DomainError {
+  constructor(desde: string, hacia: string) {
+    super(409, 'TRANSICION_DE_ESTADO_INVALIDA', `Una cita ${desde} no puede pasar a ${hacia}`);
+  }
+}
+
+export class ObservacionRequeridaError extends DomainError {
+  constructor() {
+    super(409, 'OBSERVACION_REQUERIDA', 'Registra la observación antes de finalizar la cita');
+  }
+}
+
+export class CitaNoEnAtencionError extends DomainError {
+  constructor() {
+    super(409, 'CITA_NO_EN_ATENCION', 'La observación se registra durante la atención');
+  }
+}
+
+export class ObservacionYaRegistradaError extends DomainError {
+  constructor() {
+    super(409, 'OBSERVACION_YA_REGISTRADA', 'Esta cita ya tiene una observación registrada');
+  }
+}
+
 // ---- Gestión de usuarios ----
 
 export class OperacionSobrePropiaCuentaError extends DomainError {

@@ -11,6 +11,7 @@ import { AvailabilityModule } from './modules/availability/availability.module';
 import { DentistsModule } from './modules/dentists/dentists.module';
 import { ServicesModule } from './modules/services/services.module';
 import { UsersModule } from './modules/users/users.module';
+import { ObservationsModule } from './modules/observations/observations.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -34,6 +35,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DentistsModule,
     AvailabilityModule,
     AppointmentsModule,
+    ObservationsModule,
   ],
   providers: [
     // Guards globales: primero autenticación, luego autorización por rol.
