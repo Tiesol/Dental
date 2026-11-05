@@ -92,6 +92,12 @@ export class AvailabilityService {
     });
   }
 
+  // Rango de un día de la clínica, para filtrar por fecha. Valida que la fecha exista.
+  rangoDeFecha(fecha: string): Intervalo {
+    assertFechaValida(fecha);
+    return rangoDelDia(fecha, this.zonaClinica());
+  }
+
   // Día de la clínica al que pertenece un instante (ej.: la hora de inicio de una reserva).
   fechaClinica(instante: Date): string {
     return fechaEnZona(instante, this.zonaClinica());

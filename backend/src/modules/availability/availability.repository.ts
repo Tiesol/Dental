@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { lockDentist } from '../../prisma/dentist-lock';
 import { PrismaService, Tx } from '../../prisma/prisma.service';
 import { Intervalo } from '../appointments/domain/overlap';
 import {
@@ -122,11 +123,4 @@ export class AvailabilityRepository {
     });
     return count > 0;
   }
-}
-
-// El mismo bloqueo que serializa las reservas de un odontólogo (ARQUITECTURA.md sección 5): sin él,
-// un bloque podría crearse mientras se confirma una cita que choca con él, y dos PUT simultáneos
-// terminarían en deadlock o violando availability_no_overlap.
-async function lockDentist(tx: Prisma.TransactionClient, dentistId: string): Promise<void> {
-  await tx.$queryRaw`SELECT id FROM "Dentist" WHERE id = ${dentistId} FOR UPDATE`;
 }

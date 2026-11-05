@@ -5,6 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { validateEnv } from './config/env.validation';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AvailabilityModule } from './modules/availability/availability.module';
 import { DentistsModule } from './modules/dentists/dentists.module';
@@ -32,6 +33,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ServicesModule,
     DentistsModule,
     AvailabilityModule,
+    AppointmentsModule,
   ],
   providers: [
     // Guards globales: primero autenticación, luego autorización por rol.
