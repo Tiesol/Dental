@@ -34,5 +34,6 @@ test('E2E 05 - un paciente no puede entrar a la agenda', async ({ page }) => {
 
   await page.goto('/agenda');
 
+  await expect(page.getByRole('heading', { name: 'Acceso denegado' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Agenda' })).toHaveCount(0);
 });
