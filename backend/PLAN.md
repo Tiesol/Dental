@@ -12,7 +12,7 @@ Al terminar una tarea: marcarla como hecha en esta tabla y agregar `(hecho)` a s
 | T2    | Cálculo de horarios disponibles (1 endpoint)                | `availability` | T1                 | Hecho     |
 | T3    | Reservar y consultar citas (4 endpoints)                    | `appointments` | T2                 | Hecho     |
 | T4    | Reprogramar y cancelar (2 endpoints)                        | `appointments` | T3                 | Hecho     |
-| T5    | Estados de la cita y observación (2 endpoints)              | `observations` | T3                 | Pendiente |
+| T5    | Estados de la cita y observación (2 endpoints)              | `observations` | T3                 | Hecho     |
 | T6    | Agenda del odontólogo (2 endpoints)                         | `appointments` | T3                 | Pendiente |
 | T7    | Tests pendientes de lo ya construido                        | varios         | —                  | Pendiente |
 | T8    | Entorno para los E2E: seed, reloj fijo, Playwright y CI     | `e2e`          | T3                 | Pendiente |
