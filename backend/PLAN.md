@@ -18,7 +18,7 @@ Al terminar una tarea: marcarla como hecha en esta tabla y agregar `(hecho)` a s
 | T8    | Entorno para los E2E: seed, reloj fijo, Playwright y CI     | `e2e`          | T3                 | Hecho     |
 | F1    | Pantalla de horarios y bloques (ADMIN)                      | frontend       | T1                 | Hecho     |
 | F2    | Reserva, con E2E 01 y 02                                    | frontend       | T3, T8             | Hecho     |
-| F3    | Mis citas, con E2E 03, 04, 06 y 07                          | frontend       | T4, T8, F2         | Pendiente |
+| F3    | Mis citas, con E2E 03, 04, 06 y 07                          | frontend       | T4, T8, F2         | Hecho     |
 | F4    | Agenda del odontólogo, con E2E 05                           | frontend       | T5, T6, T8         | Pendiente |
 | F5    | Todas las citas (ADMIN)                                     | frontend       | T4, T5             | Pendiente |
 
