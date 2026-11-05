@@ -1,4 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { PageHeader } from '@/shared/components/PageHeader';
 import { FormularioServicio } from '../components/FormularioServicio';
 import { useCrearServicio } from '../hooks/useCrearServicio';
 
@@ -7,17 +8,20 @@ export function NuevoServicioPage() {
   const crear = useCrearServicio();
 
   return (
-    <FormularioServicio
-      titulo="Nuevo servicio"
-      textoBoton="Crear servicio"
-      textoBotonEnviando="Creando…"
-      conEstado
-      onSubmit={async (datos) => {
-        await crear(datos);
-        navigate('/admin/servicios');
-      }}
-    >
-      <Link to="/admin/servicios">Volver al listado</Link>
-    </FormularioServicio>
+    <div className="page page-narrow">
+      <PageHeader
+        title="Nuevo servicio"
+        back={{ to: '/admin/servicios', label: 'Volver al listado' }}
+      />
+      <FormularioServicio
+        textoBoton="Crear servicio"
+        textoBotonEnviando="Creando…"
+        conEstado
+        onSubmit={async (datos) => {
+          await crear(datos);
+          navigate('/admin/servicios');
+        }}
+      />
+    </div>
   );
 }
