@@ -622,6 +622,60 @@ button.danger:hover:not(:disabled) {
   gap: var(--space-3);
 }
 
+/* ---- Reserva y horarios ---- */
+
+.eleccion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.selector-horario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slots button {
+  width: 100%;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+}
+
+button.tab {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+button.tab:hover:not(:disabled) {
+  background: var(--surface-sunken);
+}
+
+button.tab-active,
+button.tab-active:hover:not(:disabled) {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
 /* ---- Tramos de horario ---- */
 
 .tramo {

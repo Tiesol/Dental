@@ -14,6 +14,8 @@ const NAV_POR_ROL: Record<Role, NavItem[]> = {
     CUENTA,
     { to: '/servicios', label: 'Servicios', icon: 'list' },
     { to: '/odontologos', label: 'Odontólogos', icon: 'tooth' },
+    { to: '/reservar', label: 'Reservar cita', icon: 'plus' },
+    { to: '/mis-citas', label: 'Mis citas', icon: 'calendar' },
   ],
   ODONTOLOGO: [CUENTA],
   ADMIN: [

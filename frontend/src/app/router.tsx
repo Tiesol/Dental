@@ -3,6 +3,7 @@ import type { Role } from '@/api/types';
 import { EditarUsuarioPage, NuevoUsuarioPage, UsuariosPage } from '@/features/admin-usuarios';
 import { LoginPage, RegistroPage, RequireRole } from '@/features/auth';
 import { MiCuentaPage } from '@/features/cuenta';
+import { MisCitasPage } from '@/features/mis-citas';
 import {
   AdminOdontologosPage,
   EditarOdontologoPage,
@@ -10,6 +11,7 @@ import {
   NuevoOdontologoPage,
   OdontologosPage,
 } from '@/features/odontologos';
+import { ReservaPage } from '@/features/reserva';
 import {
   AdminServiciosPage,
   CatalogoServiciosPage,
@@ -44,6 +46,8 @@ export function AppRoutes() {
           <Route element={<Protegidas roles={['PACIENTE']} />}>
             <Route path="/servicios" element={<CatalogoServiciosPage />} />
             <Route path="/odontologos" element={<OdontologosPage />} />
+            <Route path="/reservar" element={<ReservaPage />} />
+            <Route path="/mis-citas" element={<MisCitasPage />} />
           </Route>
 
           <Route element={<Protegidas roles={['ADMIN']} />}>
