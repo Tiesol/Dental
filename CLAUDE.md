@@ -7,6 +7,8 @@ Proyecto final de Taller de Actualización V. Monolito: `backend/` (NestJS 11 + 
 - Backend: `backend/CLAUDE.md` → `backend/ARQUITECTURA.md` → `backend/CONVENCIONES.md`.
 - Frontend: `frontend/CLAUDE.md` → `frontend/ARQUITECTURA.md` → `frontend/CONVENCIONES.md`.
 - Decisiones y pendientes del proyecto: `README.md` (sección "Decisiones").
+- Qué falta construir en el backend, por tareas y endpoints: `backend/PLAN.md`.
+- Paleta de colores y reglas visuales del frontend: `frontend/DISENO.md`.
 
 ## Arquitectura (resumen)
 

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { useAuth } from '../useAuth';
 
 type Form = { nombre: string; apellido: string; telefono: string; email: string; password: string };
@@ -43,26 +44,31 @@ export function RegistroPage() {
   };
 
   return (
-    <form className="card" onSubmit={onSubmit}>
-      <h1>Crear cuenta de paciente</h1>
-      <label>
-        Nombre
-        <input
-          value={form.nombre}
-          onChange={(e) => update('nombre')(e.target.value)}
-          required
-          autoComplete="given-name"
-        />
-      </label>
-      <label>
-        Apellido
-        <input
-          value={form.apellido}
-          onChange={(e) => update('apellido')(e.target.value)}
-          required
-          autoComplete="family-name"
-        />
-      </label>
+    <form className="auth-form" onSubmit={onSubmit}>
+      <div className="page-header-text">
+        <h1>Crear cuenta de paciente</h1>
+        <p className="muted">Todos los campos son obligatorios, salvo el teléfono.</p>
+      </div>
+      <div className="form-row">
+        <label>
+          Nombre
+          <input
+            value={form.nombre}
+            onChange={(e) => update('nombre')(e.target.value)}
+            required
+            autoComplete="given-name"
+          />
+        </label>
+        <label>
+          Apellido
+          <input
+            value={form.apellido}
+            onChange={(e) => update('apellido')(e.target.value)}
+            required
+            autoComplete="family-name"
+          />
+        </label>
+      </div>
       <label>
         Teléfono (opcional)
         <input
@@ -94,11 +100,7 @@ export function RegistroPage() {
         />
         <small className="muted">Mínimo 8 caracteres</small>
       </label>
-      {error && (
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {error}
-        </p>
-      )}
+      {error && <ErrorMessage>{error}</ErrorMessage>}
       <button type="submit" disabled={sending} data-testid="btn-registrar">
         {sending ? 'Creando…' : 'Crear cuenta'}
       </button>

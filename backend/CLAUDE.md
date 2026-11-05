@@ -7,6 +7,7 @@ Antes de escribir código lee, en este orden:
 1. `ARQUITECTURA.md` — capas, estructura de carpetas, modelo de datos, estrategia de concurrencia, estados de la cita, seguridad.
 2. `CONVENCIONES.md` — idioma, nombres, errores, Prisma, tests, git.
 3. Skill `reglas-de-negocio-citas` — las reglas del PDF del docente, que son el criterio de evaluación.
+4. `PLAN.md` — lo que falta construir, por tareas y endpoints, para trabajar cada una por separado.
 
 Skills en `.claude/skills/`: `reglas-de-negocio-citas` (fuente de verdad), `ciclo-tdd` (RED/GREEN/REFACTOR, bugs, Definition of Done), `crear-modulo-nest`, `test-unitario-reglas`, `test-integracion-api`, `prisma-migraciones`.
 Agentes en `.claude/agents/`: `revisor-reglas-negocio`, `revisor-tests-backend`, `auditor-seguridad-roles`, `revisor-codigo`.

@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { useCambiarPassword } from '../hooks/useCambiarPassword';
 
 const VACIO = { passwordActual: '', passwordNueva: '', confirmacion: '' };
@@ -72,19 +74,13 @@ export function FormularioPassword() {
           autoComplete="new-password"
         />
       </label>
-      {error && (
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {error}
-        </p>
-      )}
-      {exito && (
-        <p className="success" role="status">
-          {exito}
-        </p>
-      )}
-      <button type="submit" disabled={enviando} data-testid="btn-cambiar-password">
-        {enviando ? 'Guardando…' : 'Cambiar contraseña'}
-      </button>
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+      {exito && <SuccessMessage>{exito}</SuccessMessage>}
+      <div className="form-actions">
+        <button type="submit" disabled={enviando} data-testid="btn-cambiar-password">
+          {enviando ? 'Guardando…' : 'Cambiar contraseña'}
+        </button>
+      </div>
     </form>
   );
 }

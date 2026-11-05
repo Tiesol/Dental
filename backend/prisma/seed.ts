@@ -5,6 +5,17 @@ import { hash } from 'bcryptjs';
 // Los pacientes se registran desde el frontend o con POST /api/v1/auth/register.
 const prisma = new PrismaClient();
 
+const tramo = (desde: number, hasta: number): [number, number] => [desde * 60, hasta * 60];
+
+function proximoViernesUtc(horaUtc: number): Date {
+  const fecha = new Date();
+  const VIERNES = 5;
+  const diasHastaViernes = (VIERNES - fecha.getUTCDay() + 7) % 7 || 7;
+  fecha.setUTCDate(fecha.getUTCDate() + diasHastaViernes);
+  fecha.setUTCHours(horaUtc, 0, 0, 0);
+  return fecha;
+}
+
 async function main() {
   const admin = await prisma.user.upsert({
     where: { email: 'admin@clinica.com' },
@@ -99,8 +110,44 @@ async function main() {
     }
   }
 
+  // Horarios de atención en minutos desde las 00:00 en la zona de la clínica (PDF sección 5).
+  const LUNES_A_VIERNES = [1, 2, 3, 4, 5];
+  const horarios: Record<string, { dias: number[]; tramos: [number, number][] }> = {
+    [odontologo.id]: { dias: LUNES_A_VIERNES, tramos: [tramo(8, 12), tramo(14, 18)] },
+    [ortodoncista.id]: { dias: [1, 3, 5], tramos: [tramo(9, 13), tramo(15, 19)] },
+  };
+  for (const [userId, { dias, tramos }] of Object.entries(horarios)) {
+    const dentist = await prisma.dentist.findUniqueOrThrow({ where: { userId } });
+    if ((await prisma.availabilityRule.count({ where: { dentistId: dentist.id } })) > 0) continue;
+    await prisma.availabilityRule.createMany({
+      data: dias.flatMap((diaSemana) =>
+        tramos.map(([minutoInicio, minutoFin]) => ({
+          dentistId: dentist.id,
+          diaSemana,
+          minutoInicio,
+          minutoFin,
+        })),
+      ),
+    });
+  }
+
+  // Un bloque no disponible de ejemplo: el próximo viernes de 10:00 a 11:00 (La Paz, UTC-4).
+  const laura = await prisma.dentist.findUniqueOrThrow({ where: { userId: odontologo.id } });
+  if ((await prisma.unavailableBlock.count({ where: { dentistId: laura.id } })) === 0) {
+    const inicio = proximoViernesUtc(14);
+    await prisma.unavailableBlock.create({
+      data: {
+        dentistId: laura.id,
+        inicio,
+        fin: new Date(inicio.getTime() + 60 * 60 * 1000),
+        motivo: 'Reunión de equipo',
+      },
+    });
+  }
+
   console.log(
-    `Seed listo: ${admin.email}, ${odontologo.email}, ${ortodoncista.email} y ${servicios.length} servicios`,
+    `Seed listo: ${admin.email}, ${odontologo.email}, ${ortodoncista.email}, ` +
+      `${servicios.length} servicios y horarios de atención`,
   );
 }
 

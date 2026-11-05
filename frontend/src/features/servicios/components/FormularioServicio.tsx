@@ -1,18 +1,18 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent } from 'react';
 import type { CreateServiceRequest, ServiceResponse } from '@/api/types';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { MONEDA } from '@/shared/lib/formato';
 
 export type DatosServicio = Required<Omit<CreateServiceRequest, 'activo'>> & { activo: boolean };
 
 type Props = {
-  titulo: string;
   inicial?: ServiceResponse;
   textoBoton: string;
   textoBotonEnviando: string;
   // El estado solo se elige al crear; al editar se cambia con su propio botón.
   conEstado: boolean;
   onSubmit: (datos: DatosServicio) => Promise<void>;
-  children?: ReactNode;
 };
 
 // Valida en cliente con las mismas reglas que el backend (que vuelve a validar todo).
@@ -30,13 +30,11 @@ function validar(duracion: string, precio: string): string | null {
 }
 
 export function FormularioServicio({
-  titulo,
   inicial,
   textoBoton,
   textoBotonEnviando,
   conEstado,
   onSubmit,
-  children,
 }: Props) {
   const [form, setForm] = useState({
     nombre: inicial?.nombre ?? '',
@@ -82,7 +80,6 @@ export function FormularioServicio({
 
   return (
     <form className="card" onSubmit={handleSubmit}>
-      <h1>{titulo}</h1>
       <label>
         Nombre
         <input
@@ -103,31 +100,33 @@ export function FormularioServicio({
           rows={3}
         />
       </label>
-      <label>
-        Duración estimada (minutos)
-        <input
-          type="number"
-          inputMode="numeric"
-          value={form.duracionMin}
-          onChange={(e) => update('duracionMin')(e.target.value)}
-          required
-          min={1}
-          max={480}
-          step={1}
-        />
-      </label>
-      <label>
-        Precio referencial en {MONEDA} (opcional)
-        <input
-          type="number"
-          inputMode="decimal"
-          value={form.precioReferencial}
-          onChange={(e) => update('precioReferencial')(e.target.value)}
-          min={0}
-          step={0.01}
-          placeholder="Sin precio"
-        />
-      </label>
+      <div className="form-row">
+        <label>
+          Duración estimada (minutos)
+          <input
+            type="number"
+            inputMode="numeric"
+            value={form.duracionMin}
+            onChange={(e) => update('duracionMin')(e.target.value)}
+            required
+            min={1}
+            max={480}
+            step={1}
+          />
+        </label>
+        <label>
+          Precio referencial en {MONEDA} (opcional)
+          <input
+            type="number"
+            inputMode="decimal"
+            value={form.precioReferencial}
+            onChange={(e) => update('precioReferencial')(e.target.value)}
+            min={0}
+            step={0.01}
+            placeholder="Sin precio"
+          />
+        </label>
+      </div>
       {conEstado && (
         <label className="checkbox">
           <input
@@ -138,20 +137,13 @@ export function FormularioServicio({
           Habilitado para nuevas reservas
         </label>
       )}
-      {error && (
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {error}
-        </p>
-      )}
-      {exito && (
-        <p className="success" role="status">
-          {exito}
-        </p>
-      )}
-      <button type="submit" disabled={enviando} data-testid="btn-guardar-servicio">
-        {enviando ? textoBotonEnviando : textoBoton}
-      </button>
-      {children}
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+      {exito && <SuccessMessage>{exito}</SuccessMessage>}
+      <div className="form-actions">
+        <button type="submit" disabled={enviando} data-testid="btn-guardar-servicio">
+          {enviando ? textoBotonEnviando : textoBoton}
+        </button>
+      </div>
     </form>
   );
 }

@@ -1,4 +1,5 @@
 import type { ServiceResponse } from '@/api/types';
+import { ActiveBadge } from '@/shared/components/ActiveBadge';
 import { formatearDuracion } from '@/shared/lib/formato';
 
 type Props = {
@@ -26,7 +27,7 @@ export function SelectorServicios({ servicios, seleccionados, onChange, disabled
           />
           <span>
             {s.nombre} <span className="muted">· {formatearDuracion(s.duracionMin)}</span>
-            {!s.activo && <span className="badge off">Deshabilitado</span>}
+            {!s.activo && <ActiveBadge active={false} />}
           </span>
         </label>
       ))}

@@ -7,6 +7,7 @@ Antes de escribir código lee, en este orden:
 1. `ARQUITECTURA.md` — capas, estructura por features, rutas y roles, auth en cliente, caché de datos, estados de la cita en la UI, estrategia de testing.
 2. `CONVENCIONES.md` — idioma, nombres, React, estilos, tests, `data-testid`, git.
 3. Skill `reglas-de-negocio-citas` — qué debe reflejar la interfaz según el PDF del docente.
+4. `DISENO.md` — paleta de colores, tipografía, componentes y reglas visuales. Obligatorio antes de tocar una pantalla.
 
 Skills en `.claude/skills/`: `reglas-de-negocio-citas`, `ciclo-tdd` (RED/GREEN/REFACTOR, bugs, Definition of Done), `crear-feature`, `consumo-api`, `test-componente`, `e2e-playwright`.
 Agentes en `.claude/agents/`: `revisor-flujos-ui`, `revisor-tests-frontend`, `revisor-accesibilidad-ux`, `revisor-codigo`.

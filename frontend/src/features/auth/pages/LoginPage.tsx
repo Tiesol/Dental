@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { useAuth } from '../useAuth';
 
 export function LoginPage() {
@@ -27,10 +28,13 @@ export function LoginPage() {
   };
 
   return (
-    <form className="card" onSubmit={onSubmit}>
-      <h1>Iniciar sesión</h1>
+    <form className="auth-form" onSubmit={onSubmit}>
+      <div className="page-header-text">
+        <h1>Iniciar sesión</h1>
+        <p className="muted">Ingresa con el email y la contraseña de tu cuenta.</p>
+      </div>
       {sesionExpirada && (
-        <p className="muted" role="status">
+        <p className="message message-info" role="status">
           Tu sesión expiró o tu cuenta fue deshabilitada. Vuelve a iniciar sesión.
         </p>
       )}
@@ -54,11 +58,7 @@ export function LoginPage() {
           autoComplete="current-password"
         />
       </label>
-      {error && (
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {error}
-        </p>
-      )}
+      {error && <ErrorMessage>{error}</ErrorMessage>}
       <button type="submit" disabled={sending} data-testid="btn-login">
         {sending ? 'Ingresando…' : 'Ingresar'}
       </button>

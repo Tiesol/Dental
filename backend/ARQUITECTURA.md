@@ -107,6 +107,20 @@ Entidades mínimas exigidas por el PDF (sección 11, "Persistencia"): usuarios, 
 
 Es exactamente lo que hay en `prisma/schema.prisma`:
 
+```mermaid
+erDiagram
+    User ||--o| Patient : "es"
+    User ||--o| Dentist : "es"
+    Patient ||--o{ Appointment : "reserva"
+    Dentist ||--o{ Appointment : "atiende"
+    Service ||--o{ Appointment : "se presta en"
+    Dentist ||--o{ DentistService : "realiza"
+    Service ||--o{ DentistService : "lo realizan"
+    Dentist ||--o{ AvailabilityRule : "atiende en"
+    Dentist ||--o{ UnavailableBlock : "no atiende en"
+    Appointment ||--o| Observation : "registra"
+```
+
 | Modelo             | Campos clave                                                                                   | Notas                                                                                                                   |
 | ------------------ | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `User`             | id, email (único), passwordHash, role (`PACIENTE` / `ODONTOLOGO` / `ADMIN`), activo, createdAt | Usuario base para login. `activo = false` impide iniciar sesión.                                                        |
@@ -122,9 +136,25 @@ Es exactamente lo que hay en `prisma/schema.prisma`:
 Decisiones de modelado:
 
 - Identificadores técnicos en inglés (`id`, `userId`, `createdAt`, nombres de modelos); atributos de negocio con el nombre del PDF en español (`nombre`, `especialidad`, `duracionMin`, `horaInicio`, `estado`, `activo`). Ver `CONVENCIONES.md` sección 1.
-- `horaInicio` y `horaFin` se guardan como `timestamptz` en **UTC**. La zona horaria de la clínica se configura por variable de entorno (`CLINIC_TIMEZONE`, pendiente de definir) y se usa para convertir los horarios de atención (minutos de reloj) a instantes reales.
+- `horaInicio` y `horaFin` se guardan como `timestamptz` en **UTC**. La zona horaria de la clínica se configura por variable de entorno (`CLINIC_TIMEZONE`, `America/La_Paz` por defecto) y se usa para convertir los horarios de atención (minutos de reloj) a instantes reales.
 - Intervalos semiabiertos `[horaInicio, horaFin)`: una cita que termina a las 10:00 y otra que empieza a las 10:00 **no** se solapan (regla "permitir citas consecutivas").
 - Una cita `CANCELADA` no bloquea horario. El constraint de exclusión y la consulta de solapamiento excluyen ese estado.
+- Horario partido: dos filas de `AvailabilityRule` (08:00-12:00 y 14:00-18:00), no un campo de pausa. Las pausas puntuales son `UnavailableBlock`.
+- Sin borrado en cascada: todas las claves foráneas son `RESTRICT`, para conservar el historial. Odontólogos y servicios se deshabilitan con `activo`, no se borran.
+- Reprogramar actualiza la misma fila de `Appointment`. Como el constraint se evalúa en ese `UPDATE`, si el horario nuevo está ocupado la cita conserva el anterior (PDF sección 8).
+
+Restricciones en PostgreSQL (SQL manual en las migraciones, protegidas por `test/integration/esquema.int-spec.ts`):
+
+| Constraint                                                | Regla                                                                         |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `appointment_no_overlap`                                  | Dos citas no `CANCELADA` del mismo odontólogo no se solapan.                  |
+| `appointment_rango_valido`                                | `horaInicio < horaFin`.                                                       |
+| `service_duracion_positiva`, `service_precio_no_negativo` | `duracionMin > 0`; `precioReferencial >= 0` si existe.                        |
+| `availability_dia_valido`, `availability_minutos_validos` | `diaSemana` de 0 a 6; minutos entre 0 y 1440, con `minutoInicio < minutoFin`. |
+| `availability_no_overlap`                                 | Dos tramos del mismo odontólogo y día no se solapan.                          |
+| `unavailable_block_rango_valido`                          | `inicio < fin`.                                                               |
+
+Se validan solo en la aplicación, a propósito: que el odontólogo realice el servicio (quitarle un servicio no debe invalidar sus citas históricas), que odontólogo y servicio estén habilitados al reservar (deshabilitarlos no debe afectar citas ya creadas), las transiciones de estado y que el rol de `User` coincida con su perfil.
 
 ---
 
@@ -176,7 +206,7 @@ PENDIENTE ──> CONFIRMADA ──> EN_ATENCION ──> FINALIZADA
 
 Todo lo demás es inválido y devuelve `409 Conflict`. En particular: FINALIZADA no se cancela ni vuelve a PENDIENTE; CANCELADA es terminal. Reprogramar solo se permite desde PENDIENTE o CONFIRMADA.
 
-> **Pendiente de confirmar con el usuario:** (a) si EN_ATENCION → CANCELADA debe permitirse para el ADMIN (por defecto **no**); (b) si el ODONTOLOGO puede confirmar sus propias citas PENDIENTE (por defecto solo ADMIN, porque el PDF asigna "confirmar o cancelar citas" al administrador).
+> **Confirmado:** EN_ATENCION → CANCELADA no se permite, tampoco para el ADMIN. **Pendiente de confirmar:** si el ODONTOLOGO puede confirmar sus propias citas PENDIENTE (por defecto solo ADMIN, porque el PDF asigna "confirmar o cancelar citas" al administrador).
 
 La máquina de estados es una tabla en `domain/appointment-status.ts` y se prueba unitariamente con todos los casos positivos y negativos.
 
@@ -214,7 +244,7 @@ Prefijo `/api/v1`. Respuestas JSON. Errores con formato uniforme `{ statusCode, 
 | Agenda            | `GET /dentists/me/agenda?fecha=`, `GET /dentists/me/agenda/upcoming`                                                                                                                                                                                            | ODONTOLOGO                                                              |
 | Observations      | `POST /appointments/:id/observation`                                                                                                                                                                                                                            | ODONTOLOGO dueño                                                        |
 
-Los detalles (DTOs, códigos de error por caso) se definen al implementar cada módulo, siguiendo `CONVENCIONES.md`.
+El detalle de lo que falta (cuerpos, respuestas, errores y tests de cada endpoint) está en `PLAN.md`.
 
 ---
 
@@ -248,8 +278,8 @@ DATABASE_URL=postgresql://dental:...@localhost:5433/dental_test
 JWT_SECRET=
 JWT_EXPIRES_IN=1h
 
-# pendiente de definir con el usuario, se agregará cuando se implemente availability:
-CLINIC_TIMEZONE=
+# Zona horaria de la clínica (IANA), usada para interpretar los horarios de atención:
+CLINIC_TIMEZONE=America/La_Paz
 ```
 
 El `compose.yml` de la raíz levanta las dos bases (desarrollo en 5434, test en 5433 sobre `tmpfs`) con un solo comando, de modo que el docente pueda ejecutar toda la suite.

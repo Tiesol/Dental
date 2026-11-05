@@ -1,23 +1,29 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { ActiveBadge } from '@/shared/components/ActiveBadge';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { LoadingState } from '@/shared/components/LoadingState';
+import { PageHeader } from '@/shared/components/PageHeader';
+import { useConfirm } from '@/shared/hooks/useConfirm';
 import { FormularioServicio } from '../components/FormularioServicio';
 import { useServicio } from '../hooks/useServicio';
+
+const VOLVER = { to: '/admin/servicios', label: 'Volver al listado' };
 
 export function EditarServicioPage() {
   const { id = '' } = useParams();
   const { estado, guardar, cambiarEstado } = useServicio(id);
+  const { confirm, dialog } = useConfirm();
   const [cambiando, setCambiando] = useState(false);
   const [errorEstado, setErrorEstado] = useState('');
 
-  if (estado.status === 'cargando') return <p className="muted">Cargando…</p>;
+  if (estado.status === 'cargando') return <LoadingState />;
   if (estado.status === 'error') {
     return (
-      <section className="card">
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {estado.mensaje}
-        </p>
-        <Link to="/admin/servicios">Volver al listado</Link>
-      </section>
+      <div className="page page-narrow">
+        <PageHeader title="Editar servicio" back={VOLVER} />
+        <ErrorMessage>{estado.mensaje}</ErrorMessage>
+      </div>
     );
   }
 
@@ -26,7 +32,11 @@ export function EditarServicioPage() {
   const alternarEstado = async () => {
     if (
       servicio.activo &&
-      !window.confirm('¿Deshabilitar este servicio? No se podrá reservar con él.')
+      !(await confirm({
+        title: '¿Deshabilitar este servicio?',
+        message: 'No se podrá reservar con él, pero las citas existentes se conservan.',
+        confirmLabel: 'Deshabilitar servicio',
+      }))
     ) {
       return;
     }
@@ -42,36 +52,38 @@ export function EditarServicioPage() {
   };
 
   return (
-    <FormularioServicio
-      key={servicio.id}
-      titulo="Editar servicio"
-      inicial={servicio}
-      textoBoton="Guardar cambios"
-      textoBotonEnviando="Guardando…"
-      conEstado={false}
-      onSubmit={({ activo: _activo, ...cambios }) => guardar(cambios)}
-    >
-      <p className="muted">
-        Estado:{' '}
-        <span className={servicio.activo ? 'badge ok' : 'badge off'}>
-          {servicio.activo ? 'Habilitado' : 'Deshabilitado'}
-        </span>
-      </p>
-      {errorEstado && (
-        <p className="error" role="alert">
-          {errorEstado}
-        </p>
-      )}
-      <button
-        type="button"
-        className={servicio.activo ? 'secondary danger' : 'secondary'}
-        disabled={cambiando}
-        onClick={() => void alternarEstado()}
-        data-testid="btn-cambiar-estado-servicio"
-      >
-        {servicio.activo ? 'Deshabilitar servicio' : 'Habilitar servicio'}
-      </button>
-      <Link to="/admin/servicios">Volver al listado</Link>
-    </FormularioServicio>
+    <div className="page page-narrow">
+      <PageHeader title="Editar servicio" description={servicio.nombre} back={VOLVER} />
+      <FormularioServicio
+        key={servicio.id}
+        inicial={servicio}
+        textoBoton="Guardar cambios"
+        textoBotonEnviando="Guardando…"
+        conEstado={false}
+        onSubmit={({ activo: _activo, ...cambios }) => guardar(cambios)}
+      />
+      <section className="card" aria-labelledby="titulo-estado-servicio">
+        <div className="card-section">
+          <h2 id="titulo-estado-servicio">Estado del servicio</h2>
+          <div>
+            <ActiveBadge active={servicio.activo} />
+          </div>
+          <p className="muted">Un servicio deshabilitado no se puede reservar.</p>
+        </div>
+        {errorEstado && <ErrorMessage>{errorEstado}</ErrorMessage>}
+        <div className="form-actions">
+          <button
+            type="button"
+            className={servicio.activo ? 'secondary danger' : 'secondary'}
+            disabled={cambiando}
+            onClick={() => void alternarEstado()}
+            data-testid="btn-cambiar-estado-servicio"
+          >
+            {servicio.activo ? 'Deshabilitar servicio' : 'Habilitar servicio'}
+          </button>
+        </div>
+      </section>
+      {dialog}
+    </div>
   );
 }

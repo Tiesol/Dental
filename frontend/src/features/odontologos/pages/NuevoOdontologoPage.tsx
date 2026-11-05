@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { PageHeader } from '@/shared/components/PageHeader';
 import { SelectorServicios } from '../components/SelectorServicios';
 import { useCrearOdontologo } from '../hooks/useCrearOdontologo';
 import { useServiciosParaElegir } from '../hooks/useServiciosParaElegir';
@@ -31,68 +33,73 @@ export function NuevoOdontologoPage() {
   };
 
   return (
-    <form className="card" onSubmit={onSubmit}>
-      <h1>Nuevo odontólogo</h1>
-      <label>
-        Nombre
-        <input
-          value={form.nombre}
-          onChange={(e) => update('nombre')(e.target.value)}
-          required
-          maxLength={100}
-          placeholder="Dr. Juan Rojas"
-        />
-      </label>
-      <label>
-        Especialidad
-        <input
-          value={form.especialidad}
-          onChange={(e) => update('especialidad')(e.target.value)}
-          required
-          maxLength={100}
-          placeholder="Ortodoncia"
-        />
-      </label>
-      <SelectorServicios
-        servicios={servicios}
-        seleccionados={serviceIds}
-        onChange={setServiceIds}
+    <div className="page page-narrow">
+      <PageHeader
+        title="Nuevo odontólogo"
+        description="Crea su cuenta de acceso y define los servicios que realiza."
+        back={{ to: '/admin/odontologos', label: 'Volver al listado' }}
       />
-      {errorServicios && <p className="error">{errorServicios}</p>}
-      <label>
-        Email (para iniciar sesión)
-        <input
-          type="email"
-          value={form.email}
-          onChange={(e) => update('email')(e.target.value)}
-          required
-          autoComplete="off"
+      <form className="card" onSubmit={onSubmit}>
+        <div className="form-row">
+          <label>
+            Nombre
+            <input
+              value={form.nombre}
+              onChange={(e) => update('nombre')(e.target.value)}
+              required
+              maxLength={100}
+              placeholder="Dr. Juan Rojas"
+            />
+          </label>
+          <label>
+            Especialidad
+            <input
+              value={form.especialidad}
+              onChange={(e) => update('especialidad')(e.target.value)}
+              required
+              maxLength={100}
+              placeholder="Ortodoncia"
+            />
+          </label>
+        </div>
+        <SelectorServicios
+          servicios={servicios}
+          seleccionados={serviceIds}
+          onChange={setServiceIds}
         />
-      </label>
-      <label>
-        Contraseña inicial
-        <input
-          type="password"
-          value={form.password}
-          onChange={(e) => update('password')(e.target.value)}
-          required
-          minLength={8}
-          maxLength={72}
-          autoComplete="new-password"
-        />
-        <small className="muted">
-          De 8 a 72 caracteres. El odontólogo podrá cambiarla en Mi cuenta.
-        </small>
-      </label>
-      {error && (
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {error}
-        </p>
-      )}
-      <button type="submit" disabled={enviando} data-testid="btn-crear-odontologo">
-        {enviando ? 'Registrando…' : 'Registrar odontólogo'}
-      </button>
-      <Link to="/admin/odontologos">Volver al listado</Link>
-    </form>
+        {errorServicios && <ErrorMessage>{errorServicios}</ErrorMessage>}
+        <label>
+          Email (para iniciar sesión)
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => update('email')(e.target.value)}
+            required
+            autoComplete="off"
+          />
+        </label>
+        <label>
+          Contraseña inicial
+          <input
+            type="password"
+            value={form.password}
+            onChange={(e) => update('password')(e.target.value)}
+            required
+            minLength={8}
+            maxLength={72}
+            autoComplete="new-password"
+          />
+          <small className="muted">
+            De 8 a 72 caracteres. El odontólogo podrá cambiarla en Mi cuenta.
+          </small>
+        </label>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+        <div className="form-actions">
+          <button type="submit" disabled={enviando} data-testid="btn-crear-odontologo">
+            {enviando ? 'Registrando…' : 'Registrar odontólogo'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
