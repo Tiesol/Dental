@@ -37,7 +37,8 @@ Verificar las APIs de NestJS, Prisma, React y Playwright contra la documentació
 
 ```bash
 npm install                          # en la raíz, una vez: activa los hooks de git
-docker compose up -d                 # BD dev (localhost:5434) y test (localhost:5433)
+docker compose up -d --build         # todo: front :5173, API :3000, BD dev :5434 y test :5433
+docker compose up -d db db_test      # solo las BD, para desarrollar con los comandos de abajo
 # en backend/
 npx prisma migrate dev               # migraciones
 npm run seed                         # admin@clinica.com / Admin12345, odontologo@clinica.com / Odontologo12345

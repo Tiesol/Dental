@@ -11,7 +11,7 @@ citas-dentales/
 ├── README.md                 <- este archivo: cómo levantar, índice, decisiones
 ├── CONTRIBUTING.md           <- ramas, formato de commits, pull requests, hooks
 ├── CLAUDE.md                 <- punto de entrada para Claude Code en la raíz
-├── compose.yml               <- PostgreSQL de desarrollo (5434) y de test (5433)
+├── compose.yml               <- frontend (5173), backend (3000) y PostgreSQL de desarrollo (5434) y de test (5433)
 ├── .env.example              <- variables para compose
 ├── package.json              <- tooling compartido: husky, commitlint, lint-staged
 ├── commitlint.config.mjs     <- tipos y ámbitos de commit permitidos
@@ -33,10 +33,24 @@ citas-dentales/
 
 ## Requisitos
 
-- Node.js 20+ y npm
-- Docker (para PostgreSQL)
+- Docker
+- Node.js 20+ y npm, solo para desarrollar o correr los tests
 
-## Levantar el proyecto
+## Levantar el proyecto con Docker
+
+```bash
+cp .env.example .env                  # ajusta la contraseña
+cp backend/.env.example backend/.env  # misma contraseña que en .env y un JWT_SECRET propio
+docker compose up -d --build
+```
+
+Abre http://localhost:5173. La API queda en http://localhost:3000/api/v1 y Swagger en `/api/docs`. Al arrancar, el backend aplica las migraciones y el seed.
+
+Sin `--build` se reutilizan las imágenes anteriores: úsalo cada vez que cambie el código. `docker compose down` apaga todo y conserva los datos.
+
+## Levantar el proyecto para desarrollar
+
+Los servidores corren en tu máquina, con recarga automática, y Docker solo levanta las bases. Si los contenedores del backend o del frontend están encendidos, primero apágalos con `docker compose stop backend frontend`, porque usan los mismos puertos.
 
 ```bash
 # 0. Hooks de git (una sola vez, en la raíz): commitlint + lint-staged
@@ -44,7 +58,7 @@ npm install
 
 # 1. Bases de datos (desarrollo y test)
 cp .env.example .env              # ajusta la contraseña
-docker compose up -d
+docker compose up -d db db_test
 
 # 2. Backend
 cd backend
@@ -76,7 +90,7 @@ Los pacientes se registran desde `/registro` o con `POST /api/v1/auth/register`.
 
 ## Tests
 
-Backend (desde `backend/`, con `docker compose up -d` corriendo):
+Backend (desde `backend/`, con `docker compose up -d db db_test` corriendo):
 
 ```bash
 npm run lint                     # ESLint + Prettier
@@ -106,7 +120,7 @@ Los E2E recorren la interfaz real contra el backend y la base de test. Playwrigh
 ```bash
 npm install                                  # en la raíz, una vez
 cp .env.example .env
-docker compose up -d                         # PostgreSQL de desarrollo y de test
+docker compose up -d db db_test              # PostgreSQL de desarrollo y de test
 
 cd backend
 cp .env.test.example .env.test
