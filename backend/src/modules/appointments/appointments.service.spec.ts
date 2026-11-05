@@ -25,6 +25,8 @@ describe('AppointmentsService', () => {
     findById: jest.fn(),
     findByPatient: jest.fn(),
     findAll: jest.fn(),
+    findAgenda: jest.fn(),
+    findUpcoming: jest.fn(),
   };
   const availability = {
     assertReservable: jest.fn(),
@@ -242,6 +244,35 @@ describe('AppointmentsService', () => {
       await expect(
         service.findOne('c1', { userId: 'u1', email: 'a@mail.com', role: 'ADMIN' }),
       ).rejects.toThrow(RecursoNoEncontradoError);
+    });
+  });
+
+  describe('agenda', () => {
+    const rango = { inicio: new Date(), fin: new Date() };
+
+    beforeEach(() => availability.rangoDeFecha.mockReturnValue(rango));
+
+    it('sin fecha usa el día de la clínica según el reloj', async () => {
+      availability.fechaClinica.mockReturnValue('2026-11-09');
+
+      await service.agendaDelDia('d1');
+
+      expect(availability.fechaClinica).toHaveBeenCalledWith(ahora);
+      expect(availability.rangoDeFecha).toHaveBeenCalledWith('2026-11-09');
+      expect(repository.findAgenda).toHaveBeenCalledWith('d1', rango);
+    });
+
+    it('con fecha usa esa fecha', async () => {
+      await service.agendaDelDia('d1', '2026-11-12');
+
+      expect(availability.fechaClinica).not.toHaveBeenCalled();
+      expect(availability.rangoDeFecha).toHaveBeenCalledWith('2026-11-12');
+    });
+
+    it('las próximas se piden según la hora del reloj', async () => {
+      await service.proximasDelOdontologo('d1', 10);
+
+      expect(repository.findUpcoming).toHaveBeenCalledWith('d1', ahora, 10);
     });
   });
 

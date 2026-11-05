@@ -9,6 +9,7 @@ import {
   AppointmentView,
   NewAppointment,
 } from './domain/appointment';
+import { Intervalo } from './domain/overlap';
 
 const withRelations = {
   service: { select: { id: true, nombre: true, duracionMin: true } },
@@ -74,6 +75,34 @@ export class AppointmentsRepository {
     const rows = await this.prisma.appointment.findMany({
       where: { patientId },
       include: withRelations,
+    });
+    return rows.map(toView);
+  }
+
+  async findAgenda(dentistId: string, rango: Intervalo): Promise<AppointmentView[]> {
+    const rows = await this.prisma.appointment.findMany({
+      where: {
+        dentistId,
+        estado: { not: 'CANCELADA' },
+        horaInicio: { gte: rango.inicio, lt: rango.fin },
+      },
+      include: withRelations,
+      orderBy: { horaInicio: 'asc' },
+    });
+    return rows.map(toView);
+  }
+
+  // Misma definición de "próxima" que en el historial del paciente.
+  async findUpcoming(dentistId: string, ahora: Date, limit: number): Promise<AppointmentView[]> {
+    const rows = await this.prisma.appointment.findMany({
+      where: {
+        dentistId,
+        estado: { notIn: ['CANCELADA', 'FINALIZADA'] },
+        horaInicio: { gt: ahora },
+      },
+      include: withRelations,
+      orderBy: { horaInicio: 'asc' },
+      take: limit,
     });
     return rows.map(toView);
   }
