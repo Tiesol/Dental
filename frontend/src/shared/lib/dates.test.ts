@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  fechaEnClinica,
   fechaHoraLocalAIso,
   formatearFecha,
   formatearFechaHora,
@@ -60,6 +61,12 @@ describe('formatos en la zona de la clínica', () => {
     expect(formatearFechaHora('2026-11-10T13:00:00.000Z')).toBe(
       'martes, 10 de noviembre de 2026, 09:00',
     );
+  });
+});
+
+describe('fechaEnClinica', () => {
+  it('devuelve el día de la clínica aunque en UTC ya sea el siguiente', () => {
+    expect(fechaEnClinica('2026-11-11T02:00:00.000Z')).toBe('2026-11-10');
   });
 });
 

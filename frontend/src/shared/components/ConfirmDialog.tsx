@@ -4,13 +4,21 @@ type Props = {
   title: string;
   message: string;
   confirmLabel: string;
+  cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 };
 
 // <dialog> nativo: showModal atrapa el foco, Escape lo cierra y al cerrar el navegador devuelve
 // el foco al botón que lo abrió. El foco inicial cae en Cancelar, la opción que no hace daño.
-export function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel }: Props) {
+export function ConfirmDialog({
+  title,
+  message,
+  confirmLabel,
+  cancelLabel = 'Cancelar',
+  onConfirm,
+  onCancel,
+}: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const messageId = useId();
@@ -39,7 +47,7 @@ export function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCance
       </p>
       <div className="dialog-actions">
         <button type="button" className="secondary" onClick={onCancel}>
-          Cancelar
+          {cancelLabel}
         </button>
         <button type="button" className="danger" onClick={onConfirm}>
           {confirmLabel}
