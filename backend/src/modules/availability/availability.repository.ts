@@ -8,6 +8,13 @@ import {
   UnavailableBlockRecord,
 } from './domain/availability';
 
+const blockFields = {
+  id: true,
+  inicio: true,
+  fin: true,
+  motivo: true,
+} satisfies Prisma.UnavailableBlockSelect;
+
 // Único punto de acceso a AvailabilityRule y UnavailableBlock con Prisma.
 @Injectable()
 export class AvailabilityRepository {
@@ -23,7 +30,7 @@ export class AvailabilityRepository {
       }),
       this.prisma.unavailableBlock.findMany({
         where: { dentistId, fin: { gt: ahora } },
-        select: { id: true, inicio: true, fin: true, motivo: true },
+        select: blockFields,
         orderBy: { inicio: 'asc' },
       }),
     ]);
@@ -67,7 +74,7 @@ export class AvailabilityRepository {
       }
       return tx.unavailableBlock.create({
         data: { dentistId, inicio, fin, motivo },
-        select: { id: true, inicio: true, fin: true, motivo: true },
+        select: blockFields,
       });
     });
   }
