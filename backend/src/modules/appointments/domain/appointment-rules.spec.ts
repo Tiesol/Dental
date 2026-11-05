@@ -1,10 +1,16 @@
 import {
   AccesoDenegadoACitaError,
+  CitaNoModificableError,
   HorarioEnElPasadoError,
   HorarioNoDisponibleError,
 } from '../../../common/errors/domain-error';
 import { AppointmentStatus } from './appointment';
-import { assertHorarioReservable, assertPuedeVerCita, filtrarPorCuando } from './appointment-rules';
+import {
+  assertCitaModificable,
+  assertHorarioReservable,
+  assertPuedeVerCita,
+  filtrarPorCuando,
+} from './appointment-rules';
 
 const instante = (hora: string) => new Date(`2026-11-10T${hora}:00.000Z`);
 
@@ -77,6 +83,22 @@ describe('assertPuedeVerCita', () => {
 
     expect(() => assertPuedeVerCita(cita, user)).toThrow(AccesoDenegadoACitaError);
   });
+});
+
+describe('assertCitaModificable', () => {
+  it.each(['PENDIENTE', 'CONFIRMADA'] as const)(
+    'permite cancelar o reprogramar una cita %s',
+    (estado) => {
+      expect(() => assertCitaModificable(estado)).not.toThrow();
+    },
+  );
+
+  it.each(['EN_ATENCION', 'FINALIZADA', 'CANCELADA'] as const)(
+    'rechaza cancelar o reprogramar una cita %s',
+    (estado) => {
+      expect(() => assertCitaModificable(estado)).toThrow(CitaNoModificableError);
+    },
+  );
 });
 
 describe('filtrarPorCuando', () => {

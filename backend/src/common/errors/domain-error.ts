@@ -127,6 +127,16 @@ export class AccesoDenegadoACitaError extends DomainError {
   }
 }
 
+export class CitaNoModificableError extends DomainError {
+  constructor() {
+    super(
+      409,
+      'CITA_NO_MODIFICABLE',
+      'Solo se puede reprogramar o cancelar una cita pendiente o confirmada',
+    );
+  }
+}
+
 // ---- Gestión de usuarios ----
 
 export class OperacionSobrePropiaCuentaError extends DomainError {

@@ -4,7 +4,7 @@ import {
   HorarioNoDisponibleError,
 } from '../../../common/errors/domain-error';
 import { CurrentUserData } from '../../../common/types/current-user';
-import { AppointmentView, CuandoCitas } from './appointment';
+import { AppointmentStatus, AppointmentView, CuandoCitas } from './appointment';
 import { Intervalo } from './overlap';
 
 // Validación antes de confirmar una reserva: la hora elegida debe ser uno de los horarios
@@ -52,4 +52,8 @@ export function filtrarPorCuando<T extends Pick<AppointmentView, 'horaInicio' | 
   const elegidas =
     cuando === 'historial' ? citas.filter((cita) => !esProxima(cita, ahora)) : [...citas];
   return elegidas.sort((a, b) => porInicio(b, a));
+}
+
+export function assertCitaModificable(_estado: AppointmentStatus): void {
+  throw new Error('sin implementar');
 }
