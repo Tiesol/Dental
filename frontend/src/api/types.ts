@@ -88,3 +88,37 @@ export type CreateServiceRequest = {
 
 // El estado se cambia aparte, con PATCH /services/:id/estado. null en el precio lo quita.
 export type UpdateServiceRequest = Partial<Omit<CreateServiceRequest, 'activo'>>;
+
+// ---- Odontólogos (/dentists) ----
+
+// Vista del ADMIN: incluye la cuenta y todos los servicios (también los deshabilitados).
+export type DentistAdminResponse = {
+  id: string;
+  userId: string;
+  email: string;
+  // Cuenta de acceso habilitada (se gestiona en /users/:id/estado).
+  cuentaActiva: boolean;
+  nombre: string;
+  especialidad: string;
+  // Profesional habilitado para nuevas citas (se gestiona en /dentists/:id/estado).
+  activo: boolean;
+  servicios: { id: string; nombre: string; duracionMin: number; activo: boolean }[];
+};
+
+// Vista de PACIENTE/ODONTOLOGO: solo quienes aceptan citas y solo servicios habilitados.
+export type DentistPublicResponse = {
+  id: string;
+  nombre: string;
+  especialidad: string;
+  servicios: { id: string; nombre: string; duracionMin: number }[];
+};
+
+export type CreateDentistRequest = {
+  email: string;
+  password: string;
+  nombre: string;
+  especialidad: string;
+  serviceIds: string[];
+};
+
+export type UpdateDentistRequest = { nombre?: string; especialidad?: string };

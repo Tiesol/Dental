@@ -65,6 +65,8 @@ export type NewStaffUser =
       passwordHash: string;
       nombre: string;
       especialidad: string;
+      // Servicios que realiza, asignados en la misma operación de alta (módulo dentists).
+      serviceIds?: string[];
     };
 
 // Campos de perfil que se pueden editar. Cuáles aplican depende del rol (ver profile-changes.ts).

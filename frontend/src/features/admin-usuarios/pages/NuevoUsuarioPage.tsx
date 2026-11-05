@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { StaffRole } from '@/api/types';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { PageHeader } from '@/shared/components/PageHeader';
@@ -49,7 +49,13 @@ export function NuevoUsuarioPage() {
     <div className="page page-narrow">
       <PageHeader
         title="Nuevo usuario"
-        description="Los pacientes crean su propia cuenta desde el registro."
+        description={
+          <>
+            Los pacientes crean su propia cuenta desde el registro. Para registrar un odontólogo
+            junto con los servicios que realiza, usa{' '}
+            <Link to="/admin/odontologos/nuevo">Odontólogos</Link>.
+          </>
+        }
         back={{ to: '/admin/usuarios', label: 'Volver al listado' }}
       />
       <form className="card" onSubmit={onSubmit}>

@@ -63,6 +63,50 @@ export class NombreDeServicioDuplicadoError extends DomainError {
   }
 }
 
+// ---- Odontólogos ----
+
+export class OdontologoDeshabilitadoError extends DomainError {
+  constructor() {
+    super(409, 'ODONTOLOGO_DESHABILITADO', 'El odontólogo no está aceptando nuevas citas');
+  }
+}
+
+export class OdontologoNoRealizaServicioError extends DomainError {
+  constructor() {
+    super(409, 'ODONTOLOGO_NO_REALIZA_SERVICIO', 'El odontólogo no realiza el servicio solicitado');
+  }
+}
+
+export class ServiciosInexistentesError extends DomainError {
+  constructor(ids: string[]) {
+    super(400, 'SERVICIOS_INEXISTENTES', 'Uno o más servicios indicados no existen', { ids });
+  }
+}
+
+// ---- Disponibilidad ----
+
+export class HorarioInvalidoError extends DomainError {
+  constructor(message: string) {
+    super(400, 'HORARIO_INVALIDO', message);
+  }
+}
+
+export class FechaInvalidaError extends DomainError {
+  constructor(message = 'La fecha no es válida') {
+    super(400, 'FECHA_INVALIDA', message);
+  }
+}
+
+export class BloqueConCitasError extends DomainError {
+  constructor() {
+    super(
+      409,
+      'BLOQUE_CON_CITAS',
+      'Hay citas activas en ese horario; cancélalas o reprográmalas antes de bloquearlo',
+    );
+  }
+}
+
 // ---- Gestión de usuarios ----
 
 export class OperacionSobrePropiaCuentaError extends DomainError {

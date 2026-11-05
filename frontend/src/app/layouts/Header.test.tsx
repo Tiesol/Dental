@@ -18,25 +18,25 @@ function renderConRol(role: 'PACIENTE' | 'ODONTOLOGO' | 'ADMIN', nombre = 'Ana P
 
 function enlacesDelMenu() {
   return screen
-    .getAllByRole('link', { name: /Mi cuenta|Usuarios|Servicios/ })
+    .getAllByRole('link', { name: /Mi cuenta|Usuarios|Servicios|Odontólogos/ })
     .map((a) => a.textContent);
 }
 
 describe('Header', () => {
-  it('el ADMIN ve Mi cuenta, Usuarios y Servicios', async () => {
+  it('el ADMIN ve Mi cuenta, Usuarios, Servicios y Odontólogos', async () => {
     renderConRol('ADMIN');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual(['Mi cuenta', 'Usuarios', 'Servicios']);
+    expect(enlacesDelMenu()).toEqual(['Mi cuenta', 'Usuarios', 'Servicios', 'Odontólogos']);
   });
 
-  it('el PACIENTE ve Mi cuenta y Servicios, pero no Usuarios', async () => {
+  it('el PACIENTE ve Mi cuenta, Servicios y Odontólogos, pero no Usuarios', async () => {
     renderConRol('PACIENTE');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual(['Mi cuenta', 'Servicios']);
+    expect(enlacesDelMenu()).toEqual(['Mi cuenta', 'Servicios', 'Odontólogos']);
   });
 
   it('el ODONTOLOGO ve solo Mi cuenta', async () => {

@@ -4,7 +4,7 @@ import { Icon } from './Icon';
 
 type Props = {
   title: string;
-  description?: string;
+  description?: ReactNode;
   back?: { to: string; label: string };
   actions?: ReactNode;
 };

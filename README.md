@@ -64,10 +64,11 @@ npm run dev                       # http://localhost:5173
 
 Usuarios del seed:
 
-| Rol        | Email                  | Contraseña      |
-| ---------- | ---------------------- | --------------- |
-| ADMIN      | admin@clinica.com      | Admin12345      |
-| ODONTOLOGO | odontologo@clinica.com | Odontologo12345 |
+| Rol        | Email                    | Contraseña      |
+| ---------- | ------------------------ | --------------- |
+| ADMIN      | admin@clinica.com        | Admin12345      |
+| ODONTOLOGO | odontologo@clinica.com   | Odontologo12345 |
+| ODONTOLOGO | ortodoncista@clinica.com | Odontologo12345 |
 
 Los pacientes se registran desde `/registro` o con `POST /api/v1/auth/register`.
 
@@ -108,24 +109,30 @@ Ver `CONTRIBUTING.md`: ramas cortas desde `main`, commits en formato Conventiona
 
 Prefijo `/api/v1`. Errores con formato uniforme `{ statusCode, error, message, details? }`. Contrato completo previsto en `backend/ARQUITECTURA.md` sección 8.
 
-| Método | Ruta                   | Acceso      | Descripción                                    |
-| ------ | ---------------------- | ----------- | ---------------------------------------------- |
-| POST   | `/auth/register`       | Público     | Registra un paciente (nombre, apellido, email) |
-| POST   | `/auth/login`          | Público     | Devuelve `{ accessToken, user }`               |
-| GET    | `/auth/me`             | Autenticado | Usuario del token                              |
-| GET    | `/users`               | ADMIN       | Lista de usuarios con su perfil                |
-| POST   | `/users`               | ADMIN       | Crea un ODONTOLOGO o un ADMIN                  |
-| GET    | `/users/:id`           | ADMIN       | Detalle de un usuario                          |
-| PATCH  | `/users/:id`           | ADMIN       | Edita email y perfil (el rol no cambia)        |
-| PATCH  | `/users/:id/estado`    | ADMIN       | Habilita/deshabilita una cuenta (no la propia) |
-| GET    | `/users/me`            | Autenticado | Mi perfil                                      |
-| PATCH  | `/users/me`            | Autenticado | Edito mi perfil                                |
-| PATCH  | `/users/me/password`   | Autenticado | Cambio mi contraseña (verifica la actual)      |
-| GET    | `/services`            | Autenticado | Catálogo (no-ADMIN: solo habilitados)          |
-| GET    | `/services/:id`        | Autenticado | Detalle (deshabilitado: solo ADMIN)            |
-| POST   | `/services`            | ADMIN       | Crea un servicio                               |
-| PATCH  | `/services/:id`        | ADMIN       | Edita nombre, descripción, duración o precio   |
-| PATCH  | `/services/:id/estado` | ADMIN       | Habilita/deshabilita un servicio               |
+| Método | Ruta                     | Acceso      | Descripción                                        |
+| ------ | ------------------------ | ----------- | -------------------------------------------------- |
+| POST   | `/auth/register`         | Público     | Registra un paciente (nombre, apellido, email)     |
+| POST   | `/auth/login`            | Público     | Devuelve `{ accessToken, user }`                   |
+| GET    | `/auth/me`               | Autenticado | Usuario del token                                  |
+| GET    | `/users`                 | ADMIN       | Lista de usuarios con su perfil                    |
+| POST   | `/users`                 | ADMIN       | Crea un ODONTOLOGO o un ADMIN                      |
+| GET    | `/users/:id`             | ADMIN       | Detalle de un usuario                              |
+| PATCH  | `/users/:id`             | ADMIN       | Edita email y perfil (el rol no cambia)            |
+| PATCH  | `/users/:id/estado`      | ADMIN       | Habilita/deshabilita una cuenta (no la propia)     |
+| GET    | `/users/me`              | Autenticado | Mi perfil                                          |
+| PATCH  | `/users/me`              | Autenticado | Edito mi perfil                                    |
+| PATCH  | `/users/me/password`     | Autenticado | Cambio mi contraseña (verifica la actual)          |
+| GET    | `/services`              | Autenticado | Catálogo (no-ADMIN: solo habilitados)              |
+| GET    | `/services/:id`          | Autenticado | Detalle (deshabilitado: solo ADMIN)                |
+| POST   | `/services`              | ADMIN       | Crea un servicio                                   |
+| PATCH  | `/services/:id`          | ADMIN       | Edita nombre, descripción, duración o precio       |
+| PATCH  | `/services/:id/estado`   | ADMIN       | Habilita/deshabilita un servicio                   |
+| GET    | `/dentists?serviceId=`   | Autenticado | Odontólogos (no-ADMIN: solo los que aceptan citas) |
+| GET    | `/dentists/:id`          | Autenticado | Detalle (deshabilitado: solo ADMIN)                |
+| POST   | `/dentists`              | ADMIN       | Registra odontólogo: cuenta + perfil + servicios   |
+| PATCH  | `/dentists/:id`          | ADMIN       | Edita nombre y especialidad                        |
+| PATCH  | `/dentists/:id/estado`   | ADMIN       | Habilita/deshabilita al profesional                |
+| PUT    | `/dentists/:id/services` | ADMIN       | Reemplaza los servicios que realiza                |
 
 `POST /auth/login` y `POST /auth/register` admiten 10 intentos por minuto e IP (`AUTH_THROTTLE_LIMIT`); al pasarse responden `429`.
 
@@ -176,3 +183,4 @@ No están en el PDF ni fueron confirmadas explícitamente; se eligió la opción
 19. **Login endurecido**: 10 intentos por minuto e IP en login y registro (`AUTH_THROTTLE_LIMIT`); el login tarda lo mismo exista o no el email; contraseñas de 8 a 72 caracteres (límite de bcrypt). En el frontend, un `401` con token cierra la sesión y lleva al login.
 20. **Servicios**: duración entera de 1 a 480 minutos; nombre único sin distinguir mayúsculas; precio referencial opcional con hasta 2 decimales. Un servicio deshabilitado no aparece para PACIENTE/ODONTOLOGO (su detalle responde `404`) y conserva las citas existentes. El seed carga los 5 ejemplos del PDF.
 21. **Moneda**: los precios se muestran en bolivianos (`Bs`), deducido de los teléfonos `+591` del proyecto; se cambia en `frontend/src/shared/lib/formato.ts`.
+22. **Odontólogos**: acepta nuevas citas solo si está habilitado como profesional (`Dentist.activo`) **y** su cuenta también (`User.activo`); si no, desaparece para pacientes (su detalle responde `404`) pero conserva su historial. `POST /dentists` crea cuenta, perfil y servicios en una sola operación atómica; `POST /users` con rol ODONTOLOGO sigue existiendo, pero sin servicios. Se pueden asignar servicios deshabilitados (el paciente no los ve hasta que se habiliten). El seed agrega a la Dra. Laura Gómez y al Dr. Carlos Rojas (`ortodoncista@clinica.com` / `Odontologo12345`) con sus servicios.

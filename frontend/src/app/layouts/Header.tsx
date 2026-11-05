@@ -10,12 +10,17 @@ type NavItem = { to: string; label: string; icon: IconName; end?: boolean };
 const CUENTA: NavItem = { to: '/', label: 'Mi cuenta', icon: 'user', end: true };
 
 const NAV_POR_ROL: Record<Role, NavItem[]> = {
-  PACIENTE: [CUENTA, { to: '/servicios', label: 'Servicios', icon: 'list' }],
+  PACIENTE: [
+    CUENTA,
+    { to: '/servicios', label: 'Servicios', icon: 'list' },
+    { to: '/odontologos', label: 'Odontólogos', icon: 'tooth' },
+  ],
   ODONTOLOGO: [CUENTA],
   ADMIN: [
     CUENTA,
     { to: '/admin/usuarios', label: 'Usuarios', icon: 'users' },
     { to: '/admin/servicios', label: 'Servicios', icon: 'list' },
+    { to: '/admin/odontologos', label: 'Odontólogos', icon: 'tooth' },
   ],
 };
 
