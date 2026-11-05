@@ -58,7 +58,7 @@ frontend/
 │   │   ├── cuenta/                    # mis datos, editar perfil, cambiar contraseña       (hecho)
 │   │   ├── admin-usuarios/            # listado, alta de personal, edición, habilitar (ADMIN) (hecho)
 │   │   ├── servicios/                 # catálogo para paciente + CRUD para admin          (hecho)
-│   │   ├── odontologos/               # listado para paciente + CRUD y servicios para admin (hecho; horarios pendiente)
+│   │   ├── odontologos/               # listado para paciente + CRUD y servicios para admin (hecho)
 │   │   ├── reserva/                   # asistente servicio -> odontólogo -> fecha/hora -> confirmar
 │   │   ├── mis-citas/                 # próximas, historial, detalle, reprogramar, cancelar
 │   │   ├── agenda/                    # agenda del odontólogo: hoy, próximas, cambio de estado, observación
@@ -113,7 +113,7 @@ reserva/
 | `/mis-citas/:id`                                                                                                                                                                                                                                                                | PACIENTE (dueño)      | Detalle, reprogramar, cancelar. Si la API responde 403 se muestra "No tienes acceso a esta cita" (E2E 07). |
 | `/agenda`                                                                                                                                                                                                                                                                       | ODONTOLOGO            | Citas de hoy y próximas.                                                                                   |
 | `/agenda/:id`                                                                                                                                                                                                                                                                   | ODONTOLOGO (asignado) | Detalle, cambiar estado, registrar observación.                                                            |
-| `/admin/usuarios`, `/admin/usuarios/nuevo`, `/admin/usuarios/:id`, `/admin/servicios`, `/admin/servicios/nuevo`, `/admin/servicios/:id`, `/admin/odontologos`, `/admin/odontologos/nuevo`, `/admin/odontologos/:id` (hechos), `/admin/odontologos/:id/horarios`, `/admin/citas` | ADMIN                 | Gestión.                                                                                                   |
+| `/admin/usuarios`, `/admin/usuarios/nuevo`, `/admin/usuarios/:id`, `/admin/servicios`, `/admin/servicios/nuevo`, `/admin/servicios/:id`, `/admin/odontologos`, `/admin/odontologos/nuevo`, `/admin/odontologos/:id`, `/admin/odontologos/:id/horarios` (hechos), `/admin/citas` | ADMIN                 | Gestión.                                                                                                   |
 
 `RequireRole` envuelve cada grupo de rutas: sin sesión redirige a `/login`; con rol incorrecto muestra página 403. Esto es UX; la seguridad real es del backend.
 
@@ -186,5 +186,5 @@ Los E2E arrancan backend y frontend (`webServer` en `playwright.config.ts`) y us
 
 ```
 VITE_API_URL=http://localhost:3000/api/v1
-VITE_CLINIC_TIMEZONE=   # por definir con el usuario (misma que el backend)
+VITE_CLINIC_TIMEZONE=America/La_Paz   # misma que CLINIC_TIMEZONE del backend
 ```

@@ -122,3 +122,33 @@ export type CreateDentistRequest = {
 };
 
 export type UpdateDentistRequest = { nombre?: string; especialidad?: string };
+
+// ---- Disponibilidad (/dentists/:id/availability, /blocks y /slots) ----
+
+export type AvailabilityRuleResponse = {
+  id: string;
+  // 0 = domingo ... 6 = sábado.
+  diaSemana: number;
+  // Minutos desde las 00:00 en la zona de la clínica (09:00 = 540).
+  minutoInicio: number;
+  minutoFin: number;
+};
+
+export type AvailabilityRuleRequest = Omit<AvailabilityRuleResponse, 'id'>;
+
+export type UnavailableBlockResponse = {
+  id: string;
+  inicio: string;
+  fin: string;
+  // Solo lo recibe el ADMIN.
+  motivo?: string | null;
+};
+
+export type AvailabilityResponse = {
+  horarios: AvailabilityRuleResponse[];
+  bloques: UnavailableBlockResponse[];
+};
+
+export type CreateBlockRequest = { inicio: string; fin: string; motivo?: string };
+
+export type SlotResponse = { inicio: string; fin: string };

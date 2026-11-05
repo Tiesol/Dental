@@ -5,9 +5,9 @@ import { ActiveBadge } from '@/shared/components/ActiveBadge';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
-import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { useConfirm } from '@/shared/hooks/useConfirm';
 import { SelectorServicios } from '../components/SelectorServicios';
+import { useAccion } from '../hooks/useAccion';
 import { useOdontologoAdmin } from '../hooks/useOdontologoAdmin';
 import { useServiciosParaElegir } from '../hooks/useServiciosParaElegir';
 
@@ -30,7 +30,16 @@ export function EditarOdontologoPage() {
   const { odontologo } = estado;
   return (
     <div className="page page-narrow">
-      <PageHeader title="Editar odontólogo" description={odontologo.nombre} back={VOLVER} />
+      <PageHeader
+        title="Editar odontólogo"
+        description={odontologo.nombre}
+        back={VOLVER}
+        actions={
+          <Link to={`/admin/odontologos/${odontologo.id}/horarios`} className="button secondary">
+            Horarios y bloques
+          </Link>
+        }
+      />
       <DatosProfesionales
         key={`datos-${odontologo.id}`}
         odontologo={odontologo}
@@ -44,36 +53,6 @@ export function EditarOdontologoPage() {
       <EstadoProfesional odontologo={odontologo} cambiarEstado={cambiarEstado} />
     </div>
   );
-}
-
-// Ejecuta una acción mostrando "enviando", error o éxito. Evita repetir lo mismo en cada sección.
-function useAccion() {
-  const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState('');
-  const [exito, setExito] = useState('');
-
-  const ejecutar = async (accion: () => Promise<void>, mensajeExito: string) => {
-    setError('');
-    setExito('');
-    setEnviando(true);
-    try {
-      await accion();
-      setExito(mensajeExito);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  const mensajes = (
-    <>
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      {exito && <SuccessMessage>{exito}</SuccessMessage>}
-    </>
-  );
-
-  return { enviando, ejecutar, mensajes };
 }
 
 function DatosProfesionales({
