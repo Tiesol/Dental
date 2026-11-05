@@ -9,6 +9,8 @@ import {
   EditarServicioPage,
   NuevoServicioPage,
 } from '@/features/servicios';
+import { AppLayout } from './layouts/AppLayout';
+import { AuthLayout } from './layouts/AuthLayout';
 
 // Grupo de rutas protegido: todas sus rutas hijas exigen sesión y, si se indica, uno de los roles.
 function Protegidas({ roles }: { roles?: Role[] }) {
@@ -23,24 +25,28 @@ function Protegidas({ roles }: { roles?: Role[] }) {
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/registro" element={<RegistroPage />} />
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/registro" element={<RegistroPage />} />
+      </Route>
 
       <Route element={<Protegidas />}>
-        <Route path="/" element={<MiCuentaPage />} />
-      </Route>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<MiCuentaPage />} />
 
-      <Route element={<Protegidas roles={['PACIENTE']} />}>
-        <Route path="/servicios" element={<CatalogoServiciosPage />} />
-      </Route>
+          <Route element={<Protegidas roles={['PACIENTE']} />}>
+            <Route path="/servicios" element={<CatalogoServiciosPage />} />
+          </Route>
 
-      <Route element={<Protegidas roles={['ADMIN']} />}>
-        <Route path="/admin/usuarios" element={<UsuariosPage />} />
-        <Route path="/admin/usuarios/nuevo" element={<NuevoUsuarioPage />} />
-        <Route path="/admin/usuarios/:id" element={<EditarUsuarioPage />} />
-        <Route path="/admin/servicios" element={<AdminServiciosPage />} />
-        <Route path="/admin/servicios/nuevo" element={<NuevoServicioPage />} />
-        <Route path="/admin/servicios/:id" element={<EditarServicioPage />} />
+          <Route element={<Protegidas roles={['ADMIN']} />}>
+            <Route path="/admin/usuarios" element={<UsuariosPage />} />
+            <Route path="/admin/usuarios/nuevo" element={<NuevoUsuarioPage />} />
+            <Route path="/admin/usuarios/:id" element={<EditarUsuarioPage />} />
+            <Route path="/admin/servicios" element={<AdminServiciosPage />} />
+            <Route path="/admin/servicios/nuevo" element={<NuevoServicioPage />} />
+            <Route path="/admin/servicios/:id" element={<EditarServicioPage />} />
+          </Route>
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
