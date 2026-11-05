@@ -107,6 +107,26 @@ export class BloqueConCitasError extends DomainError {
   }
 }
 
+// ---- Citas ----
+
+export class HorarioNoDisponibleError extends DomainError {
+  constructor() {
+    super(409, 'HORARIO_NO_DISPONIBLE', 'El horario ya no está disponible');
+  }
+}
+
+export class HorarioEnElPasadoError extends DomainError {
+  constructor() {
+    super(409, 'HORARIO_EN_EL_PASADO', 'No se puede reservar un horario que ya pasó');
+  }
+}
+
+export class AccesoDenegadoACitaError extends DomainError {
+  constructor() {
+    super(403, 'ACCESO_DENEGADO_A_CITA', 'No tienes acceso a esta cita');
+  }
+}
+
 // ---- Gestión de usuarios ----
 
 export class OperacionSobrePropiaCuentaError extends DomainError {
