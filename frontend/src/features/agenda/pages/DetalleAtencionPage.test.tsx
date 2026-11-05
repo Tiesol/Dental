@@ -93,7 +93,11 @@ describe('DetalleAtencionPage', () => {
     expect(screen.getByTestId('btn-registrar-observacion')).toHaveTextContent('Guardando…');
     expect(screen.getByTestId('btn-finalizar')).toHaveTextContent('Finalizar');
     liberar();
-    await waitFor(() => expect(screen.queryByLabelText('Observación')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('btn-registrar-observacion')).toHaveTextContent(
+        'Registrar observación',
+      ),
+    );
   });
 
   it('muestra los datos del paciente y de la cita', async () => {

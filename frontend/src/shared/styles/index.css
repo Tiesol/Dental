@@ -685,10 +685,14 @@ button.tab:hover:not(:disabled) {
   background: var(--surface-sunken);
 }
 
+/* Subrayado además del color: el estado no se informa solo con color. */
 button.tab-active,
 button.tab-active:hover:not(:disabled) {
   background: var(--primary-soft);
   border-color: var(--primary);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
 }
 
 /* ---- Tramos de horario ---- */

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from './Icon';
 
@@ -10,6 +10,10 @@ type Props = {
 };
 
 export function PageHeader({ title, description, back, actions }: Props) {
+  useEffect(() => {
+    document.title = `${title} · Clínica Dental`;
+  }, [title]);
+
   return (
     <div className="page-header">
       {back && (

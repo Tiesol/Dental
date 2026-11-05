@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { appointmentsApi } from '@/api/endpoints/appointments';
+import { ApiError } from '@/api/errors';
 import { useAuth } from '@/features/auth';
 import { DatosCita } from '@/shared/components/DatosCita';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
+import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { useCarga } from '@/shared/hooks/useCarga';
 import { useConfirm } from '@/shared/hooks/useConfirm';
 import { accionesPermitidas } from '@/shared/lib/estados-cita';
@@ -23,6 +25,20 @@ export function DetalleCitaPage() {
   const [reprogramando, setReprogramando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
   const [error, setError] = useState('');
+  const [exito, setExito] = useState('');
+
+  const limpiarMensajes = () => {
+    setError('');
+    setExito('');
+  };
+
+  // Un 409 o 403 significa que la cita pudo cambiar por otro lado: se muestra su estado real.
+  const alFallar = (err: Error) => {
+    setError(err.message);
+    if (err instanceof ApiError && (err.statusCode === 409 || err.statusCode === 403)) {
+      recargar();
+    }
+  };
 
   const cancelar = async () => {
     const ok = await confirm({
@@ -32,13 +48,14 @@ export function DetalleCitaPage() {
       cancelLabel: 'Volver',
     });
     if (!ok) return;
-    setError('');
+    limpiarMensajes();
     setCancelando(true);
     try {
       await appointmentsApi.cancelar(id);
+      setExito('Cita cancelada');
       recargar();
     } catch (err) {
-      setError((err as Error).message);
+      alFallar(err as Error);
     } finally {
       setCancelando(false);
     }
@@ -56,6 +73,7 @@ export function DetalleCitaPage() {
 
   const cita = estado.datos;
   const acciones = user ? accionesPermitidas(cita.estado, user.role) : [];
+  const puedeReprogramar = acciones.includes('reprogramar');
 
   return (
     <div className="page page-narrow">
@@ -63,13 +81,14 @@ export function DetalleCitaPage() {
       <section className="card">
         <DatosCita cita={cita} />
         {error && <ErrorMessage>{error}</ErrorMessage>}
+        {exito && <SuccessMessage>{exito}</SuccessMessage>}
         {!reprogramando && acciones.length > 0 && (
           <div className="form-actions">
-            {acciones.includes('reprogramar') && (
+            {puedeReprogramar && (
               <button
                 type="button"
                 onClick={() => {
-                  setError('');
+                  limpiarMensajes();
                   setReprogramando(true);
                 }}
                 data-testid="btn-reprogramar"
@@ -91,13 +110,16 @@ export function DetalleCitaPage() {
           </div>
         )}
       </section>
-      {reprogramando && (
+      {reprogramando && puedeReprogramar && (
         <PanelReprogramar
           cita={cita}
+          alElegir={limpiarMensajes}
           alTerminar={() => {
             setReprogramando(false);
+            setExito('Cita reprogramada');
             recargar();
           }}
+          alFallar={alFallar}
           alDesistir={() => setReprogramando(false)}
         />
       )}

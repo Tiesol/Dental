@@ -63,7 +63,13 @@ export function FormHorarios({ horarios, guardar }: Props) {
       </div>
       {tramos.length === 0 && <p className="muted">Todavía no tiene horarios de atención</p>}
       {tramos.map((tramo, indice) => (
-        <div className="tramo" key={tramo.clave} data-testid={`tramo-${indice}`}>
+        <div
+          className="tramo"
+          key={tramo.clave}
+          role="group"
+          aria-label={`Tramo ${indice + 1}`}
+          data-testid={`tramo-${indice}`}
+        >
           <label>
             Día
             <select

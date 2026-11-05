@@ -1,16 +1,18 @@
 import { useCallback, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { appointmentsApi } from '@/api/endpoints/appointments';
-import type { EstadoCita } from '@/api/types';
 import { useAuth } from '@/features/auth';
 import { DatosCita } from '@/shared/components/DatosCita';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
+import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { useCarga } from '@/shared/hooks/useCarga';
 import { accionesPermitidas } from '@/shared/lib/estados-cita';
 
 const VOLVER = { to: '/agenda', label: 'Volver a la agenda' };
+
+type Accion = 'iniciar' | 'observacion' | 'finalizar';
 
 // Flujo de atención del odontólogo: iniciar, registrar la observación y finalizar (PDF sección 7).
 export function DetalleAtencionPage() {
@@ -19,28 +21,51 @@ export function DetalleAtencionPage() {
   const cargar = useCallback(() => appointmentsApi.porId(id), [id]);
   const { estado, recargar } = useCarga(cargar);
   const [texto, setTexto] = useState('');
-  const [enviando, setEnviando] = useState(false);
+  const [enCurso, setEnCurso] = useState<Accion | null>(null);
   const [error, setError] = useState('');
+  const [exito, setExito] = useState('');
 
-  const ejecutar = async (accion: () => Promise<unknown>) => {
+  const ejecutar = async (
+    accion: Accion,
+    llamada: () => Promise<unknown>,
+    mensajeExito: string,
+  ) => {
     setError('');
-    setEnviando(true);
+    setExito('');
+    setEnCurso(accion);
     try {
-      await accion();
-      recargar();
+      await llamada();
+      setExito(mensajeExito);
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setEnviando(false);
+      setEnCurso(null);
+      // También tras un error: la cita pudo haber cambiado por otro lado.
+      recargar();
     }
   };
 
-  const cambiarEstado = (hacia: EstadoCita) =>
-    void ejecutar(() => appointmentsApi.cambiarEstado(id, hacia));
+  const iniciar = () =>
+    void ejecutar(
+      'iniciar',
+      () => appointmentsApi.cambiarEstado(id, 'EN_ATENCION'),
+      'Atención iniciada',
+    );
+
+  const finalizar = () =>
+    void ejecutar(
+      'finalizar',
+      () => appointmentsApi.cambiarEstado(id, 'FINALIZADA'),
+      'Cita finalizada',
+    );
 
   const registrar = (e: FormEvent) => {
     e.preventDefault();
-    void ejecutar(() => appointmentsApi.registrarObservacion(id, texto));
+    void ejecutar(
+      'observacion',
+      () => appointmentsApi.registrarObservacion(id, texto),
+      'Observación registrada',
+    );
   };
 
   if (estado.status === 'cargando') return <LoadingState />;
@@ -62,15 +87,16 @@ export function DetalleAtencionPage() {
       <section className="card">
         <DatosCita cita={cita} mostrarPaciente />
         {error && <ErrorMessage>{error}</ErrorMessage>}
+        {exito && <SuccessMessage>{exito}</SuccessMessage>}
         {acciones.includes('iniciar-atencion') && (
           <div className="form-actions">
             <button
               type="button"
-              disabled={enviando}
-              onClick={() => cambiarEstado('EN_ATENCION')}
+              disabled={enCurso !== null}
+              onClick={iniciar}
               data-testid="btn-iniciar-atencion"
             >
-              {enviando ? 'Iniciando…' : 'Iniciar atención'}
+              {enCurso === 'iniciar' ? 'Iniciando…' : 'Iniciar atención'}
             </button>
           </div>
         )}
@@ -90,8 +116,12 @@ export function DetalleAtencionPage() {
             />
           </label>
           <div className="form-actions">
-            <button type="submit" disabled={enviando} data-testid="btn-registrar-observacion">
-              {enviando ? 'Guardando…' : 'Registrar observación'}
+            <button
+              type="submit"
+              disabled={enCurso !== null}
+              data-testid="btn-registrar-observacion"
+            >
+              {enCurso === 'observacion' ? 'Guardando…' : 'Registrar observación'}
             </button>
           </div>
         </form>
@@ -108,11 +138,11 @@ export function DetalleAtencionPage() {
           <div className="form-actions">
             <button
               type="button"
-              disabled={enviando || !cita.observacion}
-              onClick={() => cambiarEstado('FINALIZADA')}
+              disabled={enCurso !== null || !cita.observacion}
+              onClick={finalizar}
               data-testid="btn-finalizar"
             >
-              {enviando ? 'Finalizando…' : 'Finalizar'}
+              {enCurso === 'finalizar' ? 'Finalizando…' : 'Finalizar'}
             </button>
           </div>
         </section>
