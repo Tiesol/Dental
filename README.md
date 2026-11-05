@@ -95,11 +95,32 @@ npm run test                     # unitarios y de componentes (Vitest + React Te
 npm run test:cov                 # con cobertura
 npm run build                    # type-check + build
 npx playwright install chromium  # una sola vez
-npm run test:e2e                 # E2E con Playwright (levanta Vite solo; hoy: smoke test)
+npm run test:e2e                 # E2E con Playwright: levanta backend y frontend solos
 npm run test:e2e:ui              # modo visual para la demostración
 ```
 
-Los escenarios E2E 01 a 07 del PDF se agregarán en `frontend/e2e/` a medida que existan las pantallas (necesitan backend y base de datos levantados).
+Los E2E recorren la interfaz real contra el backend y la base de test. Playwright levanta el backend en modo test (puerto 3100, con la hora fija en lunes 9 de noviembre de 2026) y el frontend (puerto 5199), así que no chocan con los servidores de desarrollo. Antes de cada escenario, el seed de E2E deja datos conocidos; sus rutas solo existen con `NODE_ENV=test`.
+
+### Correr toda la suite desde cero
+
+```bash
+npm install                                  # en la raíz, una vez
+cp .env.example .env
+docker compose up -d                         # PostgreSQL de desarrollo y de test
+
+cd backend
+cp .env.test.example .env.test
+npm ci
+npm run lint && npm run test && npm run test:int
+
+cd ../frontend
+npm ci
+npx playwright install chromium              # una sola vez
+npm run lint && npm run test && npm run build
+npm run test:e2e
+```
+
+Todo se puede repetir las veces que haga falta: los tests de integración y los E2E vacían la base de test antes de empezar.
 
 ## Flujo de trabajo
 

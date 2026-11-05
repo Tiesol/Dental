@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 // Smoke test: comprueba que la aplicación arranca y que las rutas públicas responden.
-// No necesita backend. Los escenarios E2E 01 a 07 del PDF se agregan en archivos
-// 01-reservar.e2e.ts ... 07-control-acceso.e2e.ts cuando existan las pantallas (skill e2e-playwright).
+// No inicia sesión. Los escenarios del PDF están en 01-reservar.e2e.ts ... 07-control-acceso.e2e.ts
+// (skill e2e-playwright).
 
 test('la raíz sin sesión redirige a la página de inicio de sesión', async ({ page }) => {
   await page.goto('/');
