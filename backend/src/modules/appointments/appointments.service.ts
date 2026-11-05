@@ -129,6 +129,16 @@ export class AppointmentsService {
     });
   }
 
+  // Sin CANCELADA (D8 de PLAN.md). "Hoy" se calcula en la zona de la clínica.
+  agendaDelDia(dentistId: string, fecha?: string): Promise<AppointmentView[]> {
+    const dia = fecha ?? this.availability.fechaClinica(this.clock.now());
+    return this.appointments.findAgenda(dentistId, this.availability.rangoDeFecha(dia));
+  }
+
+  proximasDelOdontologo(dentistId: string, limit: number): Promise<AppointmentView[]> {
+    return this.appointments.findUpcoming(dentistId, this.clock.now(), limit);
+  }
+
   private async assertDisponible(
     dentistId: string,
     horaInicio: Date,
