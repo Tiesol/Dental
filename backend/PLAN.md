@@ -6,21 +6,21 @@ Al terminar una tarea: marcarla como hecha en esta tabla y agregar `(hecho)` a s
 
 ## Estado y orden
 
-| Tarea | Qué entrega                                                 | Módulo         | Empezar después de | Estado    |
-| ----- | ----------------------------------------------------------- | -------------- | ------------------ | --------- |
-| T1    | Horarios de atención y bloques no disponibles (4 endpoints) | `availability` | —                  | Hecho     |
-| T2    | Cálculo de horarios disponibles (1 endpoint)                | `availability` | T1                 | Hecho     |
-| T3    | Reservar y consultar citas (4 endpoints)                    | `appointments` | T2                 | Hecho     |
-| T4    | Reprogramar y cancelar (2 endpoints)                        | `appointments` | T3                 | Hecho     |
-| T5    | Estados de la cita y observación (2 endpoints)              | `observations` | T3                 | Hecho     |
-| T6    | Agenda del odontólogo (2 endpoints)                         | `appointments` | T3                 | Hecho     |
-| T7    | Tests pendientes de lo ya construido                        | varios         | —                  | Hecho     |
-| T8    | Entorno para los E2E: seed, reloj fijo, Playwright y CI     | `e2e`          | T3                 | Hecho     |
-| F1    | Pantalla de horarios y bloques (ADMIN)                      | frontend       | T1                 | Hecho     |
-| F2    | Reserva, con E2E 01 y 02                                    | frontend       | T3, T8             | Hecho     |
-| F3    | Mis citas, con E2E 03, 04, 06 y 07                          | frontend       | T4, T8, F2         | Hecho     |
-| F4    | Agenda del odontólogo, con E2E 05                           | frontend       | T5, T6, T8         | Hecho     |
-| F5    | Todas las citas (ADMIN)                                     | frontend       | T4, T5             | Pendiente |
+| Tarea | Qué entrega                                                 | Módulo         | Empezar después de | Estado |
+| ----- | ----------------------------------------------------------- | -------------- | ------------------ | ------ |
+| T1    | Horarios de atención y bloques no disponibles (4 endpoints) | `availability` | —                  | Hecho  |
+| T2    | Cálculo de horarios disponibles (1 endpoint)                | `availability` | T1                 | Hecho  |
+| T3    | Reservar y consultar citas (4 endpoints)                    | `appointments` | T2                 | Hecho  |
+| T4    | Reprogramar y cancelar (2 endpoints)                        | `appointments` | T3                 | Hecho  |
+| T5    | Estados de la cita y observación (2 endpoints)              | `observations` | T3                 | Hecho  |
+| T6    | Agenda del odontólogo (2 endpoints)                         | `appointments` | T3                 | Hecho  |
+| T7    | Tests pendientes de lo ya construido                        | varios         | —                  | Hecho  |
+| T8    | Entorno para los E2E: seed, reloj fijo, Playwright y CI     | `e2e`          | T3                 | Hecho  |
+| F1    | Pantalla de horarios y bloques (ADMIN)                      | frontend       | T1                 | Hecho  |
+| F2    | Reserva, con E2E 01 y 02                                    | frontend       | T3, T8             | Hecho  |
+| F3    | Mis citas, con E2E 03, 04, 06 y 07                          | frontend       | T4, T8, F2         | Hecho  |
+| F4    | Agenda del odontólogo, con E2E 05                           | frontend       | T5, T6, T8         | Hecho  |
+| F5    | Todas las citas (ADMIN)                                     | frontend       | T4, T5             | Hecho  |
 
 ```
 T1 ──> T2 ──> T3 ──┬──> T4
