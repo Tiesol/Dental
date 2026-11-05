@@ -1,5 +1,10 @@
 import { FechaInvalidaError, HorarioInvalidoError } from '../../../common/errors/domain-error';
-import { AvailabilityRuleInput, BlockRange } from './availability';
+import {
+  AvailabilityRuleInput,
+  AvailabilityView,
+  BlockRange,
+  PublicAvailabilityView,
+} from './availability';
 
 const enteroEntre = (valor: number, min: number, max: number): boolean =>
   Number.isInteger(valor) && valor >= min && valor <= max;
@@ -44,4 +49,8 @@ export function assertBloqueValido({ inicio, fin }: BlockRange, ahora: Date): vo
   if (fin <= ahora) {
     throw new FechaInvalidaError('El bloque ya terminó');
   }
+}
+
+export function toPublicAvailability(_vista: AvailabilityView): PublicAvailabilityView {
+  throw new Error('sin implementar');
 }

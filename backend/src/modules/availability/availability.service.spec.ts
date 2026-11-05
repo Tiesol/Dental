@@ -11,6 +11,17 @@ import { AvailabilityService } from './availability.service';
 describe('AvailabilityService', () => {
   const ahora = new Date('2026-11-09T14:00:00.000Z');
   const vista = { horarios: [], bloques: [] };
+  const conBloque = {
+    horarios: [],
+    bloques: [
+      {
+        id: 'b1',
+        inicio: new Date('2026-11-10T14:00:00.000Z'),
+        fin: new Date('2026-11-10T15:00:00.000Z'),
+        motivo: 'Cirugía personal',
+      },
+    ],
+  };
   const lunes = { diaSemana: 1, minutoInicio: 540, minutoFin: 720 };
   const cuerpoBloque = { inicio: '2026-11-10T14:00:00.000Z', fin: '2026-11-10T15:00:00.000Z' };
 
@@ -47,6 +58,24 @@ describe('AvailabilityService', () => {
 
       expect(resultado).toEqual(vista);
       expect(repository.findByDentist).toHaveBeenCalledWith('d1', ahora);
+    });
+
+    it('entrega el motivo de los bloques al ADMIN', async () => {
+      repository.findByDentist.mockResolvedValue(conBloque);
+
+      const resultado = await service.find('d1', 'ADMIN');
+
+      expect(resultado).toEqual(conBloque);
+    });
+
+    it.each(['PACIENTE', 'ODONTOLOGO'] as const)('oculta el motivo al rol %s', async (rol) => {
+      repository.findByDentist.mockResolvedValue(conBloque);
+
+      const resultado = await service.find('d1', rol);
+
+      expect(resultado.bloques).toEqual([
+        { id: 'b1', inicio: conBloque.bloques[0].inicio, fin: conBloque.bloques[0].fin },
+      ]);
     });
   });
 

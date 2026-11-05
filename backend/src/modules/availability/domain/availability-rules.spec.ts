@@ -1,6 +1,10 @@
 import { FechaInvalidaError, HorarioInvalidoError } from '../../../common/errors/domain-error';
 import { AvailabilityRuleInput } from './availability';
-import { assertBloqueValido, assertHorariosValidos } from './availability-rules';
+import {
+  assertBloqueValido,
+  assertHorariosValidos,
+  toPublicAvailability,
+} from './availability-rules';
 
 const LUNES = 1;
 const MARTES = 2;
@@ -98,6 +102,21 @@ describe('assertHorariosValidos', () => {
 
       expect(() => assertHorariosValidos(horarios)).toThrow(HorarioInvalidoError);
     });
+  });
+});
+
+describe('toPublicAvailability', () => {
+  it('quita el motivo de los bloques y conserva horarios y fechas', () => {
+    const horarios = [{ id: 'h1', ...tramo(540, 720) }];
+    const inicio = new Date('2026-11-10T14:00:00Z');
+    const fin = new Date('2026-11-10T15:00:00Z');
+
+    const resultado = toPublicAvailability({
+      horarios,
+      bloques: [{ id: 'b1', inicio, fin, motivo: 'Cirugía personal' }],
+    });
+
+    expect(resultado).toEqual({ horarios, bloques: [{ id: 'b1', inicio, fin }] });
   });
 });
 

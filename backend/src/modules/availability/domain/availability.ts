@@ -20,3 +20,9 @@ export type AvailabilityView = {
   horarios: AvailabilityRuleRecord[];
   bloques: UnavailableBlockRecord[];
 };
+
+// Lo que ven PACIENTE y ODONTOLOGO: cuándo no se atiende, sin el motivo.
+export type PublicAvailabilityView = {
+  horarios: AvailabilityRuleRecord[];
+  bloques: (BlockRange & { id: string })[];
+};

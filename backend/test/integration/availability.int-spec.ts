@@ -110,7 +110,7 @@ describe('Disponibilidad (integración)', () => {
           bloque('2026-11-09T13:30:00.000Z', '2026-11-09T14:30:00.000Z'),
         ],
       });
-      const token = await tokenDePaciente();
+      const token = await tokenDeAdmin();
 
       const res = await conToken(http().get(ruta(`/dentists/${dentistId}/availability`)), token);
 
@@ -126,6 +126,32 @@ describe('Disponibilidad (integración)', () => {
           inicio: '2026-11-12T14:00:00.000Z',
           fin: '2026-11-12T15:00:00.000Z',
           motivo: 'Congreso',
+        },
+      ]);
+    });
+
+    it.each([
+      ['PACIENTE', tokenDePaciente],
+      ['ODONTOLOGO', tokenDeOdontologo],
+    ])('oculta el motivo de los bloques al rol %s', async (_rol, obtenerToken) => {
+      const dentistId = await nuevoOdontologoId();
+      await prisma.unavailableBlock.create({
+        data: {
+          dentistId,
+          inicio: new Date('2026-11-12T14:00:00.000Z'),
+          fin: new Date('2026-11-12T15:00:00.000Z'),
+          motivo: 'Cirugía personal',
+        },
+      });
+      const token = await obtenerToken();
+
+      const res = await conToken(http().get(ruta(`/dentists/${dentistId}/availability`)), token);
+
+      expect(res.body.bloques).toEqual([
+        {
+          id: expect.any(String),
+          inicio: '2026-11-12T14:00:00.000Z',
+          fin: '2026-11-12T15:00:00.000Z',
         },
       ]);
     });
@@ -414,6 +440,19 @@ describe('Disponibilidad (integración)', () => {
 
       expect(res.status).toBe(400);
       expect(await horariosEnBd(dentistId)).toEqual([]);
+    });
+
+    it('explica en español que un horario no es un objeto', async () => {
+      const dentistId = await nuevoOdontologoId();
+      const token = await tokenDeAdmin();
+
+      const res = await conToken(
+        http().put(ruta(`/dentists/${dentistId}/availability`)),
+        token,
+      ).send({ horarios: ['lunes'] });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toEqual(['Cada horario debe ser un objeto']);
     });
   });
 
