@@ -452,7 +452,8 @@ describe('Disponibilidad (integración)', () => {
       ).send({ horarios: ['lunes'] });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toEqual(['Cada horario debe ser un objeto']);
+      // El prefijo "horarios." lo agrega ValidationPipe en las validaciones anidadas.
+      expect(res.body.message).toEqual(['horarios.Cada horario debe ser un objeto']);
     });
   });
 

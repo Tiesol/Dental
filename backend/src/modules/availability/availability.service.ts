@@ -7,9 +7,14 @@ import { AvailabilityRepository } from './availability.repository';
 import {
   AvailabilityRuleInput,
   AvailabilityView,
+  PublicAvailabilityView,
   UnavailableBlockRecord,
 } from './domain/availability';
-import { assertBloqueValido, assertHorariosValidos } from './domain/availability-rules';
+import {
+  assertBloqueValido,
+  assertHorariosValidos,
+  toPublicAvailability,
+} from './domain/availability-rules';
 import { CreateBlockDto } from './dto/create-block.dto';
 
 // Casos de uso de la disponibilidad: consulta para todos y gestión por el ADMIN.
@@ -22,9 +27,10 @@ export class AvailabilityService {
   ) {}
 
   // Misma visibilidad que GET /dentists/:id: quien no es ADMIN recibe 404 si no acepta citas.
-  async find(dentistId: string, role: Role): Promise<AvailabilityView> {
+  async find(dentistId: string, role: Role): Promise<AvailabilityView | PublicAvailabilityView> {
     await this.dentists.findOne(dentistId, role);
-    return this.availability.findByDentist(dentistId, this.clock.now());
+    const vista = await this.availability.findByDentist(dentistId, this.clock.now());
+    return role === 'ADMIN' ? vista : toPublicAvailability(vista);
   }
 
   // Las citas ya creadas fuera del horario nuevo se conservan (decisión D6 de PLAN.md).

@@ -29,7 +29,7 @@ export class SetAvailabilityDto {
   })
   @IsArray({ message: 'horarios debe ser una lista' })
   @ArrayMaxSize(100, { message: 'horarios admite hasta 100 tramos' })
-  @ValidateNested({ each: true })
+  @ValidateNested({ each: true, message: 'Cada horario debe ser un objeto' })
   @Type(() => AvailabilityRuleDto)
   horarios: AvailabilityRuleDto[];
 }

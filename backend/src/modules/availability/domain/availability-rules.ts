@@ -51,6 +51,11 @@ export function assertBloqueValido({ inicio, fin }: BlockRange, ahora: Date): vo
   }
 }
 
-export function toPublicAvailability(_vista: AvailabilityView): PublicAvailabilityView {
-  throw new Error('sin implementar');
+// Proyección para PACIENTE y ODONTOLOGO: el motivo es texto libre sobre la ausencia de un
+// odontólogo y solo le sirve al ADMIN, que gestiona los bloques.
+export function toPublicAvailability({
+  horarios,
+  bloques,
+}: AvailabilityView): PublicAvailabilityView {
+  return { horarios, bloques: bloques.map(({ id, inicio, fin }) => ({ id, inicio, fin })) };
 }
