@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import type { Role } from '@/api/types';
-import { EmptyState } from '@/shared/components/EmptyState';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { useAuth } from './useAuth';
 
@@ -17,10 +16,10 @@ export function RequireRole({ children, roles }: Props) {
     return (
       <div className="page page-narrow">
         <section className="card" role="alert">
-          <EmptyState
-            title="Acceso denegado"
-            description="No tienes permiso para ver esta página."
-          />
+          <div className="empty-state">
+            <h1>Acceso denegado</h1>
+            <p className="muted">No tienes permiso para ver esta página.</p>
+          </div>
         </section>
       </div>
     );
