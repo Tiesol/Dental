@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, http } from 'msw';
+import { HttpResponse, http, type RequestHandler } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 import type { AppointmentResponse } from '@/api/types';
 import { citaDePrueba, odontologoAdminDePrueba, usuarioDePrueba } from '@/test/factories';
@@ -9,7 +9,10 @@ import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
 import { AdminCitasPage } from './AdminCitasPage';
 
-function renderPagina(iniciales: AppointmentResponse[] = [citaDePrueba()]) {
+function renderPagina(
+  iniciales: AppointmentResponse[] = [citaDePrueba()],
+  extras: RequestHandler[] = [],
+) {
   let citas = iniciales;
   const consultas = vi.fn();
   const cambios: unknown[] = [];
@@ -37,6 +40,7 @@ function renderPagina(iniciales: AppointmentResponse[] = [citaDePrueba()]) {
       return HttpResponse.json(actualizar(params.id as string, 'CANCELADA'));
     }),
   );
+  server.use(...extras);
   renderWithProviders(<AdminCitasPage />, { route: '/admin/citas', conSesion: true });
   return { consultas, cambios, cancelaciones };
 }
@@ -208,12 +212,11 @@ describe('AdminCitasPage', () => {
   });
 
   it('muestra el error si no se pueden cargar', async () => {
-    renderPagina();
-    server.use(
+    renderPagina(undefined, [
       http.get(`${API}/appointments`, () =>
         HttpResponse.json({ statusCode: 500, message: 'Falló el servidor' }, { status: 500 }),
       ),
-    );
+    ]);
 
     expect(await screen.findByTestId('error-mensaje')).toHaveTextContent('Falló el servidor');
   });

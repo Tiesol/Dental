@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, http } from 'msw';
+import { HttpResponse, http, type RequestHandler } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { citaDePrueba } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
@@ -8,7 +8,7 @@ import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
 import { MisCitasPage } from './MisCitasPage';
 
-function renderPagina() {
+function renderPagina(extras: RequestHandler[] = []) {
   server.use(
     http.get(`${API}/appointments/mine`, ({ request }) => {
       const cuando = new URL(request.url).searchParams.get('cuando');
@@ -26,6 +26,7 @@ function renderPagina() {
       );
     }),
   );
+  server.use(...extras);
   renderWithProviders(<MisCitasPage />, { route: '/mis-citas' });
 }
 
@@ -66,16 +67,14 @@ describe('MisCitasPage', () => {
   });
 
   it('avisa si no hay citas próximas y ofrece reservar', async () => {
-    renderPagina();
-    server.use(http.get(`${API}/appointments/mine`, () => HttpResponse.json([])));
+    renderPagina([http.get(`${API}/appointments/mine`, () => HttpResponse.json([]))]);
 
     expect(await screen.findByText('No tienes citas próximas')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Reservar cita' }).length).toBeGreaterThan(0);
   });
 
   it('avisa si el historial está vacío', async () => {
-    renderPagina();
-    server.use(http.get(`${API}/appointments/mine`, () => HttpResponse.json([])));
+    renderPagina([http.get(`${API}/appointments/mine`, () => HttpResponse.json([]))]);
     const user = userEvent.setup();
     await screen.findByText('No tienes citas próximas');
 
@@ -85,12 +84,11 @@ describe('MisCitasPage', () => {
   });
 
   it('muestra el error si no se pueden cargar', async () => {
-    renderPagina();
-    server.use(
+    renderPagina([
       http.get(`${API}/appointments/mine`, () =>
         HttpResponse.json({ statusCode: 500, message: 'Falló el servidor' }, { status: 500 }),
       ),
-    );
+    ]);
 
     expect(await screen.findByTestId('error-mensaje')).toHaveTextContent('Falló el servidor');
   });
