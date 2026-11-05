@@ -1,4 +1,10 @@
-import type { ServiceResponse, UserDetail, UserResponse } from '@/api/types';
+import type {
+  DentistAdminResponse,
+  DentistPublicResponse,
+  ServiceResponse,
+  UserDetail,
+  UserResponse,
+} from '@/api/types';
 
 // Datos de prueba con valores por defecto sensatos. Cada test sobreescribe lo que le importa.
 export function usuarioDePrueba(overrides: Partial<UserResponse> = {}): UserResponse {
@@ -31,6 +37,34 @@ export function servicioDePrueba(overrides: Partial<ServiceResponse> = {}): Serv
     duracionMin: 45,
     precioReferencial: 150,
     activo: true,
+    ...overrides,
+  };
+}
+
+export function odontologoAdminDePrueba(
+  overrides: Partial<DentistAdminResponse> = {},
+): DentistAdminResponse {
+  return {
+    id: 'd1',
+    userId: 'u9',
+    email: 'laura@clinica.com',
+    cuentaActiva: true,
+    nombre: 'Dra. Laura Gómez',
+    especialidad: 'Odontología general',
+    activo: true,
+    servicios: [{ id: 's1', nombre: 'Limpieza dental', duracionMin: 30, activo: true }],
+    ...overrides,
+  };
+}
+
+export function odontologoPublicoDePrueba(
+  overrides: Partial<DentistPublicResponse> = {},
+): DentistPublicResponse {
+  return {
+    id: 'd1',
+    nombre: 'Dra. Laura Gómez',
+    especialidad: 'Odontología general',
+    servicios: [{ id: 's1', nombre: 'Limpieza dental', duracionMin: 30 }],
     ...overrides,
   };
 }
