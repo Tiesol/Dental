@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { UpdateMyProfileRequest, UserDetail } from '@/api/types';
+import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { camposPropios, type CampoPropio } from '../lib/campos-propios';
 
 type Props = {
@@ -42,28 +44,30 @@ export function FormularioPerfil({ perfil, guardar }: Props) {
   return (
     <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-perfil">
       <h2 id="titulo-perfil">Editar perfil</h2>
-      {campos.includes('nombre') && (
-        <label>
-          Nombre
-          <input
-            value={form.nombre}
-            onChange={(e) => update('nombre')(e.target.value)}
-            required
-            autoComplete={perfil.role === 'PACIENTE' ? 'given-name' : 'name'}
-          />
-        </label>
-      )}
-      {campos.includes('apellido') && (
-        <label>
-          Apellido
-          <input
-            value={form.apellido}
-            onChange={(e) => update('apellido')(e.target.value)}
-            required
-            autoComplete="family-name"
-          />
-        </label>
-      )}
+      <div className="form-row">
+        {campos.includes('nombre') && (
+          <label>
+            Nombre
+            <input
+              value={form.nombre}
+              onChange={(e) => update('nombre')(e.target.value)}
+              required
+              autoComplete={perfil.role === 'PACIENTE' ? 'given-name' : 'name'}
+            />
+          </label>
+        )}
+        {campos.includes('apellido') && (
+          <label>
+            Apellido
+            <input
+              value={form.apellido}
+              onChange={(e) => update('apellido')(e.target.value)}
+              required
+              autoComplete="family-name"
+            />
+          </label>
+        )}
+      </div>
       {campos.includes('telefono') && (
         <label>
           Teléfono (opcional)
@@ -75,19 +79,13 @@ export function FormularioPerfil({ perfil, guardar }: Props) {
           />
         </label>
       )}
-      {error && (
-        <p className="error" role="alert" data-testid="error-mensaje">
-          {error}
-        </p>
-      )}
-      {exito && (
-        <p className="success" role="status">
-          {exito}
-        </p>
-      )}
-      <button type="submit" disabled={enviando} data-testid="btn-guardar-perfil">
-        {enviando ? 'Guardando…' : 'Guardar perfil'}
-      </button>
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+      {exito && <SuccessMessage>{exito}</SuccessMessage>}
+      <div className="form-actions">
+        <button type="submit" disabled={enviando} data-testid="btn-guardar-perfil">
+          {enviando ? 'Guardando…' : 'Guardar perfil'}
+        </button>
+      </div>
     </form>
   );
 }
