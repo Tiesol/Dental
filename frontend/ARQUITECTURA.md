@@ -46,7 +46,7 @@ frontend/
 │   ├── app/
 │   │   ├── App.tsx                    # providers (AuthProvider, Router) + layout        (hecho)
 │   │   ├── router.tsx                 # rutas + RequireRole por rol                      (hecho)
-│   │   └── layouts/                   # Header (hecho); luego layout por rol
+│   │   └── layouts/                   # AppLayout (con sesión), AuthLayout (login y registro), Header (menú por rol) (hechos)
 │   ├── api/
 │   │   ├── http.ts                    # único acceso a la red: adjunta el JWT, traduce errores (hecho)
 │   │   ├── token.ts                   # tokenStore: único acceso a localStorage           (hecho)
@@ -64,8 +64,8 @@ frontend/
 │   │   ├── agenda/                    # agenda del odontólogo: hoy, próximas, cambio de estado, observación
 │   │   └── admin-citas/               # todas las citas, confirmar/cancelar
 │   ├── shared/
-│   │   ├── components/                # Button, Input, Select, Modal, Table, EstadoCitaBadge, EmptyState, ErrorMessage
-│   │   ├── hooks/
+│   │   ├── components/                # PageHeader, EmptyState, LoadingState, ErrorMessage, SuccessMessage, ActiveBadge, Avatar, Icon, ConfirmDialog (hechos); EstadoCitaBadge
+│   │   ├── hooks/                     # useConfirm: reemplaza a window.confirm con un <dialog> nativo (hecho)
 │   │   ├── lib/
 │   │   │   ├── dates.ts               # formateo y conversión UTC <-> zona de la clínica
 │   │   │   └── estados-cita.ts        # etiquetas, colores y acciones permitidas por estado y rol
@@ -157,7 +157,8 @@ El componente `EstadoCitaBadge` muestra el estado con el texto exacto del PDF (P
 - `409` en reserva o reprogramación: se muestra "El horario ya no está disponible" y se refrescan los slots (E2E 02).
 - `403`: página o mensaje de acceso denegado (E2E 07).
 - Formularios: validación en cliente con mensajes en español (campos obligatorios, fecha futura), pero sin duplicar reglas de disponibilidad.
-- Estados de carga y vacío explícitos en cada lista (`EmptyState`): "No tienes citas próximas", "No hay horarios disponibles para esta fecha".
+- Estados de carga y vacío explícitos en cada lista (`LoadingState`, `EmptyState`): "No tienes citas próximas", "No hay horarios disponibles para esta fecha".
+- Acciones destructivas: se confirman con `useConfirm`, nunca con `window.confirm`. El foco inicial cae en Cancelar.
 
 ---
 
