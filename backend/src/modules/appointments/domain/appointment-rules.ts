@@ -1,5 +1,6 @@
 import {
   AccesoDenegadoACitaError,
+  CitaNoModificableError,
   HorarioEnElPasadoError,
   HorarioNoDisponibleError,
 } from '../../../common/errors/domain-error';
@@ -54,6 +55,9 @@ export function filtrarPorCuando<T extends Pick<AppointmentView, 'horaInicio' | 
   return elegidas.sort((a, b) => porInicio(b, a));
 }
 
-export function assertCitaModificable(_estado: AppointmentStatus): void {
-  throw new Error('sin implementar');
+// Solo se reprograma o cancela antes de la atención (PDF sección 8 y D1 de PLAN.md).
+export function assertCitaModificable(estado: AppointmentStatus): void {
+  if (estado !== 'PENDIENTE' && estado !== 'CONFIRMADA') {
+    throw new CitaNoModificableError();
+  }
 }

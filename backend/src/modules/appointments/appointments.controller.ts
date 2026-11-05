@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -7,6 +7,7 @@ import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { ListAppointmentsQuery } from './dto/list-appointments.query';
 import { ListMyAppointmentsQuery } from './dto/list-my-appointments.query';
+import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
 
 @ApiTags('appointments')
 @ApiBearerAuth()
@@ -40,5 +41,23 @@ export class AppointmentsController {
   @ApiOperation({ summary: 'Detalle de una cita (paciente dueño, odontólogo asignado o ADMIN)' })
   findOne(@CurrentUser() user: CurrentUserData, @Param('id', ParseUUIDPipe) id: string) {
     return this.appointmentsService.findOne(id, user);
+  }
+
+  @Patch(':id/reschedule')
+  @Roles('PACIENTE', 'ADMIN')
+  @ApiOperation({ summary: 'Reprograma una cita (paciente dueño o ADMIN)' })
+  reschedule(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RescheduleAppointmentDto,
+  ) {
+    return this.appointmentsService.reprogramar(id, dto.horaInicio, user);
+  }
+
+  @Patch(':id/cancel')
+  @Roles('PACIENTE', 'ADMIN')
+  @ApiOperation({ summary: 'Cancela una cita y libera el horario (paciente dueño o ADMIN)' })
+  cancel(@CurrentUser() user: CurrentUserData, @Param('id', ParseUUIDPipe) id: string) {
+    return this.appointmentsService.cancelar(id, user);
   }
 }

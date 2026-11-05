@@ -3,7 +3,12 @@ import { Prisma } from '@prisma/client';
 import { HorarioNoDisponibleError } from '../../common/errors/domain-error';
 import { lockDentist } from '../../prisma/dentist-lock';
 import { PrismaService, Tx } from '../../prisma/prisma.service';
-import { AppointmentFilters, AppointmentView, NewAppointment } from './domain/appointment';
+import {
+  AppointmentFilters,
+  AppointmentStatus,
+  AppointmentView,
+  NewAppointment,
+} from './domain/appointment';
 
 const withRelations = {
   service: { select: { id: true, nombre: true, duracionMin: true } },
@@ -36,8 +41,29 @@ export class AppointmentsRepository {
     }
   }
 
-  async findById(id: string): Promise<AppointmentView | null> {
-    const row = await this.prisma.appointment.findUnique({
+  // Actualiza la misma fila: si el horario nuevo choca, la cita conserva el anterior (PDF sección 8).
+  async updateHorario(
+    tx: Tx,
+    id: string,
+    horario: { horaInicio: Date; horaFin: Date },
+  ): Promise<AppointmentView> {
+    try {
+      return toView(
+        await tx.appointment.update({ where: { id }, data: horario, include: withRelations }),
+      );
+    } catch (error) {
+      throw traducirSolapamiento(error);
+    }
+  }
+
+  async updateEstado(tx: Tx, id: string, estado: AppointmentStatus): Promise<AppointmentView> {
+    return toView(
+      await tx.appointment.update({ where: { id }, data: { estado }, include: withRelations }),
+    );
+  }
+
+  async findById(id: string, tx?: Tx): Promise<AppointmentView | null> {
+    const row = await (tx ?? this.prisma).appointment.findUnique({
       where: { id },
       include: withRelations,
     });
