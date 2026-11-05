@@ -1,6 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import type { Role } from '@/api/types';
 import { EditarUsuarioPage, NuevoUsuarioPage, UsuariosPage } from '@/features/admin-usuarios';
+import { AgendaPage, DetalleAtencionPage } from '@/features/agenda';
 import { LoginPage, RegistroPage, RequireRole } from '@/features/auth';
 import { MiCuentaPage } from '@/features/cuenta';
 import { DetalleCitaPage, MisCitasPage } from '@/features/mis-citas';
@@ -49,6 +50,11 @@ export function AppRoutes() {
             <Route path="/reservar" element={<ReservaPage />} />
             <Route path="/mis-citas" element={<MisCitasPage />} />
             <Route path="/mis-citas/:id" element={<DetalleCitaPage />} />
+          </Route>
+
+          <Route element={<Protegidas roles={['ODONTOLOGO']} />}>
+            <Route path="/agenda" element={<AgendaPage />} />
+            <Route path="/agenda/:id" element={<DetalleAtencionPage />} />
           </Route>
 
           <Route element={<Protegidas roles={['ADMIN']} />}>
