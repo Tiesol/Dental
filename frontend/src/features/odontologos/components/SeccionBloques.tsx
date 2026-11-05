@@ -83,7 +83,11 @@ export function SeccionBloques({ bloques, crear, borrar }: Props) {
           ))}
         </ul>
       )}
-      <form onSubmit={(e) => void onSubmit(e)} aria-label="Nuevo bloque no disponible">
+      <form
+        className="form-bloque"
+        onSubmit={(e) => void onSubmit(e)}
+        aria-label="Nuevo bloque no disponible"
+      >
         <div className="form-row">
           <label>
             Inicio

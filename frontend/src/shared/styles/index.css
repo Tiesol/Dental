@@ -625,7 +625,7 @@ button.danger:hover:not(:disabled) {
 /* ---- Títulos dentro de una tarjeta sin relleno ---- */
 
 .card-title {
-  padding: var(--space-4) var(--space-5) 0;
+  padding: var(--space-4) var(--space-4) var(--space-3);
 }
 
 /* ---- Paginación ---- */
@@ -699,10 +699,16 @@ button.tab-active:hover:not(:disabled) {
   align-items: end;
 }
 
-@media (min-width: 30rem) {
+@media (min-width: 44rem) {
   .tramo {
-    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) auto;
+    grid-template-columns: minmax(7rem, 1fr) repeat(2, minmax(8.5rem, 1fr)) auto;
   }
+}
+
+.form-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 /* ---- Listados ---- */
