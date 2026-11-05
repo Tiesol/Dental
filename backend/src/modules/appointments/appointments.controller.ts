@@ -4,6 +4,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { CurrentUserData } from '../../common/types/current-user';
 import { AppointmentsService } from './appointments.service';
+import { ChangeStatusDto } from './dto/change-status.dto';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { ListAppointmentsQuery } from './dto/list-appointments.query';
 import { ListMyAppointmentsQuery } from './dto/list-my-appointments.query';
@@ -59,5 +60,16 @@ export class AppointmentsController {
   @ApiOperation({ summary: 'Cancela una cita y libera el horario (paciente dueño o ADMIN)' })
   cancel(@CurrentUser() user: CurrentUserData, @Param('id', ParseUUIDPipe) id: string) {
     return this.appointmentsService.cancelar(id, user);
+  }
+
+  @Patch(':id/status')
+  @Roles('ADMIN', 'ODONTOLOGO')
+  @ApiOperation({ summary: 'Cambia el estado según la transición y el rol' })
+  changeStatus(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ChangeStatusDto,
+  ) {
+    return this.appointmentsService.cambiarEstado(id, dto.estado, user);
   }
 }

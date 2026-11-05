@@ -5,13 +5,14 @@ import { CurrentUserData } from '../../common/types/current-user';
 import type { Tx } from '../../prisma/prisma.service';
 import { AvailabilityService } from '../availability/availability.service';
 import { AppointmentsRepository } from './appointments.repository';
-import { AppointmentView, CuandoCitas } from './domain/appointment';
+import { AppointmentStatus, AppointmentView, CuandoCitas } from './domain/appointment';
 import {
   assertCitaModificable,
   assertHorarioReservable,
   assertPuedeVerCita,
   filtrarPorCuando,
 } from './domain/appointment-rules';
+import { assertPuedeFinalizar, assertTransicionPermitida } from './domain/appointment-status';
 import { calcularHoraFin } from './domain/end-time';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { ListAppointmentsQuery } from './dto/list-appointments.query';
@@ -74,6 +75,22 @@ export class AppointmentsService {
     return this.modificar(id, user, (cita, tx) =>
       this.appointments.updateEstado(tx, cita.id, 'CANCELADA'),
     );
+  }
+
+  // Primero la propiedad (403), luego la transición. El estado y la observación se releen con el
+  // odontólogo bloqueado, por si otra petición los cambió mientras esta esperaba.
+  async cambiarEstado(
+    id: string,
+    hacia: AppointmentStatus,
+    user: CurrentUserData,
+  ): Promise<AppointmentView> {
+    const { odontologo } = await this.findOne(id, user);
+    return this.appointments.withDentistLock(odontologo.id, async (tx) => {
+      const cita = await this.getOrThrow(id, tx);
+      assertTransicionPermitida(cita.estado, hacia, user.role);
+      assertPuedeFinalizar(hacia, cita.observacion);
+      return this.appointments.updateEstado(tx, id, hacia);
+    });
   }
 
   async findMine(patientId: string, cuando?: CuandoCitas): Promise<AppointmentView[]> {
