@@ -21,6 +21,12 @@ export type AvailabilityView = {
   bloques: UnavailableBlockRecord[];
 };
 
+export type SlotInputs = {
+  horarios: AvailabilityRuleInput[];
+  bloques: BlockRange[];
+  citas: BlockRange[];
+};
+
 // Lo que ven PACIENTE y ODONTOLOGO: cuándo no se atiende, sin el motivo.
 export type PublicAvailabilityView = {
   horarios: AvailabilityRuleRecord[];

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Service } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService, Tx } from '../../prisma/prisma.service';
 import { NewService, ServiceChanges, ServiceRecord } from './domain/service';
 
 // Único punto de acceso a la tabla Service con Prisma.
@@ -16,8 +16,8 @@ export class ServicesRepository {
     return rows.map(toRecord);
   }
 
-  async findById(id: string): Promise<ServiceRecord | null> {
-    const row = await this.prisma.service.findUnique({ where: { id } });
+  async findById(id: string, tx?: Tx): Promise<ServiceRecord | null> {
+    const row = await (tx ?? this.prisma).service.findUnique({ where: { id } });
     return row ? toRecord(row) : null;
   }
 

@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService, Tx } from '../../prisma/prisma.service';
+import { Intervalo } from '../appointments/domain/overlap';
 import {
   AvailabilityRuleInput,
   AvailabilityView,
   NewUnavailableBlock,
+  SlotInputs,
   UnavailableBlockRecord,
 } from './domain/availability';
 
@@ -35,6 +37,40 @@ export class AvailabilityRepository {
       }),
     ]);
     return { horarios, bloques };
+  }
+
+  // Lo que necesita el cálculo de horarios de un día. Una reserva lo lee dentro de su transacción,
+  // y al reprogramar se excluye la propia cita para poder moverla a un horario que se cruza con ella.
+  async findSlotInputs(
+    dentistId: string,
+    diaSemana: number,
+    { inicio, fin }: Intervalo,
+    { tx, excluirCitaId }: { tx?: Tx; excluirCitaId?: string } = {},
+  ): Promise<SlotInputs> {
+    const db = tx ?? this.prisma;
+    const horarios = await db.availabilityRule.findMany({
+      where: { dentistId, diaSemana },
+      select: { diaSemana: true, minutoInicio: true, minutoFin: true },
+    });
+    const bloques = await db.unavailableBlock.findMany({
+      where: { dentistId, inicio: { lt: fin }, fin: { gt: inicio } },
+      select: { inicio: true, fin: true },
+    });
+    const citas = await db.appointment.findMany({
+      where: {
+        dentistId,
+        estado: { not: 'CANCELADA' },
+        horaInicio: { lt: fin },
+        horaFin: { gt: inicio },
+        ...(excluirCitaId ? { id: { not: excluirCitaId } } : {}),
+      },
+      select: { horaInicio: true, horaFin: true },
+    });
+    return {
+      horarios,
+      bloques,
+      citas: citas.map(({ horaInicio, horaFin }) => ({ inicio: horaInicio, fin: horaFin })),
+    };
   }
 
   // Borra y vuelve a crear en una transacción, para que nunca quede a medias.

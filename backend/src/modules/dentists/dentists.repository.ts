@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService, Tx } from '../../prisma/prisma.service';
 import { DentistChanges, DentistRecord } from './domain/dentist';
 
 const withRelations = {
@@ -42,8 +42,11 @@ export class DentistsRepository {
     return rows.map(toRecord);
   }
 
-  async findById(id: string): Promise<DentistRecord | null> {
-    const row = await this.prisma.dentist.findUnique({ where: { id }, include: withRelations });
+  async findById(id: string, tx?: Tx): Promise<DentistRecord | null> {
+    const row = await (tx ?? this.prisma).dentist.findUnique({
+      where: { id },
+      include: withRelations,
+    });
     return row ? toRecord(row) : null;
   }
 

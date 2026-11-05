@@ -4,6 +4,7 @@ import {
   RecursoNoEncontradoError,
 } from '../../common/errors/domain-error';
 import { Role } from '../../common/types/role';
+import type { Tx } from '../../prisma/prisma.service';
 import { ServiceChanges, ServiceRecord } from './domain/service';
 import { normalizarNombreServicio, puedeVerServicio } from './domain/service-rules';
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -69,8 +70,9 @@ export class ServicesService {
     return ids.filter((id) => !existentes.has(id));
   }
 
-  private async getOrThrow(id: string): Promise<ServiceRecord> {
-    const service = await this.services.findById(id);
+  // Sin filtrar por rol: lo usan quienes validan una reserva, también dentro de su transacción.
+  async getOrThrow(id: string, tx?: Tx): Promise<ServiceRecord> {
+    const service = await this.services.findById(id, tx);
     if (!service) {
       throw new RecursoNoEncontradoError('Servicio');
     }
