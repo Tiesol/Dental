@@ -7,8 +7,10 @@ import { AppointmentStatus } from '../appointments/domain/appointment';
 export class E2eRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  nombreDeLaBase(): Promise<string> {
-    throw new Error('sin implementar');
+  async nombreDeLaBase(): Promise<string> {
+    const [{ nombre }] = await this.prisma.$queryRaw<{ nombre: string }[]>`
+      SELECT current_database() AS nombre`;
+    return nombre;
   }
 
   async vaciar(): Promise<void> {

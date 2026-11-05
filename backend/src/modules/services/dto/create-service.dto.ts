@@ -2,10 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsInt,
-  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -16,13 +16,13 @@ import {
 export class CreateServiceDto {
   @ApiProperty({ example: 'Limpieza dental' })
   @IsString()
-  @IsNotEmpty({ message: 'El nombre es obligatorio' })
+  @Matches(/\S/, { message: 'El nombre es obligatorio' })
   @MaxLength(100, { message: 'El nombre admite hasta 100 caracteres' })
   nombre: string;
 
   @ApiProperty({ example: 'Profilaxis y eliminación de sarro' })
   @IsString()
-  @IsNotEmpty({ message: 'La descripción es obligatoria' })
+  @Matches(/\S/, { message: 'La descripción es obligatoria' })
   @MaxLength(500, { message: 'La descripción admite hasta 500 caracteres' })
   descripcion: string;
 

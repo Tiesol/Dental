@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { BaseNoEsDeTestError } from '../../common/errors/domain-error';
 import { PasswordHasher } from '../../common/security/password-hasher';
 import { calcularHoraFin } from '../appointments/domain/end-time';
 import { CreateE2eAppointmentDto } from './dto/create-e2e-appointment.dto';
@@ -20,6 +21,11 @@ export class E2eService {
   ) {}
 
   async sembrar(): Promise<void> {
+    // Sin .env.test, start:test se conectaría a la base de desarrollo: NODE_ENV no basta.
+    const base = await this.e2e.nombreDeLaBase();
+    if (!base.endsWith('_test')) {
+      throw new BaseNoEsDeTestError(base);
+    }
     await this.e2e.vaciar();
     const claveAdmin = await this.hasher.hash('Admin12345');
     const clavePaciente = await this.hasher.hash('Paciente12345');

@@ -2,11 +2,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsIn,
-  IsNotEmpty,
   IsString,
+  Matches,
+  MaxLength,
   MinLength,
   ValidateIf,
-  MaxLength,
 } from 'class-validator';
 import { STAFF_ROLES, type StaffRole } from '../domain/user';
 
@@ -34,12 +34,14 @@ export class CreateUserDto {
   })
   @ValidateIf((dto: CreateUserDto) => dto.role === 'ODONTOLOGO')
   @IsString()
-  @IsNotEmpty({ message: 'El nombre es obligatorio para un odontólogo' })
+  @Matches(/\S/, { message: 'El nombre es obligatorio para un odontólogo' })
+  @MaxLength(100, { message: 'El nombre admite hasta 100 caracteres' })
   nombre?: string;
 
   @ApiPropertyOptional({ example: 'Ortodoncia', description: 'Obligatorio si role = ODONTOLOGO' })
   @ValidateIf((dto: CreateUserDto) => dto.role === 'ODONTOLOGO')
   @IsString()
-  @IsNotEmpty({ message: 'La especialidad es obligatoria para un odontólogo' })
+  @Matches(/\S/, { message: 'La especialidad es obligatoria para un odontólogo' })
+  @MaxLength(100, { message: 'La especialidad admite hasta 100 caracteres' })
   especialidad?: string;
 }

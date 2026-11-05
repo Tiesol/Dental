@@ -3,9 +3,9 @@ import {
   ArrayMaxSize,
   IsArray,
   IsEmail,
-  IsNotEmpty,
   IsString,
   IsUUID,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -25,13 +25,13 @@ export class CreateDentistDto {
 
   @ApiProperty({ example: 'Dr. Carlos Rojas' })
   @IsString()
-  @IsNotEmpty({ message: 'El nombre es obligatorio' })
+  @Matches(/\S/, { message: 'El nombre es obligatorio' })
   @MaxLength(100, { message: 'El nombre admite hasta 100 caracteres' })
   nombre: string;
 
   @ApiProperty({ example: 'Ortodoncia' })
   @IsString()
-  @IsNotEmpty({ message: 'La especialidad es obligatoria' })
+  @Matches(/\S/, { message: 'La especialidad es obligatoria' })
   @MaxLength(100, { message: 'La especialidad admite hasta 100 caracteres' })
   especialidad: string;
 
