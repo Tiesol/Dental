@@ -39,18 +39,18 @@ Si encuentras algo que el plan no define, usa el valor por defecto de la secció
 
 ## Decisiones
 
-No están en el PDF. Cada tarea usa el valor por defecto; cambiarlo aquí si el equipo decide otra cosa.
+No están en el PDF. Las marcadas "(confirmado)" ya las decidió el equipo; las demás usan este valor por defecto, que se cambia aquí si se decide otra cosa.
 
-| #   | Tema                                                  | Por defecto                                                      | Tarea |
-| --- | ----------------------------------------------------- | ---------------------------------------------------------------- | ----- |
-| D1  | ¿El ADMIN puede cancelar una cita `EN_ATENCION`?      | No                                                               | T4    |
-| D2  | ¿El ODONTOLOGO puede confirmar sus citas `PENDIENTE`? | No, solo el ADMIN                                                | T5    |
-| D3  | Cada cuánto se ofrece un horario                      | Cada 15 minutos, en una constante `PASO_SLOTS_MIN`               | T2    |
-| D4  | Estado de una cita `CONFIRMADA` al reprogramarla      | Conserva su estado                                               | T4    |
-| D5  | Segunda observación sobre la misma cita               | Se rechaza con `409`                                             | T5    |
-| D6  | Cambiar un horario con citas ya creadas fuera de él   | Se permite; las citas se conservan                               | T1    |
-| D7  | Conversión entre zona de la clínica y UTC             | `date-fns` + `date-fns-tz`, verificando su API en `node_modules` | T2    |
-| D8  | Citas `CANCELADA` en la agenda del odontólogo         | No se muestran                                                   | T6    |
+| #   | Tema                                                  | Por defecto                                                                                                           | Tarea |
+| --- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----- |
+| D1  | ¿El ADMIN puede cancelar una cita `EN_ATENCION`?      | No: si ya está en atención no se cancela (confirmado)                                                                 | T4    |
+| D2  | ¿El ODONTOLOGO puede confirmar sus citas `PENDIENTE`? | No, solo el ADMIN                                                                                                     | T5    |
+| D3  | Cada cuánto se ofrece un horario                      | Cada 15 minutos, en una constante `PASO_SLOTS_MIN`. El PDF no lo fija: solo exige considerar la duración del servicio | T2    |
+| D4  | Estado de la cita al reprogramarla                    | Conserva su estado: `CONFIRMADA` sigue confirmada y `PENDIENTE` sigue pendiente (confirmado)                          | T4    |
+| D5  | Segunda observación sobre la misma cita               | Se rechaza con `409`                                                                                                  | T5    |
+| D6  | Cambiar un horario con citas ya creadas fuera de él   | Se permite; las citas se conservan                                                                                    | T1    |
+| D7  | Conversión entre zona de la clínica y UTC             | `date-fns` + `date-fns-tz`, verificando su API en `node_modules`                                                      | T2    |
+| D8  | Citas `CANCELADA` en la agenda del odontólogo         | No se muestran                                                                                                        | T6    |
 
 ## Reglas para todas las tareas
 

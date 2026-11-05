@@ -166,7 +166,7 @@ No están en el PDF ni fueron confirmadas explícitamente; se eligió la opción
 2. **Gestor de paquetes**: npm.
 3. **Tests unitarios colocados junto al código** (`*.spec.ts` en `src/`), como hace NestJS por defecto; integración en `test/integration/` y helpers en `test/helpers/`.
 4. **Prevención de doble reserva**: transacción Prisma con `SELECT ... FOR UPDATE` sobre el odontólogo **más** constraint de exclusión en PostgreSQL (`btree_gist`), ya incluido en la migración inicial.
-5. **Transiciones de estado y roles** (tabla en `backend/ARQUITECTURA.md` sección 6): confirmar solo ADMIN; iniciar y finalizar solo el odontólogo asignado; cancelar paciente dueño o ADMIN desde PENDIENTE/CONFIRMADA; EN_ATENCION no se cancela. **Pendientes**: ¿puede el ADMIN cancelar una cita EN_ATENCION? ¿puede el ODONTOLOGO confirmar sus propias citas?
+5. **Transiciones de estado y roles** (tabla en `backend/ARQUITECTURA.md` sección 6): confirmar solo ADMIN; iniciar y finalizar solo el odontólogo asignado; cancelar paciente dueño o ADMIN desde PENDIENTE/CONFIRMADA; EN_ATENCION no se cancela. El ADMIN tampoco cancela una cita EN_ATENCION (confirmado). **Pendiente**: ¿puede el ODONTOLOGO confirmar sus propias citas? (por defecto, no).
 6. **Finalizar exige observación** (EN_ATENCION → FINALIZADA solo con observación registrada).
 7. **Fechas**: se almacenan en UTC (`timestamptz`); los horarios de atención se guardan en minutos desde las 00:00 en la zona de la clínica. La zona se configura en `CLINIC_TIMEZONE` (`America/La_Paz` por defecto).
 8. **Intervalos semiabiertos** `[inicio, fin)`: citas consecutivas no se solapan.
