@@ -168,7 +168,7 @@ No están en el PDF ni fueron confirmadas explícitamente; se eligió la opción
 4. **Prevención de doble reserva**: transacción Prisma con `SELECT ... FOR UPDATE` sobre el odontólogo **más** constraint de exclusión en PostgreSQL (`btree_gist`), ya incluido en la migración inicial.
 5. **Transiciones de estado y roles** (tabla en `backend/ARQUITECTURA.md` sección 6): confirmar solo ADMIN; iniciar y finalizar solo el odontólogo asignado; cancelar paciente dueño o ADMIN desde PENDIENTE/CONFIRMADA; EN_ATENCION no se cancela. **Pendientes**: ¿puede el ADMIN cancelar una cita EN_ATENCION? ¿puede el ODONTOLOGO confirmar sus propias citas?
 6. **Finalizar exige observación** (EN_ATENCION → FINALIZADA solo con observación registrada).
-7. **Fechas**: se almacenan en UTC (`timestamptz`); los horarios de atención se guardan en minutos desde las 00:00 en la zona de la clínica. La zona irá en `CLINIC_TIMEZONE` / `VITE_CLINIC_TIMEZONE`. **Falta definir cuál** (por ejemplo `America/La_Paz`).
+7. **Fechas**: se almacenan en UTC (`timestamptz`); los horarios de atención se guardan en minutos desde las 00:00 en la zona de la clínica. La zona se configura en `CLINIC_TIMEZONE` (`America/La_Paz` por defecto).
 8. **Intervalos semiabiertos** `[inicio, fin)`: citas consecutivas no se solapan.
 9. **Librerías del frontend propuestas, no confirmadas**: TanStack Query para caché de datos de servidor, MSW para simular la API en tests, CSS Modules para estilos, `date-fns` + `date-fns-tz` para fechas. El código actual usa React Router (ya estaba), hooks simples y CSS global; se migrará cuando se confirme.
 10. **Token JWT en el frontend**: en `localStorage`, encapsulado en `src/api/token.ts`.

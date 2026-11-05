@@ -278,8 +278,8 @@ DATABASE_URL=postgresql://dental:...@localhost:5433/dental_test
 JWT_SECRET=
 JWT_EXPIRES_IN=1h
 
-# pendiente de definir con el usuario, se agregará cuando se implemente availability:
-CLINIC_TIMEZONE=
+# Zona horaria de la clínica (IANA), usada para interpretar los horarios de atención:
+CLINIC_TIMEZONE=America/La_Paz
 ```
 
 El `compose.yml` de la raíz levanta las dos bases (desarrollo en 5434, test en 5433 sobre `tmpfs`) con un solo comando, de modo que el docente pueda ejecutar toda la suite.
