@@ -9,7 +9,7 @@ Al terminar una tarea: marcarla como hecha en esta tabla y agregar `(hecho)` a s
 | Tarea | Qué entrega                                                 | Módulo         | Empezar después de | Estado    |
 | ----- | ----------------------------------------------------------- | -------------- | ------------------ | --------- |
 | T1    | Horarios de atención y bloques no disponibles (4 endpoints) | `availability` | —                  | Hecho     |
-| T2    | Cálculo de horarios disponibles (1 endpoint)                | `availability` | T1                 | Pendiente |
+| T2    | Cálculo de horarios disponibles (1 endpoint)                | `availability` | T1                 | Hecho     |
 | T3    | Reservar y consultar citas (4 endpoints)                    | `appointments` | T2                 | Pendiente |
 | T4    | Reprogramar y cancelar (2 endpoints)                        | `appointments` | T3                 | Pendiente |
 | T5    | Estados de la cita y observación (2 endpoints)              | `observations` | T3                 | Pendiente |
