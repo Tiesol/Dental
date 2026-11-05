@@ -1,10 +1,11 @@
 import {
   AccesoDenegadoACitaError,
+  CitaNoModificableError,
   HorarioEnElPasadoError,
   HorarioNoDisponibleError,
 } from '../../../common/errors/domain-error';
 import { CurrentUserData } from '../../../common/types/current-user';
-import { AppointmentView, CuandoCitas } from './appointment';
+import { AppointmentStatus, AppointmentView, CuandoCitas } from './appointment';
 import { Intervalo } from './overlap';
 
 // Validación antes de confirmar una reserva: la hora elegida debe ser uno de los horarios
@@ -52,4 +53,11 @@ export function filtrarPorCuando<T extends Pick<AppointmentView, 'horaInicio' | 
   const elegidas =
     cuando === 'historial' ? citas.filter((cita) => !esProxima(cita, ahora)) : [...citas];
   return elegidas.sort((a, b) => porInicio(b, a));
+}
+
+// Solo se reprograma o cancela antes de la atención (PDF sección 8 y D1 de PLAN.md).
+export function assertCitaModificable(estado: AppointmentStatus): void {
+  if (estado !== 'PENDIENTE' && estado !== 'CONFIRMADA') {
+    throw new CitaNoModificableError();
+  }
 }

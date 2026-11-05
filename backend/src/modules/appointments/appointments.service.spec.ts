@@ -1,5 +1,6 @@
 import {
   AccesoDenegadoACitaError,
+  CitaNoModificableError,
   HorarioEnElPasadoError,
   HorarioNoDisponibleError,
   OdontologoNoRealizaServicioError,
@@ -19,6 +20,8 @@ describe('AppointmentsService', () => {
   const repository = {
     withDentistLock: jest.fn(),
     create: jest.fn(),
+    updateHorario: jest.fn(),
+    updateEstado: jest.fn(),
     findById: jest.fn(),
     findByPatient: jest.fn(),
     findAll: jest.fn(),
@@ -100,6 +103,90 @@ describe('AppointmentsService', () => {
       await expect(service.reservar(pasado, 'p1')).rejects.toThrow(HorarioEnElPasadoError);
 
       expect(repository.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('reprogramar y cancelar', () => {
+    const dueno = {
+      userId: 'u1',
+      email: 'a@mail.com',
+      role: 'PACIENTE' as const,
+      patientId: 'p1',
+    };
+    const cita = (estado: string) => ({
+      id: 'c1',
+      estado,
+      paciente: { id: 'p1' },
+      odontologo: { id: 'd1' },
+      servicio: { id: 's1' },
+    });
+
+    it('reprograma excluyendo la propia cita y recalcula la hora de fin', async () => {
+      repository.findById.mockResolvedValue(cita('CONFIRMADA'));
+
+      await service.reprogramar('c1', horaInicio, dueno);
+
+      expect(availability.slotsDelDia).toHaveBeenCalledWith(
+        expect.objectContaining({ dentistId: 'd1', excluirCitaId: 'c1', tx }),
+      );
+      expect(repository.updateHorario).toHaveBeenCalledWith(tx, 'c1', {
+        horaInicio: new Date(horaInicio),
+        horaFin: new Date('2026-11-10T13:45:00.000Z'),
+      });
+    });
+
+    it('no toca la cita si el horario nuevo no está disponible', async () => {
+      repository.findById.mockResolvedValue(cita('PENDIENTE'));
+      availability.slotsDelDia.mockResolvedValue([]);
+
+      await expect(service.reprogramar('c1', horaInicio, dueno)).rejects.toThrow(
+        HorarioNoDisponibleError,
+      );
+
+      expect(repository.updateHorario).not.toHaveBeenCalled();
+    });
+
+    it.each(['EN_ATENCION', 'FINALIZADA', 'CANCELADA'])(
+      'no reprograma ni cancela una cita %s',
+      async (estado) => {
+        repository.findById.mockResolvedValue(cita(estado));
+
+        await expect(service.reprogramar('c1', horaInicio, dueno)).rejects.toThrow(
+          CitaNoModificableError,
+        );
+        await expect(service.cancelar('c1', dueno)).rejects.toThrow(CitaNoModificableError);
+
+        expect(repository.updateHorario).not.toHaveBeenCalled();
+        expect(repository.updateEstado).not.toHaveBeenCalled();
+      },
+    );
+
+    it('relee el estado dentro de la transacción: si cambió mientras esperaba, no modifica', async () => {
+      repository.findById
+        .mockResolvedValueOnce(cita('PENDIENTE'))
+        .mockResolvedValueOnce(cita('CANCELADA'));
+
+      await expect(service.cancelar('c1', dueno)).rejects.toThrow(CitaNoModificableError);
+
+      expect(repository.findById).toHaveBeenLastCalledWith('c1', tx);
+      expect(repository.updateEstado).not.toHaveBeenCalled();
+    });
+
+    it('cancela dejando la cita en CANCELADA', async () => {
+      repository.findById.mockResolvedValue(cita('PENDIENTE'));
+
+      await service.cancelar('c1', dueno);
+
+      expect(repository.updateEstado).toHaveBeenCalledWith(tx, 'c1', 'CANCELADA');
+    });
+
+    it('rechaza a otro paciente antes de abrir la transacción', async () => {
+      repository.findById.mockResolvedValue(cita('PENDIENTE'));
+      const otro = { ...dueno, patientId: 'p2' };
+
+      await expect(service.cancelar('c1', otro)).rejects.toThrow(AccesoDenegadoACitaError);
+
+      expect(repository.withDentistLock).not.toHaveBeenCalled();
     });
   });
 

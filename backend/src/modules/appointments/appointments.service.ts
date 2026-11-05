@@ -7,6 +7,7 @@ import { AvailabilityService } from '../availability/availability.service';
 import { AppointmentsRepository } from './appointments.repository';
 import { AppointmentView, CuandoCitas } from './domain/appointment';
 import {
+  assertCitaModificable,
   assertHorarioReservable,
   assertPuedeVerCita,
   filtrarPorCuando,
@@ -45,6 +46,36 @@ export class AppointmentsService {
     });
   }
 
+  // Misma transacción y mismas validaciones que reservar. Se excluye la propia cita al calcular
+  // los horarios libres, para poder moverla a uno que se cruza con el suyo. Conserva estado,
+  // odontólogo y servicio (D4 de PLAN.md).
+  async reprogramar(
+    id: string,
+    nuevaHora: string,
+    user: CurrentUserData,
+  ): Promise<AppointmentView> {
+    const horaInicio = new Date(nuevaHora);
+    return this.modificar(id, user, async (cita, tx) => {
+      const { duracionMin } = await this.availability.assertReservable(
+        cita.odontologo.id,
+        cita.servicio.id,
+        tx,
+      );
+      await this.assertDisponible(cita.odontologo.id, horaInicio, duracionMin, tx, cita.id);
+      return this.appointments.updateHorario(tx, cita.id, {
+        horaInicio,
+        horaFin: calcularHoraFin(horaInicio, duracionMin),
+      });
+    });
+  }
+
+  // El horario queda libre de inmediato: una cita CANCELADA no ocupa la agenda.
+  cancelar(id: string, user: CurrentUserData): Promise<AppointmentView> {
+    return this.modificar(id, user, (cita, tx) =>
+      this.appointments.updateEstado(tx, cita.id, 'CANCELADA'),
+    );
+  }
+
   async findMine(patientId: string, cuando?: CuandoCitas): Promise<AppointmentView[]> {
     const citas = await this.appointments.findByPatient(patientId);
     return filtrarPorCuando(citas, cuando, this.clock.now());
@@ -66,23 +97,40 @@ export class AppointmentsService {
     });
   }
 
+  // Reglas comunes a reprogramar y cancelar. El estado se relee con el odontólogo bloqueado, por
+  // si otra petición cambió la cita mientras esta esperaba.
+  private async modificar(
+    id: string,
+    user: CurrentUserData,
+    cambio: (cita: AppointmentView, tx: Tx) => Promise<AppointmentView>,
+  ): Promise<AppointmentView> {
+    const { odontologo } = await this.findOne(id, user);
+    return this.appointments.withDentistLock(odontologo.id, async (tx) => {
+      const cita = await this.getOrThrow(id, tx);
+      assertCitaModificable(cita.estado);
+      return cambio(cita, tx);
+    });
+  }
+
   private async assertDisponible(
     dentistId: string,
     horaInicio: Date,
     duracionMin: number,
     tx: Tx,
+    excluirCitaId?: string,
   ): Promise<void> {
     const slots = await this.availability.slotsDelDia({
       dentistId,
       fecha: this.availability.fechaClinica(horaInicio),
       duracionMin,
       tx,
+      excluirCitaId,
     });
     assertHorarioReservable(horaInicio, slots, this.clock.now());
   }
 
-  private async getOrThrow(id: string): Promise<AppointmentView> {
-    const cita = await this.appointments.findById(id);
+  private async getOrThrow(id: string, tx?: Tx): Promise<AppointmentView> {
+    const cita = await this.appointments.findById(id, tx);
     if (!cita) {
       throw new RecursoNoEncontradoError('Cita');
     }
