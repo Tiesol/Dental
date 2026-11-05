@@ -622,6 +622,12 @@ button.danger:hover:not(:disabled) {
   gap: var(--space-3);
 }
 
+/* ---- Títulos dentro de una tarjeta sin relleno ---- */
+
+.card-title {
+  padding: var(--space-4) var(--space-5) 0;
+}
+
 /* ---- Reserva y horarios ---- */
 
 .eleccion {
