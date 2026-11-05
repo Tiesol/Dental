@@ -244,7 +244,7 @@ Prefijo `/api/v1`. Respuestas JSON. Errores con formato uniforme `{ statusCode, 
 | Agenda            | `GET /dentists/me/agenda?fecha=`, `GET /dentists/me/agenda/upcoming`                                                                                                                                                                                            | ODONTOLOGO                                                              |
 | Observations      | `POST /appointments/:id/observation`                                                                                                                                                                                                                            | ODONTOLOGO dueño                                                        |
 
-Los detalles (DTOs, códigos de error por caso) se definen al implementar cada módulo, siguiendo `CONVENCIONES.md`.
+El detalle de lo que falta (cuerpos, respuestas, errores y tests de cada endpoint) está en `PLAN.md`.
 
 ---
 
