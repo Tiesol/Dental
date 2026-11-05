@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -16,6 +17,7 @@ import type { CurrentUserData } from '../../common/types/current-user';
 import { AvailabilityService } from './availability.service';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { SetAvailabilityDto } from './dto/set-availability.dto';
+import { SlotsQuery } from './dto/slots.query';
 
 @ApiTags('availability')
 @ApiBearerAuth()
@@ -34,6 +36,12 @@ export class AvailabilityController {
   @ApiOperation({ summary: 'Reemplaza todos los horarios de atención (solo ADMIN)' })
   replaceHorarios(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetAvailabilityDto) {
     return this.availabilityService.replaceHorarios(id, dto.horarios);
+  }
+
+  @Get('slots')
+  @ApiOperation({ summary: 'Horarios disponibles de un día para un servicio' })
+  findSlots(@Param('id', ParseUUIDPipe) id: string, @Query() query: SlotsQuery) {
+    return this.availabilityService.findSlots(id, query.serviceId, query.fecha);
   }
 
   @Post('blocks')

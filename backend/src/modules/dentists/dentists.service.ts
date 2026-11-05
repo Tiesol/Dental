@@ -4,6 +4,7 @@ import {
   ServiciosInexistentesError,
 } from '../../common/errors/domain-error';
 import { Role } from '../../common/types/role';
+import type { Tx } from '../../prisma/prisma.service';
 import { ServicesService } from '../services/services.service';
 import { UsersService } from '../users/users.service';
 import { DentistChanges, DentistPublicView, DentistRecord } from './domain/dentist';
@@ -67,8 +68,9 @@ export class DentistsService {
     return this.dentists.replaceServices(id, serviceIds);
   }
 
-  private async getOrThrow(id: string): Promise<DentistRecord> {
-    const dentist = await this.dentists.findById(id);
+  // Sin filtrar por rol: lo usan quienes validan una reserva, también dentro de su transacción.
+  async getOrThrow(id: string, tx?: Tx): Promise<DentistRecord> {
+    const dentist = await this.dentists.findById(id, tx);
     if (!dentist) {
       throw new RecursoNoEncontradoError('Odontólogo');
     }
