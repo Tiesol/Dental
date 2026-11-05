@@ -102,6 +102,7 @@ export function AdminOdontologosPage() {
                     <td>
                       <div className="actions">
                         <Link to={`/admin/odontologos/${d.id}`}>Editar</Link>
+                        <Link to={`/admin/odontologos/${d.id}/horarios`}>Horarios</Link>
                         <button
                           type="button"
                           className={d.activo ? 'secondary danger' : 'secondary'}

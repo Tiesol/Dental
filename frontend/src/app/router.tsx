@@ -6,6 +6,7 @@ import { MiCuentaPage } from '@/features/cuenta';
 import {
   AdminOdontologosPage,
   EditarOdontologoPage,
+  HorariosOdontologoPage,
   NuevoOdontologoPage,
   OdontologosPage,
 } from '@/features/odontologos';
@@ -55,6 +56,7 @@ export function AppRoutes() {
             <Route path="/admin/odontologos" element={<AdminOdontologosPage />} />
             <Route path="/admin/odontologos/nuevo" element={<NuevoOdontologoPage />} />
             <Route path="/admin/odontologos/:id" element={<EditarOdontologoPage />} />
+            <Route path="/admin/odontologos/:id/horarios" element={<HorariosOdontologoPage />} />
           </Route>
         </Route>
       </Route>

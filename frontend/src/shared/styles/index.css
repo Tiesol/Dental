@@ -227,13 +227,15 @@ button:disabled {
   cursor: not-allowed;
 }
 
-button.secondary {
+button.secondary,
+a.button.secondary {
   background: transparent;
   border-color: var(--border-strong);
   color: var(--text);
 }
 
-button.secondary:hover:not(:disabled) {
+button.secondary:hover:not(:disabled),
+a.button.secondary:hover {
   background: var(--surface-sunken);
 }
 
@@ -618,6 +620,20 @@ button.danger:hover:not(:disabled) {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+/* ---- Tramos de horario ---- */
+
+.tramo {
+  display: grid;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+@media (min-width: 30rem) {
+  .tramo {
+    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) auto;
+  }
 }
 
 /* ---- Listados ---- */
