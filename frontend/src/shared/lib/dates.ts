@@ -40,6 +40,11 @@ export function formatearFechaHora(iso: string): string {
   return `${formatearFecha(iso)}, ${formatearHora(iso)}`;
 }
 
+// Día de la clínica de un instante (YYYY-MM-DD), como lo espera la API.
+export function fechaEnClinica(iso: string): string {
+  return formatear(iso, 'yyyy-MM-dd');
+}
+
 // Fecha de hoy en la clínica (YYYY-MM-DD), como la espera la API.
 export function hoyEnClinica(): string {
   return formatear(new Date(), 'yyyy-MM-dd');

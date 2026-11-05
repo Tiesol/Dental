@@ -1,7 +1,13 @@
 import { useCallback, useState } from 'react';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 
-type ConfirmOptions = { title: string; message: string; confirmLabel: string };
+type ConfirmOptions = {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  // Texto del botón que desiste, cuando "Cancelar" se confundiría con la acción.
+  cancelLabel?: string;
+};
 type Pending = ConfirmOptions & { resolve: (ok: boolean) => void };
 
 // Reemplaza a window.confirm: `if (!(await confirm({...}))) return;`. Quien lo usa debe
@@ -25,6 +31,7 @@ export function useConfirm() {
       title={pending.title}
       message={pending.message}
       confirmLabel={pending.confirmLabel}
+      cancelLabel={pending.cancelLabel}
       onConfirm={() => finish(true)}
       onCancel={() => finish(false)}
     />
