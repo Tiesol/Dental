@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   AvailabilityRuleInput,
@@ -31,17 +32,18 @@ export class AvailabilityRepository {
 
   // Borra y vuelve a crear en una transacción, para que nunca quede a medias.
   async replaceRules(dentistId: string, horarios: AvailabilityRuleInput[]): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.availabilityRule.deleteMany({ where: { dentistId } }),
-      this.prisma.availabilityRule.createMany({
+    await this.prisma.$transaction(async (tx) => {
+      await lockDentist(tx, dentistId);
+      await tx.availabilityRule.deleteMany({ where: { dentistId } });
+      await tx.availabilityRule.createMany({
         data: horarios.map(({ diaSemana, minutoInicio, minutoFin }) => ({
           dentistId,
           diaSemana,
           minutoInicio,
           minutoFin,
         })),
-      }),
-    ]);
+      });
+    });
   }
 
   // Devuelve null, sin crear nada, si el bloque choca con una cita activa (estado distinto de
@@ -50,20 +52,23 @@ export class AvailabilityRepository {
     dentistId: string,
     { inicio, fin, motivo }: NewUnavailableBlock,
   ): Promise<UnavailableBlockRecord | null> {
-    const citasEnElBloque = await this.prisma.appointment.count({
-      where: {
-        dentistId,
-        estado: { not: 'CANCELADA' },
-        horaInicio: { lt: fin },
-        horaFin: { gt: inicio },
-      },
-    });
-    if (citasEnElBloque > 0) {
-      return null;
-    }
-    return this.prisma.unavailableBlock.create({
-      data: { dentistId, inicio, fin, motivo },
-      select: { id: true, inicio: true, fin: true, motivo: true },
+    return this.prisma.$transaction(async (tx) => {
+      await lockDentist(tx, dentistId);
+      const citasEnElBloque = await tx.appointment.count({
+        where: {
+          dentistId,
+          estado: { not: 'CANCELADA' },
+          horaInicio: { lt: fin },
+          horaFin: { gt: inicio },
+        },
+      });
+      if (citasEnElBloque > 0) {
+        return null;
+      }
+      return tx.unavailableBlock.create({
+        data: { dentistId, inicio, fin, motivo },
+        select: { id: true, inicio: true, fin: true, motivo: true },
+      });
     });
   }
 
@@ -74,4 +79,10 @@ export class AvailabilityRepository {
     });
     return count > 0;
   }
+}
+
+// El mismo bloqueo que serializa las reservas de un odontólogo (ARQUITECTURA.md sección 5): sin él,
+// un bloque podría crearse mientras se confirma una cita que choca con él.
+async function lockDentist(tx: Prisma.TransactionClient, dentistId: string): Promise<void> {
+  await tx.$queryRaw`SELECT id FROM "Dentist" WHERE id = ${dentistId} FOR UPDATE`;
 }
