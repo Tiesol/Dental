@@ -1,4 +1,4 @@
-import type { UserResponse } from '@/api/types';
+import type { ServiceResponse, UserDetail, UserResponse } from '@/api/types';
 
 // Datos de prueba con valores por defecto sensatos. Cada test sobreescribe lo que le importa.
 export function usuarioDePrueba(overrides: Partial<UserResponse> = {}): UserResponse {
@@ -10,6 +10,27 @@ export function usuarioDePrueba(overrides: Partial<UserResponse> = {}): UserResp
     createdAt: '2026-10-14T00:00:00.000Z',
     nombre: 'Ana Pérez',
     patientId: 'p1',
+    ...overrides,
+  };
+}
+
+export function usuarioDetalleDePrueba(overrides: Partial<UserDetail> = {}): UserDetail {
+  return {
+    ...usuarioDePrueba(),
+    paciente: { nombre: 'Ana', apellido: 'Pérez', telefono: null },
+    odontologo: null,
+    ...overrides,
+  };
+}
+
+export function servicioDePrueba(overrides: Partial<ServiceResponse> = {}): ServiceResponse {
+  return {
+    id: 's1',
+    nombre: 'Limpieza dental',
+    descripcion: 'Eliminación de placa y sarro.',
+    duracionMin: 45,
+    precioReferencial: 150,
+    activo: true,
     ...overrides,
   };
 }
