@@ -40,7 +40,7 @@ Reglas de estilo y de trabajo que aplican a todo el código del frontend. Si alg
 ## 5. Estilos
 
 - Una sola solución de estilos para todo el proyecto. Hoy: CSS global en `src/shared/styles/index.css`, con tokens en `:root` (color, espaciado, tipografía y radios; se redefinen para modo oscuro) y clases como `page`, `card`, `muted`. Usar los tokens, no valores sueltos. Errores y éxitos con `ErrorMessage` y `SuccessMessage`, no con párrafos a mano. Propuesta para cuando crezca: CSS Modules (ver "Decisiones" en el README raíz). No mezclar con estilos inline salvo valores dinámicos.
-- Colores de estado de cita definidos una sola vez en `shared/lib/estados-cita.ts`.
+- Paleta, tipografía, componentes y reglas visuales: ver `DISENO.md`. Los colores de estado de cita son tokens del CSS; `shared/lib/estados-cita.ts` define una sola vez qué clase usa cada estado.
 - Diseño responsive mínimo: usable en 360px de ancho, sin scroll horizontal de la página. Las tablas apilan sus filas en pantallas angostas.
 - Los tests corren con `css: false`: no detectan problemas visuales (contraste, desbordes). Todo cambio de estilos se verifica en el navegador, en claro y en oscuro.
 
