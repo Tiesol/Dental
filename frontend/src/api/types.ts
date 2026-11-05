@@ -152,3 +152,36 @@ export type AvailabilityResponse = {
 export type CreateBlockRequest = { inicio: string; fin: string; motivo?: string };
 
 export type SlotResponse = { inicio: string; fin: string };
+
+// ---- Citas (/appointments) ----
+
+export type EstadoCita = 'PENDIENTE' | 'CONFIRMADA' | 'EN_ATENCION' | 'FINALIZADA' | 'CANCELADA';
+
+export type AppointmentResponse = {
+  id: string;
+  horaInicio: string;
+  horaFin: string;
+  estado: EstadoCita;
+  createdAt: string;
+  servicio: { id: string; nombre: string; duracionMin: number };
+  odontologo: { id: string; nombre: string; especialidad: string };
+  paciente: { id: string; nombre: string; apellido: string; telefono: string | null };
+  observacion: { texto: string; createdAt: string } | null;
+};
+
+// horaFin, estado y patientId los deriva el backend. horaInicio es el valor que devolvió /slots.
+export type CreateAppointmentRequest = {
+  dentistId: string;
+  serviceId: string;
+  horaInicio: string;
+};
+
+export type CuandoCitas = 'proximas' | 'historial';
+
+export type AppointmentFiltersRequest = {
+  fecha?: string;
+  estado?: EstadoCita;
+  dentistId?: string;
+  limit?: number;
+  offset?: number;
+};

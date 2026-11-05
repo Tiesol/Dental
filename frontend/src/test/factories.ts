@@ -1,4 +1,5 @@
 import type {
+  AppointmentResponse,
   DentistAdminResponse,
   DentistPublicResponse,
   ServiceResponse,
@@ -65,6 +66,21 @@ export function odontologoPublicoDePrueba(
     nombre: 'Dra. Laura Gómez',
     especialidad: 'Odontología general',
     servicios: [{ id: 's1', nombre: 'Limpieza dental', duracionMin: 30 }],
+    ...overrides,
+  };
+}
+
+export function citaDePrueba(overrides: Partial<AppointmentResponse> = {}): AppointmentResponse {
+  return {
+    id: 'c1',
+    horaInicio: '2026-11-10T13:00:00.000Z',
+    horaFin: '2026-11-10T13:30:00.000Z',
+    estado: 'PENDIENTE',
+    createdAt: '2026-11-09T12:00:00.000Z',
+    servicio: { id: 's1', nombre: 'Limpieza dental', duracionMin: 30 },
+    odontologo: { id: 'd1', nombre: 'Dra. Laura Gómez', especialidad: 'Odontología general' },
+    paciente: { id: 'p1', nombre: 'Ana', apellido: 'Pérez', telefono: null },
+    observacion: null,
     ...overrides,
   };
 }
