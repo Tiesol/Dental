@@ -15,23 +15,34 @@ Al terminar una tarea: marcarla como hecha en esta tabla y agregar `(hecho)` a s
 | T5    | Estados de la cita y observación (2 endpoints)              | `observations` | T3                 | Pendiente |
 | T6    | Agenda del odontólogo (2 endpoints)                         | `appointments` | T3                 | Pendiente |
 | T7    | Tests pendientes de lo ya construido                        | varios         | —                  | Pendiente |
+| T8    | Entorno para los E2E: seed, reloj fijo, Playwright y CI     | `e2e`          | T3                 | Pendiente |
+| F1    | Pantalla de horarios y bloques (ADMIN)                      | frontend       | T1                 | Pendiente |
+| F2    | Reserva, con E2E 01 y 02                                    | frontend       | T3, T8             | Pendiente |
+| F3    | Mis citas, con E2E 03, 04, 06 y 07                          | frontend       | T4, T8, F2         | Pendiente |
+| F4    | Agenda del odontólogo, con E2E 05                           | frontend       | T5, T6, T8         | Pendiente |
+| F5    | Todas las citas (ADMIN)                                     | frontend       | T4, T5             | Pendiente |
 
 ```
 T1 ──> T2 ──> T3 ──┬──> T4
                    ├──> T5
-                   └──> T6
+                   ├──> T6
+                   └──> T8 ──> F2 ──> F3
+                            └──> F4 (además necesita T5 y T6)
 
 T7: en cualquier momento
+F1: después de T1
+F5: después de T4 y T5
 ```
 
-**Qué se puede hacer en paralelo:** T7 con cualquiera, y T4, T5 y T6 entre sí. T1, T2 y T3 van en orden, porque cada una usa el código de la anterior.
+**Qué se puede hacer en paralelo:** T7 con cualquiera; T4, T5, T6 y T8 entre sí; F1 desde que termina T1. T1, T2 y T3 van en orden, porque cada una usa el código de la anterior.
 
 ## Cómo empezar una tarea en un chat nuevo
 
-Crear la rama desde `main` actualizado y pegar esto, cambiando el número de tarea:
+Pegar esto, cambiando el número de tarea. La tarea de la que depende ya debe estar en `main`. En las tareas F, cambiar `backend/CLAUDE.md` por `frontend/CLAUDE.md`.
 
 ```
-Lee backend/PLAN.md y desarrolla la tarea T1, solo esa.
+Actualiza main, crea la rama que indica la tarea y lee backend/PLAN.md.
+Desarrolla la tarea T1, solo esa.
 Sigue backend/CLAUDE.md y el skill ciclo-tdd: RED, GREEN y REFACTOR con un commit por paso.
 Si encuentras algo que el plan no define, usa el valor por defecto de la sección
 "Decisiones" y avísame. Termina cuando se cumpla la Definition of Done.
@@ -245,6 +256,22 @@ Rama `test/reglas-existentes`. Sin cambios de comportamiento: si un test descubr
 - `dentists`: crear un odontólogo y asociar servicios (PDF 13); vista según el rol; deshabilitado.
 - `services`: gestión por ADMIN; un paciente no ve los deshabilitados.
 - `users`: gestión por ADMIN; mi cuenta; cambiar contraseña; cuenta deshabilitada pierde el acceso al instante.
+- En las tres, cada ruta privada sin token (`401`) y con rol incorrecto (`403`), como pide el PDF 13.
+
+---
+
+## T8. Entorno para los E2E
+
+Rama `test/entorno-e2e`. Ámbito: `e2e`. Construye la infraestructura que define el skill `e2e-playwright` del frontend, que es la referencia; no escribe los escenarios, que van con cada pantalla.
+
+- **Backend en modo test:** script `npm run start:test` contra la BD de test, con `NODE_ENV=test`.
+- **Reloj fijo:** `Clock` devuelve una hora fija configurable solo con `NODE_ENV=test`, para que los horarios existan siempre y no caigan en el pasado.
+- **Seed de E2E:** script o endpoint disponible solo con `NODE_ENV=test`, con admin, dos pacientes, un odontólogo con dos servicios y horario de lunes a viernes de 09:00 a 12:00, un servicio deshabilitado y sin citas. También debe poder crear las citas que pide cada escenario, incluidas una `CONFIRMADA` de hoy y una `FINALIZADA` con observación.
+- **Playwright:** agregar a `playwright.config.ts` el backend como segundo `webServer`, y crear `e2e/fixtures/seed.ts` y `e2e/fixtures/auth.ts`.
+- **CI:** el job de frontend hoy no tiene base de datos: agregar PostgreSQL y las migraciones, sin perder los E2E de smoke.
+- **Documentación:** en el README, cómo correr toda la suite desde cero, porque el PDF exige que todos los tests puedan ejecutarse de nuevo durante la evaluación.
+
+**Hecho cuando:** un test de prueba inicia sesión por la interfaz contra el backend real, y `npm run test:e2e` da el mismo resultado dos veces seguidas, en local y en el CI. Un test que intente usar el seed sin `NODE_ENV=test` debe fallar.
 
 ---
 
@@ -263,14 +290,28 @@ Rama `test/reglas-existentes`. Sin cambios de comportamiento: si un test descubr
 | Cancelación y reprogramación   | T4     |     | Odontólogo solo consulta su agenda           | T6    |
 |                                |        |     | Endpoints sin autenticación o rol incorrecto | todas |
 
-## Después del backend
+| PDF 14, E2E                 | Tarea |
+| --------------------------- | ----- |
+| E2E 01 Reservar             | F2    |
+| E2E 02 Evitar doble reserva | F2    |
+| E2E 03 Reprogramar          | F3    |
+| E2E 04 Cancelar             | F3    |
+| E2E 05 Atención             | F4    |
+| E2E 06 Historial            | F3    |
+| E2E 07 Control de acceso    | F3    |
 
-Los E2E del PDF necesitan estas pantallas, que se construyen siguiendo `frontend/DISENO.md`:
+---
 
-| Pantalla (`frontend/src/features/`) | Necesita   | E2E del PDF                   |
-| ----------------------------------- | ---------- | ----------------------------- |
-| Horarios en `odontologos/` (ADMIN)  | T1         | —                             |
-| `reserva/`                          | T2, T3     | 01 reservar, 02 doble reserva |
-| `mis-citas/`                        | T3, T4     | 03, 04, 06, 07                |
-| `agenda/`                           | T5, T6     | 05 atención                   |
-| `admin-citas/`                      | T3, T4, T5 | —                             |
+## Pantallas del frontend
+
+Se construyen siguiendo `frontend/DISENO.md` y el skill `crear-feature`. Cada escenario E2E se escribe junto con su pantalla, con los pasos y el archivo que define el skill `e2e-playwright`. Las rutas están en `frontend/ARQUITECTURA.md` sección 4.
+
+| Tarea | Rama                        | Carpeta en `src/features/` | Qué incluye                                                                    | E2E            |
+| ----- | --------------------------- | -------------------------- | ------------------------------------------------------------------------------ | -------------- |
+| F1    | `feat/pantalla-horarios`    | `odontologos/`             | Editar horarios y bloques de un odontólogo (ADMIN)                             | —              |
+| F2    | `feat/pantalla-reserva`     | `reserva/`                 | Asistente servicio, odontólogo, fecha y hora, confirmar; `409` con lista nueva | 01, 02         |
+| F3    | `feat/pantalla-mis-citas`   | `mis-citas/`               | Próximas, historial, detalle, reprogramar, cancelar; `403` "No tienes acceso"  | 03, 04, 06, 07 |
+| F4    | `feat/pantalla-agenda`      | `agenda/`                  | Citas de hoy y próximas, cambio de estado, observación                         | 05             |
+| F5    | `feat/pantalla-admin-citas` | `admin-citas/`             | Todas las citas, filtros, confirmar y cancelar                                 | —              |
+
+F2 crea `shared/lib/dates.ts`, `shared/lib/estados-cita.ts` y `EstadoCitaBadge`, que usan F3, F4 y F5.
