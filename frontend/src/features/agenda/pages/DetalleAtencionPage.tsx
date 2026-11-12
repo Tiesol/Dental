@@ -1,14 +1,19 @@
 import { useCallback, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { appointmentsApi } from '@/api/endpoints/appointments';
+import type { AppointmentResponse, EstadoCita } from '@/api/types';
 import { useAuth } from '@/features/auth';
+import { Button } from '@/shared/components/Button';
 import { DatosCita } from '@/shared/components/DatosCita';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { SuccessMessage } from '@/shared/components/SuccessMessage';
+import { TextArea } from '@/shared/components/TextArea';
 import { useCarga } from '@/shared/hooks/useCarga';
+import { useForm } from '@/shared/hooks/useForm';
 import { accionesPermitidas } from '@/shared/lib/estados-cita';
+import { required } from '@/shared/lib/validators';
 
 const VOLVER = { to: '/agenda', label: 'Volver a la agenda' };
 
@@ -18,52 +23,57 @@ type Accion = 'iniciar' | 'observacion' | 'finalizar';
 export function DetalleAtencionPage() {
   const { id = '' } = useParams();
   const { user } = useAuth();
-  const cargar = useCallback(() => appointmentsApi.porId(id), [id]);
-  const { estado, recargar } = useCarga(cargar);
-  const [texto, setTexto] = useState('');
+  const cargar = useCallback((signal: AbortSignal) => appointmentsApi.porId(id, signal), [id]);
+  const { estado, recargar, actualizar } = useCarga(cargar);
+  const form = useForm({ texto: '' }, { texto: required('Escribe la observación de la atención') });
   const [enCurso, setEnCurso] = useState<Accion | null>(null);
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
 
+  // Cada acción cambia solo esta cita y se aplica con la respuesta del backend. Tras un error se
+  // vuelve a pedir la cita, porque pudo haber cambiado por otro lado.
   const ejecutar = async (
     accion: Accion,
-    llamada: () => Promise<unknown>,
+    llamada: () => Promise<(cita: AppointmentResponse) => AppointmentResponse>,
     mensajeExito: string,
   ) => {
     setError('');
     setExito('');
     setEnCurso(accion);
     try {
-      await llamada();
+      actualizar(await llamada());
       setExito(mensajeExito);
     } catch (err) {
       setError((err as Error).message);
+      recargar();
     } finally {
       setEnCurso(null);
-      // También tras un error: la cita pudo haber cambiado por otro lado.
-      recargar();
     }
   };
 
+  const cambiarEstado = async (nuevo: EstadoCita) => {
+    const actualizada = await appointmentsApi.cambiarEstado(id, nuevo);
+    return () => actualizada;
+  };
+
   const iniciar = () =>
-    void ejecutar(
-      'iniciar',
-      () => appointmentsApi.cambiarEstado(id, 'EN_ATENCION'),
-      'Atención iniciada',
-    );
+    void ejecutar('iniciar', () => cambiarEstado('EN_ATENCION'), 'Atención iniciada');
 
   const finalizar = () =>
-    void ejecutar(
-      'finalizar',
-      () => appointmentsApi.cambiarEstado(id, 'FINALIZADA'),
-      'Cita finalizada',
-    );
+    void ejecutar('finalizar', () => cambiarEstado('FINALIZADA'), 'Cita finalizada');
 
-  const registrar = (e: FormEvent) => {
+  const registrar = async (e: FormEvent) => {
     e.preventDefault();
-    void ejecutar(
+    if (!form.validate()) return;
+    await ejecutar(
       'observacion',
-      () => appointmentsApi.registrarObservacion(id, texto),
+      async () => {
+        const observacion = await appointmentsApi.registrarObservacion(
+          id,
+          form.values.texto.trim(),
+        );
+        return (cita) => ({ ...cita, observacion });
+      },
       'Observación registrada',
     );
   };
@@ -90,39 +100,31 @@ export function DetalleAtencionPage() {
         {exito && <SuccessMessage>{exito}</SuccessMessage>}
         {acciones.includes('iniciar-atencion') && (
           <div className="form-actions">
-            <button
-              type="button"
+            <Button
+              loading={enCurso === 'iniciar'}
               disabled={enCurso !== null}
               onClick={iniciar}
               data-testid="btn-iniciar-atencion"
             >
-              {enCurso === 'iniciar' ? 'Iniciando…' : 'Iniciar atención'}
-            </button>
+              Iniciar atención
+            </Button>
           </div>
         )}
       </section>
 
       {acciones.includes('registrar-observacion') && !cita.observacion && (
-        <form className="card" onSubmit={registrar} aria-labelledby="titulo-observacion">
+        <form className="card" onSubmit={registrar} aria-labelledby="titulo-observacion" noValidate>
           <h2 id="titulo-observacion">Observación de la atención</h2>
-          <label>
-            Observación
-            <textarea
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
-              required
-              maxLength={2000}
-              rows={4}
-            />
-          </label>
+          <TextArea {...form.field('texto')} label="Observación" maxLength={2000} rows={4} />
           <div className="form-actions">
-            <button
+            <Button
               type="submit"
+              loading={enCurso === 'observacion'}
               disabled={enCurso !== null}
               data-testid="btn-registrar-observacion"
             >
-              {enCurso === 'observacion' ? 'Guardando…' : 'Registrar observación'}
-            </button>
+              Registrar observación
+            </Button>
           </div>
         </form>
       )}
@@ -136,14 +138,14 @@ export function DetalleAtencionPage() {
             )}
           </div>
           <div className="form-actions">
-            <button
-              type="button"
+            <Button
+              loading={enCurso === 'finalizar'}
               disabled={enCurso !== null || !cita.observacion}
               onClick={finalizar}
               data-testid="btn-finalizar"
             >
-              {enCurso === 'finalizar' ? 'Finalizando…' : 'Finalizar'}
-            </button>
+              Finalizar
+            </Button>
           </div>
         </section>
       )}

@@ -8,8 +8,14 @@ import { TablaAgenda } from '../components/TablaAgenda';
 
 // Agenda del odontólogo autenticado: el backend la toma del token, nunca de un parámetro.
 export function AgendaPage() {
-  const cargarHoy = useCallback(() => appointmentsApi.agenda(), []);
-  const cargarProximas = useCallback(() => appointmentsApi.agendaProximas(), []);
+  const cargarHoy = useCallback(
+    (signal: AbortSignal) => appointmentsApi.agenda(undefined, signal),
+    [],
+  );
+  const cargarProximas = useCallback(
+    (signal: AbortSignal) => appointmentsApi.agendaProximas(signal),
+    [],
+  );
   const { estado: hoy } = useCarga(cargarHoy);
   const { estado: proximas } = useCarga(cargarProximas);
 
