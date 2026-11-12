@@ -14,6 +14,13 @@ const PATHS = {
   tag: 'M3.5 12.5V5A1.5 1.5 0 0 1 5 3.5h7.5L21 12l-8.5 8.5-9-8ZM8 8h.01',
   alert: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 8v5M12 16.5h.01',
   check: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8 12.5l2.7 2.7L16 9.5',
+  tick: 'M5 12.5l4.5 4.5L19 7.5',
+  'chevron-down': 'M6 9l6 6 6-6',
+  'chevron-left': 'M15 6l-6 6 6 6',
+  'chevron-right': 'M9 6l6 6-6 6',
+  close: 'M6 6l12 12M18 6 6 18',
+  copy: 'M9 9h9.5A1.5 1.5 0 0 1 20 10.5V19a1.5 1.5 0 0 1-1.5 1.5H10A1.5 1.5 0 0 1 8.5 19V9.5M15.5 5.5V5A1.5 1.5 0 0 0 14 3.5H5.5A1.5 1.5 0 0 0 4 5v8.5A1.5 1.5 0 0 0 5.5 15H6',
+  refresh: 'M20 12a8 8 0 1 1-2.4-5.7M20 4.5v4h-4',
 } as const;
 
 export type IconName = keyof typeof PATHS;
