@@ -3,6 +3,7 @@ import { authApi } from '@/api/endpoints/auth';
 import { onSesionExpirada } from '@/api/http';
 import { tokenStore } from '@/api/token';
 import type { RegisterRequest, UserResponse } from '@/api/types';
+import { setErrorReportUser } from '@/shared/lib/error-report';
 import { AuthContext, type AuthContextValue } from './auth-context';
 
 // Mantiene la sesión: al arrancar valida el token guardado con GET /auth/me.
@@ -16,6 +17,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tokenStore.clear();
     setUser(null);
   }, []);
+
+  // El detalle técnico de un error inesperado incluye quién estaba usando la aplicación.
+  useEffect(() => {
+    setErrorReportUser(user ? `${user.email} (${user.role})` : null);
+  }, [user]);
 
   // Cualquier 401 con token (vencido o cuenta deshabilitada) cierra la sesión en toda la app.
   useEffect(

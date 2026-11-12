@@ -1,5 +1,6 @@
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '@/features/auth';
+import { GlobalErrorNotice } from '@/shared/components/GlobalErrorNotice';
 import { AppRoutes } from './router';
 
 export function App() {
@@ -8,6 +9,7 @@ export function App() {
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>
+      <GlobalErrorNotice />
     </AuthProvider>
   );
 }
