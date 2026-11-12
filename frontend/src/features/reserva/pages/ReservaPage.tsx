@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { appointmentsApi } from '@/api/endpoints/appointments';
 import { ApiError } from '@/api/errors';
 import type { DentistPublicResponse, ServiceResponse, SlotResponse } from '@/api/types';
+import { Button } from '@/shared/components/Button';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { formatearFecha, formatearRangoHora, hoyEnClinica } from '@/shared/lib/dates';
@@ -71,9 +72,9 @@ export function ReservaPage() {
           <span>
             Servicio: <strong>{servicio.nombre}</strong>
           </span>
-          <button type="button" className="secondary" onClick={cambiarServicio}>
+          <Button variant="secondary" onClick={cambiarServicio}>
             Cambiar servicio
-          </button>
+          </Button>
         </div>
       )}
 
@@ -92,9 +93,9 @@ export function ReservaPage() {
           <span>
             Odontólogo: <strong>{odontologo.nombre}</strong>
           </span>
-          <button type="button" className="secondary" onClick={cambiarOdontologo}>
+          <Button variant="secondary" onClick={cambiarOdontologo}>
             Cambiar odontólogo
-          </button>
+          </Button>
         </div>
       )}
 
@@ -128,22 +129,12 @@ export function ReservaPage() {
             <dd>{formatearRangoHora(slot.inicio, slot.fin)}</dd>
           </dl>
           <div className="form-actions">
-            <button
-              type="button"
-              disabled={enviando}
-              onClick={() => void confirmar()}
-              data-testid="btn-reservar"
-            >
-              {enviando ? 'Reservando…' : 'Confirmar reserva'}
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              disabled={enviando}
-              onClick={() => setSlot(null)}
-            >
+            <Button loading={enviando} onClick={() => void confirmar()} data-testid="btn-reservar">
+              Confirmar reserva
+            </Button>
+            <Button variant="secondary" disabled={enviando} onClick={() => setSlot(null)}>
               Elegir otro horario
-            </button>
+            </Button>
           </div>
         </section>
       )}

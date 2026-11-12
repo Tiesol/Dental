@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { dentistsApi } from '@/api/endpoints/dentists';
 import type { DentistPublicResponse } from '@/api/types';
+import { Button } from '@/shared/components/Button';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
@@ -10,7 +11,10 @@ type Props = { serviceId: string; onElegir: (odontologo: DentistPublicResponse) 
 
 // Solo odontólogos que aceptan citas y realizan el servicio: lo filtra el backend.
 export function PasoOdontologo({ serviceId, onElegir }: Props) {
-  const cargar = useCallback(() => dentistsApi.listar(serviceId), [serviceId]);
+  const cargar = useCallback(
+    (signal: AbortSignal) => dentistsApi.listar(serviceId, signal),
+    [serviceId],
+  );
   const { estado } = useCarga(cargar);
 
   return (
@@ -32,14 +36,13 @@ export function PasoOdontologo({ serviceId, onElegir }: Props) {
                 <strong>{odontologo.nombre}</strong>
                 <span className="muted">{odontologo.especialidad}</span>
               </div>
-              <button
-                type="button"
-                className="secondary"
+              <Button
+                variant="secondary"
                 aria-label={`Elegir ${odontologo.nombre}`}
                 onClick={() => onElegir(odontologo)}
               >
                 Elegir
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

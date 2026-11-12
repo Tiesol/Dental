@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { servicesApi } from '@/api/endpoints/services';
 import type { ServiceResponse } from '@/api/types';
+import { Button } from '@/shared/components/Button';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
@@ -31,14 +32,13 @@ export function PasoServicio({ onElegir }: Props) {
                   {servicio.descripcion} · {formatearDuracion(servicio.duracionMin)}
                 </span>
               </div>
-              <button
-                type="button"
-                className="secondary"
+              <Button
+                variant="secondary"
                 aria-label={`Elegir ${servicio.nombre}`}
                 onClick={() => onElegir(servicio)}
               >
                 Elegir
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

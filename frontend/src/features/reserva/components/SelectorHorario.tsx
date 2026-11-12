@@ -1,4 +1,6 @@
 import type { SlotResponse } from '@/api/types';
+import { Button } from '@/shared/components/Button';
+import { DateField } from '@/shared/components/DateField';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
@@ -20,36 +22,33 @@ export function SelectorHorario({ dentistId, serviceId, fecha, onCambiarFecha, o
 
   return (
     <div className="selector-horario">
-      <label>
-        Fecha
-        <input
-          type="date"
-          value={fecha}
-          min={hoyEnClinica()}
-          onChange={(e) => onCambiarFecha(e.target.value)}
-          data-testid="input-fecha"
-        />
-      </label>
-      {estado.status === 'cargando' && <LoadingState />}
-      {estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
-      {estado.status === 'ok' && estado.datos.length === 0 && (
+      <DateField
+        label="Fecha"
+        value={fecha}
+        min={hoyEnClinica()}
+        onChange={onCambiarFecha}
+        data-testid="input-fecha"
+      />
+      {!fecha && <p className="muted">Elige una fecha para ver sus horarios.</p>}
+      {fecha && estado.status === 'cargando' && <LoadingState />}
+      {fecha && estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
+      {fecha && estado.status === 'ok' && estado.datos.length === 0 && (
         <EmptyState
           title="No hay horarios disponibles para esta fecha"
           description="Prueba con otra fecha."
         />
       )}
-      {estado.status === 'ok' && estado.datos.length > 0 && (
+      {fecha && estado.status === 'ok' && estado.datos.length > 0 && (
         <ul className="slots" aria-label="Horarios disponibles">
           {estado.datos.map((slot) => (
             <li key={slot.inicio}>
-              <button
-                type="button"
-                className="secondary"
+              <Button
+                variant="secondary"
                 onClick={() => onElegir(slot)}
                 data-testid={`slot-${formatearHora(slot.inicio)}`}
               >
                 {formatearRangoHora(slot.inicio, slot.fin)}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
