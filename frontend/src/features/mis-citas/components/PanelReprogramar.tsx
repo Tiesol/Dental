@@ -3,11 +3,12 @@ import { appointmentsApi } from '@/api/endpoints/appointments';
 import { ApiError } from '@/api/errors';
 import type { AppointmentResponse, SlotResponse } from '@/api/types';
 import { SelectorHorario } from '@/features/reserva';
+import { Button } from '@/shared/components/Button';
 import { fechaEnClinica, formatearFecha, formatearRangoHora } from '@/shared/lib/dates';
 
 type Props = {
   cita: AppointmentResponse;
-  alTerminar: () => void;
+  alTerminar: (reprogramada: AppointmentResponse) => void;
   alFallar: (error: Error) => void;
   alDesistir: () => void;
   alElegir: () => void;
@@ -23,8 +24,7 @@ export function PanelReprogramar({ cita, alTerminar, alFallar, alDesistir, alEle
     if (!slot) return;
     setEnviando(true);
     try {
-      await appointmentsApi.reprogramar(cita.id, slot.inicio);
-      alTerminar();
+      alTerminar(await appointmentsApi.reprogramar(cita.id, slot.inicio));
     } catch (err) {
       alFallar(err as Error);
       setEnviando(false);
@@ -58,28 +58,22 @@ export function PanelReprogramar({ cita, alTerminar, alFallar, alDesistir, alEle
       )}
       <div className="form-actions">
         {slot && (
-          <button
-            type="button"
-            disabled={enviando}
+          <Button
+            loading={enviando}
             onClick={() => void confirmar()}
             data-testid="btn-confirmar-reprogramacion"
           >
-            {enviando ? 'Reprogramando…' : 'Confirmar nuevo horario'}
-          </button>
+            Confirmar nuevo horario
+          </Button>
         )}
         {slot && (
-          <button
-            type="button"
-            className="secondary"
-            disabled={enviando}
-            onClick={() => setSlot(null)}
-          >
+          <Button variant="secondary" disabled={enviando} onClick={() => setSlot(null)}>
             Elegir otro horario
-          </button>
+          </Button>
         )}
-        <button type="button" className="secondary" disabled={enviando} onClick={alDesistir}>
+        <Button variant="secondary" disabled={enviando} onClick={alDesistir}>
           Volver a la cita
-        </button>
+        </Button>
       </div>
     </section>
   );

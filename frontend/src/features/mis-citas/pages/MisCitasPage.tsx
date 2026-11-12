@@ -2,6 +2,8 @@ import { useCallback, useRef, useState, type KeyboardEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { appointmentsApi } from '@/api/endpoints/appointments';
 import type { CuandoCitas } from '@/api/types';
+import { Button } from '@/shared/components/Button';
+import { ButtonLink } from '@/shared/components/ButtonLink';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { EstadoCitaBadge } from '@/shared/components/EstadoCitaBadge';
@@ -19,7 +21,10 @@ const PESTANIAS: { valor: CuandoCitas; etiqueta: string }[] = [
 // Próximas citas e historial del paciente autenticado. La separación la hace el backend.
 export function MisCitasPage() {
   const [cuando, setCuando] = useState<CuandoCitas>('proximas');
-  const cargar = useCallback(() => appointmentsApi.mias(cuando), [cuando]);
+  const cargar = useCallback(
+    (signal: AbortSignal) => appointmentsApi.mias(cuando, signal),
+    [cuando],
+  );
   const { estado } = useCarga(cargar);
   const { state } = useLocation() as { state: { exito?: string } | null };
   const pestanias = useRef<Partial<Record<CuandoCitas, HTMLButtonElement | null>>>({});
@@ -38,9 +43,9 @@ export function MisCitasPage() {
         title="Mis citas"
         description="Próximas e historial."
         actions={
-          <Link to="/reservar" className="button" data-testid="link-reservar">
+          <ButtonLink to="/reservar" data-testid="link-reservar">
             Reservar cita
-          </Link>
+          </ButtonLink>
         }
       />
 
@@ -48,9 +53,9 @@ export function MisCitasPage() {
 
       <div className="tabs" role="tablist" aria-label="Mis citas">
         {PESTANIAS.map(({ valor, etiqueta }) => (
-          <button
+          <Button
             key={valor}
-            type="button"
+            variant="tab"
             role="tab"
             id={`pestania-${valor}`}
             ref={(boton) => {
@@ -60,11 +65,10 @@ export function MisCitasPage() {
             aria-controls="panel-mis-citas"
             tabIndex={cuando === valor ? 0 : -1}
             onKeyDown={alPulsarTecla}
-            className={cuando === valor ? 'tab tab-active' : 'tab'}
             onClick={() => setCuando(valor)}
           >
             {etiqueta}
-          </button>
+          </Button>
         ))}
       </div>
 

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { appointmentsApi } from '@/api/endpoints/appointments';
 import { ApiError } from '@/api/errors';
 import { useAuth } from '@/features/auth';
+import { Button } from '@/shared/components/Button';
 import { DatosCita } from '@/shared/components/DatosCita';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
@@ -19,8 +20,8 @@ const VOLVER = { to: '/mis-citas', label: 'Volver a Mis citas' };
 export function DetalleCitaPage() {
   const { id = '' } = useParams();
   const { user } = useAuth();
-  const cargar = useCallback(() => appointmentsApi.porId(id), [id]);
-  const { estado, recargar } = useCarga(cargar);
+  const cargar = useCallback((signal: AbortSignal) => appointmentsApi.porId(id, signal), [id]);
+  const { estado, recargar, actualizar } = useCarga(cargar);
   const { confirm, dialog } = useConfirm();
   const [reprogramando, setReprogramando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
@@ -51,9 +52,9 @@ export function DetalleCitaPage() {
     limpiarMensajes();
     setCancelando(true);
     try {
-      await appointmentsApi.cancelar(id);
+      const cancelada = await appointmentsApi.cancelar(id);
+      actualizar(() => cancelada);
       setExito('Cita cancelada');
-      recargar();
     } catch (err) {
       alFallar(err as Error);
     } finally {
@@ -85,8 +86,8 @@ export function DetalleCitaPage() {
         {!reprogramando && acciones.length > 0 && (
           <div className="form-actions">
             {puedeReprogramar && (
-              <button
-                type="button"
+              <Button
+                disabled={cancelando}
                 onClick={() => {
                   limpiarMensajes();
                   setReprogramando(true);
@@ -94,18 +95,17 @@ export function DetalleCitaPage() {
                 data-testid="btn-reprogramar"
               >
                 Reprogramar
-              </button>
+              </Button>
             )}
             {acciones.includes('cancelar') && (
-              <button
-                type="button"
-                className="secondary danger"
-                disabled={cancelando}
+              <Button
+                variant="danger-outline"
+                loading={cancelando}
                 onClick={() => void cancelar()}
                 data-testid="btn-cancelar"
               >
-                {cancelando ? 'Cancelando…' : 'Cancelar cita'}
-              </button>
+                Cancelar cita
+              </Button>
             )}
           </div>
         )}
@@ -114,10 +114,10 @@ export function DetalleCitaPage() {
         <PanelReprogramar
           cita={cita}
           alElegir={limpiarMensajes}
-          alTerminar={() => {
+          alTerminar={(reprogramada) => {
+            actualizar(() => reprogramada);
             setReprogramando(false);
             setExito('Cita reprogramada');
-            recargar();
           }}
           alFallar={alFallar}
           alDesistir={() => setReprogramando(false)}
