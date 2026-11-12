@@ -4,16 +4,28 @@ import type { Role } from '@/api/types';
 import { useAuth } from '@/features/auth';
 import { ActiveBadge } from '@/shared/components/ActiveBadge';
 import { Avatar } from '@/shared/components/Avatar';
+import { Button } from '@/shared/components/Button';
+import { ButtonLink } from '@/shared/components/ButtonLink';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { Icon } from '@/shared/components/Icon';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
+import { Select, type SelectOption } from '@/shared/components/Select';
+import { TextField } from '@/shared/components/TextField';
 import { useConfirm } from '@/shared/hooks/useConfirm';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { ROLE_LABEL } from '@/shared/lib/roles';
 import { useUsuarios } from '../hooks/useUsuarios';
 
 type FiltroRol = Role | 'TODOS';
+
+const OPCIONES_ROL: SelectOption<FiltroRol>[] = [
+  { value: 'TODOS', label: 'Todos' },
+  { value: 'PACIENTE', label: ROLE_LABEL.PACIENTE },
+  { value: 'ODONTOLOGO', label: ROLE_LABEL.ODONTOLOGO },
+  { value: 'ADMIN', label: ROLE_LABEL.ADMIN },
+];
 
 export function UsuariosPage() {
   const { user: yo } = useAuth();
@@ -21,18 +33,19 @@ export function UsuariosPage() {
   const { confirm, dialog } = useConfirm();
   const [filtroRol, setFiltroRol] = useState<FiltroRol>('TODOS');
   const [busqueda, setBusqueda] = useState('');
+  const busquedaAplicada = useDebouncedValue(busqueda);
   const [procesando, setProcesando] = useState<string | null>(null);
   const [errorAccion, setErrorAccion] = useState('');
 
   const visibles = useMemo(() => {
     if (estado.status !== 'ok') return [];
-    const texto = busqueda.trim().toLowerCase();
+    const texto = busquedaAplicada.trim().toLowerCase();
     return estado.usuarios.filter(
       (u) =>
         (filtroRol === 'TODOS' || u.role === filtroRol) &&
         (!texto || u.nombre.toLowerCase().includes(texto) || u.email.includes(texto)),
     );
-  }, [estado, filtroRol, busqueda]);
+  }, [estado, filtroRol, busquedaAplicada]);
 
   const alternarEstado = async (id: string, nombre: string, activo: boolean) => {
     if (
@@ -58,33 +71,30 @@ export function UsuariosPage() {
         title="Usuarios"
         description="Cuentas de pacientes, odontólogos y administradores."
         actions={
-          <Link to="/admin/usuarios/nuevo" className="button" data-testid="btn-nuevo-usuario">
+          <ButtonLink to="/admin/usuarios/nuevo" data-testid="btn-nuevo-usuario">
             <Icon name="plus" />
             Nuevo usuario
-          </Link>
+          </ButtonLink>
         }
       />
 
       <section className="card card-flush">
         <div className="filters">
-          <label>
-            Rol
-            <select value={filtroRol} onChange={(e) => setFiltroRol(e.target.value as FiltroRol)}>
-              <option value="TODOS">Todos</option>
-              <option value="PACIENTE">{ROLE_LABEL.PACIENTE}</option>
-              <option value="ODONTOLOGO">{ROLE_LABEL.ODONTOLOGO}</option>
-              <option value="ADMIN">{ROLE_LABEL.ADMIN}</option>
-            </select>
-          </label>
-          <label className="filters-grow">
-            Buscar
-            <input
-              type="search"
-              placeholder="Nombre o email"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-            />
-          </label>
+          <Select
+            variant="filter"
+            label="Rol"
+            value={filtroRol}
+            options={OPCIONES_ROL}
+            onChange={setFiltroRol}
+          />
+          <TextField
+            label="Buscar"
+            type="search"
+            placeholder="Nombre o email"
+            value={busqueda}
+            onChange={setBusqueda}
+            fieldClassName="field-filter filters-grow"
+          />
           {estado.status === 'ok' && (
             <p className="muted filters-count" role="status">
               Mostrando {visibles.length} de {estado.usuarios.length}{' '}
@@ -137,16 +147,16 @@ export function UsuariosPage() {
                       <td>
                         <div className="actions">
                           <Link to={`/admin/usuarios/${u.id}`}>Editar</Link>
-                          <button
-                            type="button"
-                            className={u.activo ? 'secondary danger' : 'secondary'}
-                            disabled={esYo || procesando === u.id}
+                          <Button
+                            variant={u.activo ? 'danger-outline' : 'secondary'}
+                            loading={procesando === u.id}
+                            disabled={esYo}
                             title={esYo ? 'No puedes deshabilitar tu propia cuenta' : undefined}
                             onClick={() => void alternarEstado(u.id, u.nombre, u.activo)}
                             data-testid="btn-cambiar-estado"
                           >
                             {u.activo ? 'Deshabilitar' : 'Habilitar'}
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>

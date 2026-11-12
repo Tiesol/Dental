@@ -1,46 +1,56 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { StaffRole } from '@/api/types';
+import { Button } from '@/shared/components/Button';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { PageHeader } from '@/shared/components/PageHeader';
+import { Select, type SelectOption } from '@/shared/components/Select';
+import { TextField } from '@/shared/components/TextField';
+import { useForm } from '@/shared/hooks/useForm';
+import { combine, email, maxLength, minLength, required } from '@/shared/lib/validators';
 import { ROLE_LABEL } from '@/shared/lib/roles';
 import { useCrearUsuario } from '../hooks/useCrearUsuario';
 
-type Form = {
-  role: StaffRole;
-  email: string;
-  password: string;
-  nombre: string;
-  especialidad: string;
-};
+const OPCIONES_ROL: SelectOption<StaffRole>[] = [
+  { value: 'ODONTOLOGO', label: ROLE_LABEL.ODONTOLOGO },
+  { value: 'ADMIN', label: ROLE_LABEL.ADMIN },
+];
 
 // Alta de ODONTOLOGO o ADMIN. Los pacientes se registran solos desde /registro.
 export function NuevoUsuarioPage() {
   const navigate = useNavigate();
   const { crear, enviando, error } = useCrearUsuario();
-  const [form, setForm] = useState<Form>({
-    role: 'ODONTOLOGO',
-    email: '',
-    password: '',
-    nombre: '',
-    especialidad: '',
-  });
-
-  const update = (field: keyof Form) => (value: string) =>
-    setForm((f) => ({ ...f, [field]: value }));
+  const [role, setRole] = useState<StaffRole>('ODONTOLOGO');
+  const esOdontologo = role === 'ODONTOLOGO';
+  // Nombre y especialidad solo aplican a un odontólogo.
+  const form = useForm(
+    { nombre: '', especialidad: '', email: '', password: '' },
+    {
+      nombre: (valor) => (esOdontologo ? required('Escribe el nombre')(valor) : null),
+      especialidad: (valor) => (esOdontologo ? required('Escribe la especialidad')(valor) : null),
+      email: combine(required('Escribe el email'), email()),
+      password: combine(
+        required('Escribe una contraseña inicial'),
+        minLength(8, 'La contraseña debe tener al menos 8 caracteres'),
+        maxLength(72, 'La contraseña admite hasta 72 caracteres'),
+      ),
+    },
+  );
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!form.validate()) return;
+    const { nombre, especialidad, email: correo, password } = form.values;
     const creado = await crear(
-      form.role === 'ODONTOLOGO'
+      esOdontologo
         ? {
             role: 'ODONTOLOGO',
-            email: form.email,
-            password: form.password,
-            nombre: form.nombre,
-            especialidad: form.especialidad,
+            email: correo.trim(),
+            password,
+            nombre: nombre.trim(),
+            especialidad: especialidad.trim(),
           }
-        : { role: 'ADMIN', email: form.email, password: form.password },
+        : { role: 'ADMIN', email: correo.trim(), password },
     );
     if (creado) navigate('/admin/usuarios');
   };
@@ -58,65 +68,37 @@ export function NuevoUsuarioPage() {
         }
         back={{ to: '/admin/usuarios', label: 'Volver al listado' }}
       />
-      <form className="card" onSubmit={onSubmit}>
-        <label>
-          Rol
-          <select value={form.role} onChange={(e) => update('role')(e.target.value)}>
-            <option value="ODONTOLOGO">{ROLE_LABEL.ODONTOLOGO}</option>
-            <option value="ADMIN">{ROLE_LABEL.ADMIN}</option>
-          </select>
-        </label>
-        {form.role === 'ODONTOLOGO' && (
+      <form className="card" onSubmit={onSubmit} noValidate>
+        <Select label="Rol" value={role} options={OPCIONES_ROL} onChange={setRole} />
+        {esOdontologo && (
           <>
-            <label>
-              Nombre
-              <input
-                value={form.nombre}
-                onChange={(e) => update('nombre')(e.target.value)}
-                required
-                placeholder="Dr. Juan Rojas"
-              />
-            </label>
-            <label>
-              Especialidad
-              <input
-                value={form.especialidad}
-                onChange={(e) => update('especialidad')(e.target.value)}
-                required
-                placeholder="Ortodoncia"
-              />
-            </label>
+            <TextField
+              {...form.field('nombre')}
+              label="Nombre"
+              placeholder="Dr. Juan Rojas"
+              maxLength={100}
+            />
+            <TextField
+              {...form.field('especialidad')}
+              label="Especialidad"
+              placeholder="Ortodoncia"
+              maxLength={100}
+            />
           </>
         )}
-        <label>
-          Email
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => update('email')(e.target.value)}
-            required
-            autoComplete="off"
-          />
-        </label>
-        <label>
-          Contraseña inicial
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => update('password')(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-          <small className="muted">
-            Mínimo 8 caracteres. El usuario podrá cambiarla en Mi cuenta.
-          </small>
-        </label>
+        <TextField {...form.field('email')} label="Email" type="email" autoComplete="off" />
+        <TextField
+          {...form.field('password')}
+          label="Contraseña inicial"
+          type="password"
+          autoComplete="new-password"
+          hint="Mínimo 8 caracteres. El usuario podrá cambiarla en Mi cuenta."
+        />
         {error && <ErrorMessage>{error}</ErrorMessage>}
         <div className="form-actions">
-          <button type="submit" disabled={enviando} data-testid="btn-crear-usuario">
-            {enviando ? 'Creando…' : 'Crear usuario'}
-          </button>
+          <Button type="submit" loading={enviando} data-testid="btn-crear-usuario">
+            Crear usuario
+          </Button>
         </div>
       </form>
     </div>
