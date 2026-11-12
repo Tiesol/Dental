@@ -1,39 +1,36 @@
 /* ---- Tokens ---- */
 
+/* Paleta clara única (azul clínico): la interfaz no tiene modo oscuro. Ver DISENO.md. */
 :root {
-  --bg: #f3f6f7;
+  --bg: #f5f8fc;
   --surface: #ffffff;
-  --surface-sunken: #edf2f3;
-  --text: #16252b;
-  --muted: #526369;
-  --border: #dbe3e6;
-  --border-strong: #84979e;
-  --primary: #0b7285;
-  --primary-hover: #095c6b;
-  --primary-soft: #e1f2f4;
+  --surface-sunken: #eef3f9;
+  --surface-pressed: #e2e9f3;
+  --text: #172033;
+  --muted: #4f5d73;
+  --border: #dde5ef;
+  --border-strong: #7d8aa0;
+  --primary: #1d5fd1;
+  --primary-hover: #184fb0;
+  --primary-active: #133f8c;
+  --primary-soft: #e6effc;
   --on-primary: #ffffff;
   --error: #b42318;
   --error-hover: #912018;
+  --error-active: #761a14;
   --error-soft: #fdecea;
   --on-error: #ffffff;
   --success: #1b6e33;
   --success-soft: #e6f4e9;
+  --backdrop: rgb(23 32 51 / 0.45);
 
   /* Estados de la cita. FINALIZADA y CANCELADA reutilizan success y muted. */
   --estado-pendiente: #7f5200;
   --estado-pendiente-soft: #fdf1d8;
-  --estado-confirmada: #135a9e;
-  --estado-confirmada-soft: #e4effa;
+  --estado-confirmada: #0b6470;
+  --estado-confirmada-soft: #dff2f3;
   --estado-en-atencion: #65409c;
   --estado-en-atencion-soft: #f0eafa;
-
-  /* La marca es igual en claro y oscuro: barra lateral y panel de acceso. */
-  --brand-bg: #0c3a44;
-  --brand-text: #e3eff1;
-  --brand-muted: #a9c6cc;
-  --brand-line: #24525d;
-  --brand-hover: #174a55;
-  --brand-active: #1f5e6b;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -52,43 +49,14 @@
   --radius-sm: 6px;
   --radius-md: 10px;
 
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
-  color-scheme: light dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1619;
-    --surface: #172126;
-    --surface-sunken: #1e2a30;
-    --text: #e6edef;
-    --muted: #a0b1b7;
-    --border: #2c3a40;
-    --border-strong: #64787f;
-    --primary: #5cc8d7;
-    --primary-hover: #84d9e4;
-    --primary-soft: #14343c;
-    --on-primary: #06262c;
-    --error: #ff9d91;
-    --error-hover: #ffb9b0;
-    --error-soft: #3a1b18;
-    --on-error: #3a0d08;
-    --success: #84dc9e;
-    --success-soft: #15301e;
-    --estado-pendiente: #f2c86a;
-    --estado-pendiente-soft: #3a2c10;
-    --estado-confirmada: #93c5f5;
-    --estado-confirmada-soft: #14304c;
-    --estado-en-atencion: #cbb2f1;
-    --estado-en-atencion-soft: #2d2246;
-    --brand-bg: #0b252c;
-    --brand-line: #1e3f48;
-    --brand-hover: #143740;
-    --brand-active: #1b4853;
-  }
+  color-scheme: light;
 }
 
 /* ---- Base ---- */
@@ -157,18 +125,39 @@ small {
   height: 1.25em;
 }
 
-/* ---- Controles ---- */
+/* ---- Campos ---- */
 
-label {
+.field {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
+}
+
+.field-label {
   font-size: var(--text-sm);
   font-weight: 600;
 }
 
+.field-hint {
+  color: var(--muted);
+}
+
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--error);
+}
+
+.field-error .icon {
+  width: 1.125em;
+  height: 1.125em;
+  margin-top: 0.125rem;
+}
+
 input,
-select,
 textarea {
   width: 100%;
   padding: 0.625rem var(--space-3);
@@ -179,6 +168,17 @@ textarea {
   font-weight: 400;
   background: var(--surface);
   color: var(--text);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+input[aria-invalid='true'],
+textarea[aria-invalid='true'],
+.select-trigger[aria-invalid='true'] {
+  border-color: var(--error);
 }
 
 textarea {
@@ -193,69 +193,397 @@ input[type='checkbox'] {
 }
 
 label.checkbox {
-  flex-direction: row;
+  display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-md);
-  font-weight: 400;
 }
 
-button,
-a.button {
+/* Campo de texto con un botón pegado a la derecha (calendario, horas). */
+.input-group {
+  position: relative;
+  display: flex;
+}
+
+.input-group input {
+  padding-right: 2.75rem;
+}
+
+.input-group-button {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  width: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.input-group-button:hover {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+/* ---- Botones ---- */
+
+button {
+  font: inherit;
+}
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.625rem var(--space-4);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   font: inherit;
   font-weight: 600;
+  line-height: 1.5;
   text-decoration: none;
-  background: var(--primary);
-  color: var(--on-primary);
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
 }
 
-button:hover:not(:disabled),
-a.button:hover {
-  background: var(--primary-hover);
+.btn-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-button:disabled {
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-button.secondary,
-a.button.secondary {
-  background: transparent;
+/* Cargando: el texto queda oculto pero ocupa su lugar, así el botón no cambia de ancho. */
+.btn[aria-busy='true'] {
+  opacity: 1;
+  cursor: progress;
+}
+
+.btn[aria-busy='true'] .btn-label {
+  opacity: 0;
+}
+
+.btn-spinner {
+  position: absolute;
+  inset: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btn-primary:active:not(:disabled) {
+  background: var(--primary-active);
+}
+
+.btn-secondary,
+.btn-tab {
+  background: var(--surface);
   border-color: var(--border-strong);
   color: var(--text);
 }
 
-button.secondary:hover:not(:disabled),
-a.button.secondary:hover {
+.btn-secondary:hover:not(:disabled),
+.btn-tab:hover:not(:disabled) {
   background: var(--surface-sunken);
 }
 
-button.secondary.danger {
-  background: transparent;
-  border-color: var(--error);
-  color: var(--error);
+.btn-secondary:active:not(:disabled),
+.btn-tab:active:not(:disabled) {
+  background: var(--surface-pressed);
 }
 
-button.secondary.danger:hover:not(:disabled) {
-  background: var(--error-soft);
-}
-
-button.danger {
+.btn-danger {
   background: var(--error);
   color: var(--on-error);
 }
 
-button.danger:hover:not(:disabled) {
+.btn-danger:hover:not(:disabled) {
   background: var(--error-hover);
+}
+
+.btn-danger:active:not(:disabled) {
+  background: var(--error-active);
+}
+
+.btn-danger-outline {
+  background: var(--surface);
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+  background: var(--error-soft);
+}
+
+.btn-danger-outline:active:not(:disabled) {
+  border-color: var(--error-hover);
+  color: var(--error-hover);
+}
+
+/* Subrayado además del color: el estado no se informa solo con color. */
+.btn-tab[aria-selected='true'],
+.btn-tab[aria-selected='true']:hover:not(:disabled) {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+}
+
+.btn-ghost {
+  padding: var(--space-2);
+  background: transparent;
+  color: var(--muted);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+.btn-ghost:active:not(:disabled) {
+  background: var(--surface-pressed);
+}
+
+/* ---- Desplegables, calendario y horas ---- */
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0.625rem var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease;
+}
+
+.select-trigger:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.select-trigger[aria-expanded='true'] {
+  border-color: var(--primary);
+}
+
+.select-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.select-trigger .icon {
+  color: var(--muted);
+  transition: transform var(--duration-base) ease;
+}
+
+.select-trigger[aria-expanded='true'] .icon {
+  transform: rotate(180deg);
+}
+
+.select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-placeholder {
+  color: var(--muted);
+}
+
+/* Anclado al control por variables que calcula useAnchoredPopover. El fondo opaco evita repintar
+   todo al hacer scroll dentro de la lista. */
+.popover {
+  position: fixed;
+  z-index: 50;
+  top: var(--popover-y, 0);
+  left: var(--popover-x, 0);
+  max-height: var(--popover-max-h, 20rem);
+  margin: 0;
+  padding: var(--space-1);
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  animation: popover-in var(--duration-base) ease-out;
+}
+
+.popover[data-placement='top'] {
+  translate: 0 -100%;
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+}
+
+.listbox {
+  width: var(--popover-w, auto);
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.option-active {
+  background: var(--surface-sunken);
+}
+
+.option[aria-selected='true'] {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.popover-calendar {
+  width: min(19rem, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-3);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.calendar-title {
+  font-weight: 600;
+}
+
+.calendar-title::first-letter {
+  text-transform: uppercase;
+}
+
+.calendar-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendar-grid th {
+  padding: var(--space-1) 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  color: var(--muted);
+  background: none;
+  border: none;
+}
+
+.calendar-grid td {
+  padding: 1px;
+  border: none;
+}
+
+.calendar-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.calendar-day:hover {
+  background: var(--surface-sunken);
+}
+
+.calendar-day-outside {
+  color: var(--muted);
+}
+
+.calendar-day-today {
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.calendar-day-selected,
+.calendar-day-selected:hover {
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+}
+
+.calendar-day[aria-disabled='true'] {
+  color: var(--muted);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.calendar-day[aria-disabled='true']:hover {
+  background: transparent;
+}
+
+.calendar-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.calendar-footer:empty {
+  display: none;
 }
 
 /* ---- Estructura de la aplicación ---- */
@@ -287,12 +615,9 @@ button.danger:hover:not(:disabled) {
   justify-content: space-between;
   gap: var(--space-2) var(--space-4);
   padding: var(--space-3) var(--space-4);
-  background: var(--brand-bg);
-  color: var(--brand-text);
-}
-
-.sidebar :focus-visible {
-  outline-color: var(--brand-text);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
 }
 
 .brand {
@@ -302,12 +627,13 @@ button.danger:hover:not(:disabled) {
   font-size: var(--text-lg);
   font-weight: 700;
   text-decoration: none;
-  color: inherit;
+  color: var(--text);
 }
 
 .brand .icon {
   width: 1.5em;
   height: 1.5em;
+  color: var(--primary);
 }
 
 .sidebar-nav {
@@ -332,17 +658,26 @@ button.danger:hover:not(:disabled) {
   border-radius: var(--radius-sm);
   font-weight: 500;
   text-decoration: none;
-  color: var(--brand-text);
+  color: var(--text);
+  transition: background-color var(--duration-fast) ease;
+}
+
+.sidebar-nav a .icon {
+  color: var(--muted);
 }
 
 .sidebar-nav a:hover {
-  background: var(--brand-hover);
+  background: var(--surface-sunken);
 }
 
 .sidebar-nav a.active {
-  background: var(--brand-active);
+  background: var(--primary-soft);
   font-weight: 700;
-  color: #ffffff;
+  color: var(--primary);
+}
+
+.sidebar-nav a.active .icon {
+  color: var(--primary);
 }
 
 .sidebar-user {
@@ -366,7 +701,7 @@ button.danger:hover:not(:disabled) {
 /* Móvil: marca y salir en una fila, menú en la siguiente. Avatar e iconos vuelven en escritorio. */
 @media (max-width: 55.99rem) {
   .sidebar .avatar,
-  .sidebar button.logout .icon,
+  .sidebar .logout .icon,
   .sidebar-nav a .icon {
     display: none;
   }
@@ -374,20 +709,13 @@ button.danger:hover:not(:disabled) {
 
 .sidebar-user-text span {
   font-size: var(--text-sm);
-  color: var(--brand-muted);
+  color: var(--muted);
 }
 
-.sidebar button.logout {
+.sidebar .logout {
   padding: var(--space-2) var(--space-3);
-  background: transparent;
-  border-color: var(--brand-line);
-  color: var(--brand-text);
   font-weight: 500;
   white-space: nowrap;
-}
-
-.sidebar button.logout:hover:not(:disabled) {
-  background: var(--brand-hover);
 }
 
 .content {
@@ -423,6 +751,8 @@ button.danger:hover:not(:disabled) {
     gap: var(--space-5);
     height: 100dvh;
     padding: var(--space-5) var(--space-4);
+    border-bottom: none;
+    border-right: 1px solid var(--border);
   }
 
   .sidebar-nav {
@@ -434,10 +764,19 @@ button.danger:hover:not(:disabled) {
     flex-direction: column;
   }
 
+  /* Barra a la izquierda de la página actual, además del fondo y el peso. */
+  .sidebar-nav a {
+    border-left: 3px solid transparent;
+  }
+
+  .sidebar-nav a.active {
+    border-left-color: var(--primary);
+  }
+
   .sidebar-user {
     flex-wrap: wrap;
     padding-top: var(--space-4);
-    border-top: 1px solid var(--brand-line);
+    border-top: 1px solid var(--border);
   }
 
   .sidebar-user-text {
@@ -445,7 +784,7 @@ button.danger:hover:not(:disabled) {
     flex: 1 1 0;
   }
 
-  .sidebar button.logout {
+  .sidebar .logout {
     width: 100%;
   }
 
@@ -460,15 +799,16 @@ button.danger:hover:not(:disabled) {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  background: var(--surface);
+  background: var(--bg);
 }
 
 .auth-brand {
   position: relative;
   overflow: hidden;
   padding: var(--space-4);
-  background: var(--brand-bg);
-  color: var(--brand-text);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
 }
 
 .auth-brand-text {
@@ -505,6 +845,8 @@ button.danger:hover:not(:disabled) {
     display: flex;
     flex-direction: column;
     padding: var(--space-6);
+    border-bottom: none;
+    border-right: 1px solid var(--border);
   }
 
   .auth-brand-text {
@@ -521,12 +863,11 @@ button.danger:hover:not(:disabled) {
     font-size: var(--text-2xl);
     font-weight: 700;
     line-height: 1.15;
-    color: #ffffff;
   }
 
   .auth-brand-text p:last-child {
     font-size: var(--text-lg);
-    color: var(--brand-muted);
+    color: var(--muted);
   }
 
   .auth-brand-mark {
@@ -534,7 +875,7 @@ button.danger:hover:not(:disabled) {
     right: -6rem;
     bottom: -6rem;
     display: block;
-    color: var(--brand-line);
+    color: var(--primary-soft);
   }
 
   .auth-brand-mark .icon {
@@ -611,7 +952,7 @@ button.danger:hover:not(:disabled) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .form-actions button {
+  .form-actions .btn {
     align-self: flex-start;
   }
 }
@@ -666,33 +1007,13 @@ button.danger:hover:not(:disabled) {
   list-style: none;
 }
 
-.slots button {
+.slots .btn {
   width: 100%;
 }
 
 .tabs {
   display: flex;
   gap: var(--space-2);
-}
-
-button.tab {
-  background: transparent;
-  border-color: var(--border-strong);
-  color: var(--text);
-}
-
-button.tab:hover:not(:disabled) {
-  background: var(--surface-sunken);
-}
-
-/* Subrayado además del color: el estado no se informa solo con color. */
-button.tab-active,
-button.tab-active:hover:not(:disabled) {
-  background: var(--primary-soft);
-  border-color: var(--primary);
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.25em;
 }
 
 /* ---- Tramos de horario ---- */
@@ -706,6 +1027,12 @@ button.tab-active:hover:not(:disabled) {
 @media (min-width: 44rem) {
   .tramo {
     grid-template-columns: minmax(7rem, 1fr) repeat(2, minmax(8.5rem, 1fr)) auto;
+    align-items: start;
+  }
+
+  /* El botón Quitar queda a la altura de los controles, aunque un campo muestre su error. */
+  .tramo > .btn {
+    margin-top: calc(var(--text-sm) * 1.5 + var(--space-1));
   }
 }
 
@@ -720,13 +1047,14 @@ button.tab-active:hover:not(:disabled) {
 .filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: var(--space-3) var(--space-4);
   padding: var(--space-4);
   border-bottom: 1px solid var(--border);
 }
 
-.filters label {
+/* En móvil cada filtro ocupa el ancho; en pantallas anchas comparten la fila. */
+.field-filter {
   flex: 1 1 11rem;
 }
 
@@ -793,7 +1121,7 @@ tbody tr:last-child td {
   white-space: nowrap;
 }
 
-.actions button {
+.actions .btn {
   padding: var(--space-1) var(--space-3);
   font-size: var(--text-sm);
 }
@@ -884,11 +1212,6 @@ tbody tr:last-child td {
   font-weight: 700;
   background: var(--primary-soft);
   color: var(--primary);
-}
-
-.sidebar .avatar {
-  background: var(--brand-active);
-  color: #ffffff;
 }
 
 .avatar-large {
@@ -1071,12 +1394,6 @@ tbody tr:last-child td {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .skeleton {
-    animation: none;
-  }
-}
-
 /* ---- Diálogo de confirmación ---- */
 
 .dialog {
@@ -1089,8 +1406,12 @@ tbody tr:last-child td {
   color: var(--text);
 }
 
+.dialog[open] {
+  animation: popover-in var(--duration-base) ease-out;
+}
+
 .dialog::backdrop {
-  background: rgb(10 28 33 / 0.55);
+  background: var(--backdrop);
 }
 
 .dialog p {
@@ -1103,6 +1424,87 @@ tbody tr:last-child td {
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-5);
+}
+
+/* ---- Errores inesperados ---- */
+
+.error-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-4);
+  background: var(--bg);
+}
+
+.error-screen-card {
+  width: 100%;
+  max-width: 36rem;
+}
+
+.error-notice {
+  position: fixed;
+  z-index: 60;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  max-width: 30rem;
+  margin-left: auto;
+  padding: var(--space-4);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  animation: popover-in var(--duration-base) ease-out;
+}
+
+.error-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.error-details-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.error-details-head > .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--error);
+}
+
+.error-details-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.error-details-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.error-details-tech summary {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.error-details-tech pre {
+  max-height: 16rem;
+  margin: var(--space-2) 0 0;
+  padding: var(--space-3);
+  overflow: auto;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* ---- Odontólogos ---- */
@@ -1148,4 +1550,30 @@ tbody tr:last-child td {
   display: block;
   margin-top: var(--space-1);
   color: var(--error);
+}
+
+/* ---- Movimiento reducido ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  /* El spinner sigue girando, más lento: es lo único que indica que se espera una respuesta. */
+  .btn-spinner {
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .skeleton {
+    animation: none;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: none;
+  }
 }
