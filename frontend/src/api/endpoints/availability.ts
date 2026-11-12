@@ -11,9 +11,15 @@ export const availabilityApi = {
   obtener: (dentistId: string) =>
     http.get<AvailabilityResponse>(`/dentists/${dentistId}/availability`),
 
-  horariosDisponibles: (dentistId: string, serviceId: string, fecha: string) =>
+  horariosDisponibles: (
+    dentistId: string,
+    serviceId: string,
+    fecha: string,
+    signal?: AbortSignal,
+  ) =>
     http.get<SlotResponse[]>(
       `/dentists/${dentistId}/slots?serviceId=${encodeURIComponent(serviceId)}&fecha=${encodeURIComponent(fecha)}`,
+      signal,
     ),
 
   // Solo ADMIN

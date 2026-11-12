@@ -3,7 +3,9 @@ import { tokenStore } from './token';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api/v1';
 
-type Options = { body?: unknown };
+// `signal` cancela la petición (filtro nuevo, pantalla que se desmonta). Una cancelación se propaga
+// como AbortError, no como ApiError: no es un fallo y nadie la muestra.
+type Options = { body?: unknown; signal?: AbortSignal };
 
 // Avisos de "sesión expirada": si el backend rechaza con 401 un token que sí enviamos (venció,
 // o un ADMIN deshabilitó la cuenta), se borra el token y se avisa a quien escuche (AuthProvider),
@@ -27,8 +29,10 @@ async function request<T>(method: string, path: string, options: Options = {}): 
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: options.signal,
     });
-  } catch {
+  } catch (err) {
+    if (options.signal?.aborted) throw err;
     throw new ApiError(0, MENSAJE_SIN_CONEXION);
   }
 
@@ -54,7 +58,7 @@ function extraerMensaje(data: unknown): string {
 }
 
 export const http = {
-  get: <T>(path: string) => request<T>('GET', path),
+  get: <T>(path: string, signal?: AbortSignal) => request<T>('GET', path, { signal }),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, { body }),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, { body }),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, { body }),

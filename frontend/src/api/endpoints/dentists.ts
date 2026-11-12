@@ -11,7 +11,8 @@ const conFiltro = (serviceId?: string) =>
 
 // El mismo endpoint devuelve una vista distinta según el rol del token.
 export const dentistsApi = {
-  listar: (serviceId?: string) => http.get<DentistPublicResponse[]>(conFiltro(serviceId)),
+  listar: (serviceId?: string, signal?: AbortSignal) =>
+    http.get<DentistPublicResponse[]>(conFiltro(serviceId), signal),
 
   // Solo ADMIN
   listarAdmin: () => http.get<DentistAdminResponse[]>('/dentists'),

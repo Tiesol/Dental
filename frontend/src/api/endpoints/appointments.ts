@@ -19,9 +19,10 @@ const conFiltros = (filtros: AppointmentFiltersRequest) => {
 export const appointmentsApi = {
   reservar: (body: CreateAppointmentRequest) =>
     http.post<AppointmentResponse>('/appointments', body),
-  mias: (cuando: CuandoCitas) =>
-    http.get<AppointmentResponse[]>(`/appointments/mine?cuando=${cuando}`),
-  porId: (id: string) => http.get<AppointmentResponse>(`/appointments/${id}`),
+  mias: (cuando: CuandoCitas, signal?: AbortSignal) =>
+    http.get<AppointmentResponse[]>(`/appointments/mine?cuando=${cuando}`, signal),
+  porId: (id: string, signal?: AbortSignal) =>
+    http.get<AppointmentResponse>(`/appointments/${id}`, signal),
   reprogramar: (id: string, horaInicio: string) =>
     http.patch<AppointmentResponse>(`/appointments/${id}/reschedule`, { horaInicio }),
   cancelar: (id: string) => http.patch<AppointmentResponse>(`/appointments/${id}/cancel`),
@@ -31,13 +32,15 @@ export const appointmentsApi = {
     http.post<{ texto: string; createdAt: string }>(`/appointments/${id}/observation`, { texto }),
 
   // Solo ADMIN
-  todas: (filtros: AppointmentFiltersRequest = {}) =>
-    http.get<AppointmentResponse[]>(conFiltros(filtros)),
+  todas: (filtros: AppointmentFiltersRequest = {}, signal?: AbortSignal) =>
+    http.get<AppointmentResponse[]>(conFiltros(filtros), signal),
 
   // Solo ODONTOLOGO
-  agenda: (fecha?: string) =>
+  agenda: (fecha?: string, signal?: AbortSignal) =>
     http.get<AppointmentResponse[]>(
       fecha ? `/dentists/me/agenda?fecha=${encodeURIComponent(fecha)}` : '/dentists/me/agenda',
+      signal,
     ),
-  agendaProximas: () => http.get<AppointmentResponse[]>('/dentists/me/agenda/upcoming'),
+  agendaProximas: (signal?: AbortSignal) =>
+    http.get<AppointmentResponse[]>('/dentists/me/agenda/upcoming', signal),
 };
