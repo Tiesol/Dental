@@ -1,35 +1,45 @@
 import { useState, type FormEvent } from 'react';
+import { Button } from '@/shared/components/Button';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { SuccessMessage } from '@/shared/components/SuccessMessage';
+import { TextField } from '@/shared/components/TextField';
+import { useForm } from '@/shared/hooks/useForm';
+import { combine, maxLength, minLength, required } from '@/shared/lib/validators';
 import { useCambiarPassword } from '../hooks/useCambiarPassword';
 
 const VACIO = { passwordActual: '', passwordNueva: '', confirmacion: '' };
 
 export function FormularioPassword() {
   const cambiarPassword = useCambiarPassword();
-  const [form, setForm] = useState(VACIO);
+  const form = useForm(VACIO, {
+    passwordActual: required('Escribe tu contraseña actual'),
+    passwordNueva: combine(
+      required('Escribe la nueva contraseña'),
+      minLength(8, 'La nueva contraseña debe tener al menos 8 caracteres'),
+      maxLength(72, 'La contraseña admite hasta 72 caracteres'),
+    ),
+    confirmacion: (valor, valores) =>
+      required('Repite la nueva contraseña')(valor) ??
+      (valor !== valores.passwordNueva
+        ? 'La confirmación no coincide con la nueva contraseña'
+        : null),
+  });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
-
-  const update = (campo: keyof typeof VACIO) => (value: string) =>
-    setForm((f) => ({ ...f, [campo]: value }));
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setExito('');
-    if (form.passwordNueva !== form.confirmacion) {
-      setError('La confirmación no coincide con la nueva contraseña');
-      return;
-    }
+    if (!form.validate()) return;
     setEnviando(true);
     try {
       await cambiarPassword({
-        passwordActual: form.passwordActual,
-        passwordNueva: form.passwordNueva,
+        passwordActual: form.values.passwordActual,
+        passwordNueva: form.values.passwordNueva,
       });
-      setForm(VACIO);
+      form.reset();
       setExito('Contraseña actualizada');
     } catch (err) {
       setError((err as Error).message);
@@ -39,47 +49,33 @@ export function FormularioPassword() {
   };
 
   return (
-    <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-password">
+    <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-password" noValidate>
       <h2 id="titulo-password">Cambiar contraseña</h2>
-      <label>
-        Contraseña actual
-        <input
-          type="password"
-          value={form.passwordActual}
-          onChange={(e) => update('passwordActual')(e.target.value)}
-          required
-          autoComplete="current-password"
-        />
-      </label>
-      <label>
-        Nueva contraseña
-        <input
-          type="password"
-          value={form.passwordNueva}
-          onChange={(e) => update('passwordNueva')(e.target.value)}
-          required
-          minLength={8}
-          autoComplete="new-password"
-        />
-        <small className="muted">Mínimo 8 caracteres</small>
-      </label>
-      <label>
-        Confirmar nueva contraseña
-        <input
-          type="password"
-          value={form.confirmacion}
-          onChange={(e) => update('confirmacion')(e.target.value)}
-          required
-          minLength={8}
-          autoComplete="new-password"
-        />
-      </label>
+      <TextField
+        {...form.field('passwordActual')}
+        label="Contraseña actual"
+        type="password"
+        autoComplete="current-password"
+      />
+      <TextField
+        {...form.field('passwordNueva')}
+        label="Nueva contraseña"
+        type="password"
+        autoComplete="new-password"
+        hint="Mínimo 8 caracteres"
+      />
+      <TextField
+        {...form.field('confirmacion')}
+        label="Confirmar nueva contraseña"
+        type="password"
+        autoComplete="new-password"
+      />
       {error && <ErrorMessage>{error}</ErrorMessage>}
       {exito && <SuccessMessage>{exito}</SuccessMessage>}
       <div className="form-actions">
-        <button type="submit" disabled={enviando} data-testid="btn-cambiar-password">
-          {enviando ? 'Guardando…' : 'Cambiar contraseña'}
-        </button>
+        <Button type="submit" loading={enviando} data-testid="btn-cambiar-password">
+          Cambiar contraseña
+        </Button>
       </div>
     </form>
   );

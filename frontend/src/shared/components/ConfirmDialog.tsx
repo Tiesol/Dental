@@ -1,4 +1,5 @@
 import { useId, useLayoutEffect, useRef } from 'react';
+import { Button } from './Button';
 
 type Props = {
   title: string;
@@ -46,12 +47,12 @@ export function ConfirmDialog({
         {message}
       </p>
       <div className="dialog-actions">
-        <button type="button" className="secondary" onClick={onCancel}>
+        <Button variant="secondary" onClick={onCancel}>
           {cancelLabel}
-        </button>
-        <button type="button" className="danger" onClick={onConfirm}>
+        </Button>
+        <Button variant="danger" onClick={onConfirm}>
           {confirmLabel}
-        </button>
+        </Button>
       </div>
     </dialog>
   );

@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom';
 import type { Role } from '@/api/types';
 import { useAuth } from '@/features/auth';
 import { Avatar } from '@/shared/components/Avatar';
+import { Button } from '@/shared/components/Button';
 import { Icon, type IconName } from '@/shared/components/Icon';
 import { ROLE_LABEL } from '@/shared/lib/roles';
 
@@ -55,10 +56,10 @@ export function Header() {
           <strong>{user.nombre}</strong>
           <span>{ROLE_LABEL[user.role]}</span>
         </div>
-        <button type="button" className="logout" onClick={logout} data-testid="btn-logout">
+        <Button variant="secondary" className="logout" onClick={logout} data-testid="btn-logout">
           <Icon name="logout" />
           Cerrar sesión
-        </button>
+        </Button>
       </div>
     </header>
   );

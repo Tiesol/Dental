@@ -1,39 +1,46 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Button } from '@/shared/components/Button';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { TextField } from '@/shared/components/TextField';
+import { useForm } from '@/shared/hooks/useForm';
+import { combine, email, maxLength, minLength, required } from '@/shared/lib/validators';
 import { useAuth } from '../useAuth';
-
-type Form = { nombre: string; apellido: string; telefono: string; email: string; password: string };
 
 export function RegistroPage() {
   const { user, register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState<Form>({
-    nombre: '',
-    apellido: '',
-    telefono: '',
-    email: '',
-    password: '',
-  });
+  const form = useForm(
+    { nombre: '', apellido: '', telefono: '', email: '', password: '' },
+    {
+      nombre: required('Escribe tu nombre'),
+      apellido: required('Escribe tu apellido'),
+      email: combine(required('Escribe tu email'), email()),
+      password: combine(
+        required('Escribe una contraseña'),
+        minLength(8, 'La contraseña debe tener al menos 8 caracteres'),
+        maxLength(72, 'La contraseña admite hasta 72 caracteres'),
+      ),
+    },
+  );
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
 
   if (user) return <Navigate to="/" replace />;
 
-  const update = (field: keyof Form) => (value: string) =>
-    setForm((f) => ({ ...f, [field]: value }));
-
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!form.validate()) return;
+    const { nombre, apellido, telefono, email: correo, password } = form.values;
     setSending(true);
     try {
       await register({
-        nombre: form.nombre,
-        apellido: form.apellido,
-        email: form.email,
-        password: form.password,
-        ...(form.telefono.trim() ? { telefono: form.telefono.trim() } : {}),
+        nombre: nombre.trim(),
+        apellido: apellido.trim(),
+        email: correo.trim(),
+        password,
+        ...(telefono.trim() ? { telefono: telefono.trim() } : {}),
       });
       navigate('/');
     } catch (err) {
@@ -44,66 +51,44 @@ export function RegistroPage() {
   };
 
   return (
-    <form className="auth-form" onSubmit={onSubmit}>
+    <form className="auth-form" onSubmit={onSubmit} noValidate>
       <div className="page-header-text">
         <h1>Crear cuenta de paciente</h1>
         <p className="muted">Todos los campos son obligatorios, salvo el teléfono.</p>
       </div>
       <div className="form-row">
-        <label>
-          Nombre
-          <input
-            value={form.nombre}
-            onChange={(e) => update('nombre')(e.target.value)}
-            required
-            autoComplete="given-name"
-          />
-        </label>
-        <label>
-          Apellido
-          <input
-            value={form.apellido}
-            onChange={(e) => update('apellido')(e.target.value)}
-            required
-            autoComplete="family-name"
-          />
-        </label>
+        <TextField
+          {...form.field('nombre')}
+          label="Nombre"
+          autoComplete="given-name"
+          maxLength={100}
+        />
+        <TextField
+          {...form.field('apellido')}
+          label="Apellido"
+          autoComplete="family-name"
+          maxLength={100}
+        />
       </div>
-      <label>
-        Teléfono (opcional)
-        <input
-          type="tel"
-          value={form.telefono}
-          onChange={(e) => update('telefono')(e.target.value)}
-          autoComplete="tel"
-        />
-      </label>
-      <label>
-        Email
-        <input
-          type="email"
-          value={form.email}
-          onChange={(e) => update('email')(e.target.value)}
-          required
-          autoComplete="email"
-        />
-      </label>
-      <label>
-        Contraseña
-        <input
-          type="password"
-          value={form.password}
-          onChange={(e) => update('password')(e.target.value)}
-          required
-          minLength={8}
-          autoComplete="new-password"
-        />
-        <small className="muted">Mínimo 8 caracteres</small>
-      </label>
+      <TextField
+        {...form.field('telefono')}
+        label="Teléfono (opcional)"
+        type="tel"
+        autoComplete="tel"
+        maxLength={30}
+      />
+      <TextField {...form.field('email')} label="Email" type="email" autoComplete="email" />
+      <TextField
+        {...form.field('password')}
+        label="Contraseña"
+        type="password"
+        autoComplete="new-password"
+        hint="Mínimo 8 caracteres"
+      />
       {error && <ErrorMessage>{error}</ErrorMessage>}
-      <button type="submit" disabled={sending} data-testid="btn-registrar">
-        {sending ? 'Creando…' : 'Crear cuenta'}
-      </button>
+      <Button type="submit" loading={sending} data-testid="btn-registrar">
+        Crear cuenta
+      </Button>
       <p className="muted">
         ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
       </p>
