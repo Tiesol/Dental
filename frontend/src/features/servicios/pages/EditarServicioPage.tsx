@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ActiveBadge } from '@/shared/components/ActiveBadge';
+import { Button } from '@/shared/components/Button';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
@@ -58,7 +59,6 @@ export function EditarServicioPage() {
         key={servicio.id}
         inicial={servicio}
         textoBoton="Guardar cambios"
-        textoBotonEnviando="Guardando…"
         conEstado={false}
         onSubmit={({ activo: _activo, ...cambios }) => guardar(cambios)}
       />
@@ -72,15 +72,14 @@ export function EditarServicioPage() {
         </div>
         {errorEstado && <ErrorMessage>{errorEstado}</ErrorMessage>}
         <div className="form-actions">
-          <button
-            type="button"
-            className={servicio.activo ? 'secondary danger' : 'secondary'}
-            disabled={cambiando}
+          <Button
+            variant={servicio.activo ? 'danger-outline' : 'secondary'}
+            loading={cambiando}
             onClick={() => void alternarEstado()}
             data-testid="btn-cambiar-estado-servicio"
           >
             {servicio.activo ? 'Deshabilitar servicio' : 'Habilitar servicio'}
-          </button>
+          </Button>
         </div>
       </section>
       {dialog}

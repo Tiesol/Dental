@@ -1,16 +1,25 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ActiveBadge } from '@/shared/components/ActiveBadge';
+import { Button } from '@/shared/components/Button';
+import { ButtonLink } from '@/shared/components/ButtonLink';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { Icon } from '@/shared/components/Icon';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
+import { Select, type SelectOption } from '@/shared/components/Select';
 import { useConfirm } from '@/shared/hooks/useConfirm';
 import { formatearDuracion, formatearPrecio } from '@/shared/lib/formato';
 import { useServicios } from '../hooks/useServicios';
 
 type Filtro = 'TODOS' | 'HABILITADOS' | 'DESHABILITADOS';
+
+const OPCIONES_FILTRO: SelectOption<Filtro>[] = [
+  { value: 'TODOS', label: 'Todos' },
+  { value: 'HABILITADOS', label: 'Habilitados' },
+  { value: 'DESHABILITADOS', label: 'Deshabilitados' },
+];
 
 // Gestión del catálogo (ADMIN): ve todos los servicios, con su estado.
 export function AdminServiciosPage() {
@@ -56,23 +65,22 @@ export function AdminServiciosPage() {
         title="Servicios"
         description="Tratamientos que los pacientes pueden reservar."
         actions={
-          <Link to="/admin/servicios/nuevo" className="button" data-testid="btn-nuevo-servicio">
+          <ButtonLink to="/admin/servicios/nuevo" data-testid="btn-nuevo-servicio">
             <Icon name="plus" />
             Nuevo servicio
-          </Link>
+          </ButtonLink>
         }
       />
 
       <section className="card card-flush">
         <div className="filters">
-          <label>
-            Estado
-            <select value={filtro} onChange={(e) => setFiltro(e.target.value as Filtro)}>
-              <option value="TODOS">Todos</option>
-              <option value="HABILITADOS">Habilitados</option>
-              <option value="DESHABILITADOS">Deshabilitados</option>
-            </select>
-          </label>
+          <Select
+            variant="filter"
+            label="Estado"
+            value={filtro}
+            options={OPCIONES_FILTRO}
+            onChange={setFiltro}
+          />
         </div>
 
         {estado.status === 'cargando' && <LoadingState />}
@@ -117,15 +125,14 @@ export function AdminServiciosPage() {
                     <td>
                       <div className="actions">
                         <Link to={`/admin/servicios/${s.id}`}>Editar</Link>
-                        <button
-                          type="button"
-                          className={s.activo ? 'secondary danger' : 'secondary'}
-                          disabled={procesando === s.id}
+                        <Button
+                          variant={s.activo ? 'danger-outline' : 'secondary'}
+                          loading={procesando === s.id}
                           onClick={() => void alternarEstado(s.id, s.nombre, s.activo)}
                           data-testid="btn-cambiar-estado-servicio"
                         >
                           {s.activo ? 'Deshabilitar' : 'Habilitar'}
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>

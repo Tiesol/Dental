@@ -1,74 +1,76 @@
 import { useState, type FormEvent } from 'react';
 import type { CreateServiceRequest, ServiceResponse } from '@/api/types';
+import { Button } from '@/shared/components/Button';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { SuccessMessage } from '@/shared/components/SuccessMessage';
+import { TextArea } from '@/shared/components/TextArea';
+import { TextField } from '@/shared/components/TextField';
+import { useForm } from '@/shared/hooks/useForm';
 import { MONEDA } from '@/shared/lib/formato';
+import { required } from '@/shared/lib/validators';
 
 export type DatosServicio = Required<Omit<CreateServiceRequest, 'activo'>> & { activo: boolean };
 
 type Props = {
   inicial?: ServiceResponse;
   textoBoton: string;
-  textoBotonEnviando: string;
   // El estado solo se elige al crear; al editar se cambia con su propio botón.
   conEstado: boolean;
   onSubmit: (datos: DatosServicio) => Promise<void>;
 };
 
-// Valida en cliente con las mismas reglas que el backend (que vuelve a validar todo).
-function validar(duracion: string, precio: string): string | null {
-  const d = Number(duracion);
-  if (!Number.isInteger(d) || d < 1 || d > 480) {
-    return 'La duración debe ser un número entero de minutos entre 1 y 480';
-  }
-  if (precio.trim() !== '') {
-    const p = Number(precio);
-    if (!Number.isFinite(p) || p < 0) return 'El precio no puede ser negativo';
-    if (Math.round(p * 100) !== p * 100) return 'El precio admite hasta 2 decimales';
-  }
+// Mismas reglas que el backend, que vuelve a validar todo.
+function validarDuracion(valor: string): string | null {
+  if (valor.trim() === '') return 'Escribe la duración en minutos';
+  const minutos = Number(valor);
+  return Number.isInteger(minutos) && minutos >= 1 && minutos <= 480
+    ? null
+    : 'La duración debe ser un número entero de minutos entre 1 y 480';
+}
+
+function validarPrecio(valor: string): string | null {
+  if (valor.trim() === '') return null;
+  const precio = Number(valor);
+  if (!Number.isFinite(precio) || precio < 0) return 'El precio no puede ser negativo';
+  if (Math.round(precio * 100) !== precio * 100) return 'El precio admite hasta 2 decimales';
   return null;
 }
 
-export function FormularioServicio({
-  inicial,
-  textoBoton,
-  textoBotonEnviando,
-  conEstado,
-  onSubmit,
-}: Props) {
-  const [form, setForm] = useState({
-    nombre: inicial?.nombre ?? '',
-    descripcion: inicial?.descripcion ?? '',
-    duracionMin: inicial ? String(inicial.duracionMin) : '30',
-    precioReferencial: inicial?.precioReferencial == null ? '' : String(inicial.precioReferencial),
-    activo: inicial?.activo ?? true,
-  });
+export function FormularioServicio({ inicial, textoBoton, conEstado, onSubmit }: Props) {
+  const form = useForm(
+    {
+      nombre: inicial?.nombre ?? '',
+      descripcion: inicial?.descripcion ?? '',
+      duracionMin: inicial ? String(inicial.duracionMin) : '30',
+      precioReferencial:
+        inicial?.precioReferencial == null ? '' : String(inicial.precioReferencial),
+    },
+    {
+      nombre: required('Escribe el nombre del servicio'),
+      descripcion: required('Escribe la descripción'),
+      duracionMin: validarDuracion,
+      precioReferencial: validarPrecio,
+    },
+  );
+  const [activo, setActivo] = useState(inicial?.activo ?? true);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
-
-  const update =
-    (campo: 'nombre' | 'descripcion' | 'duracionMin' | 'precioReferencial') => (value: string) =>
-      setForm((f) => ({ ...f, [campo]: value }));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setExito('');
-    const invalido = validar(form.duracionMin, form.precioReferencial);
-    if (invalido) {
-      setError(invalido);
-      return;
-    }
+    if (!form.validate()) return;
+    const { nombre, descripcion, duracionMin, precioReferencial } = form.values;
     setEnviando(true);
     try {
       await onSubmit({
-        nombre: form.nombre.trim(),
-        descripcion: form.descripcion.trim(),
-        duracionMin: Number(form.duracionMin),
-        precioReferencial:
-          form.precioReferencial.trim() === '' ? null : Number(form.precioReferencial),
-        activo: form.activo,
+        nombre: nombre.trim(),
+        descripcion: descripcion.trim(),
+        duracionMin: Number(duracionMin),
+        precioReferencial: precioReferencial.trim() === '' ? null : Number(precioReferencial),
+        activo,
       });
       setExito('Cambios guardados');
     } catch (err) {
@@ -79,70 +81,46 @@ export function FormularioServicio({
   };
 
   return (
-    <form className="card" onSubmit={handleSubmit}>
-      <label>
-        Nombre
-        <input
-          value={form.nombre}
-          onChange={(e) => update('nombre')(e.target.value)}
-          required
-          maxLength={100}
-          placeholder="Limpieza dental"
-        />
-      </label>
-      <label>
-        Descripción
-        <textarea
-          value={form.descripcion}
-          onChange={(e) => update('descripcion')(e.target.value)}
-          required
-          maxLength={500}
-          rows={3}
-        />
-      </label>
+    <form className="card" onSubmit={handleSubmit} noValidate>
+      <TextField
+        {...form.field('nombre')}
+        label="Nombre"
+        maxLength={100}
+        placeholder="Limpieza dental"
+      />
+      <TextArea {...form.field('descripcion')} label="Descripción" maxLength={500} rows={3} />
       <div className="form-row">
-        <label>
-          Duración estimada (minutos)
-          <input
-            type="number"
-            inputMode="numeric"
-            value={form.duracionMin}
-            onChange={(e) => update('duracionMin')(e.target.value)}
-            required
-            min={1}
-            max={480}
-            step={1}
-          />
-        </label>
-        <label>
-          Precio referencial en {MONEDA} (opcional)
-          <input
-            type="number"
-            inputMode="decimal"
-            value={form.precioReferencial}
-            onChange={(e) => update('precioReferencial')(e.target.value)}
-            min={0}
-            step={0.01}
-            placeholder="Sin precio"
-          />
-        </label>
+        <TextField
+          {...form.field('duracionMin')}
+          label="Duración estimada (minutos)"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={480}
+          step={1}
+        />
+        <TextField
+          {...form.field('precioReferencial')}
+          label={`Precio referencial en ${MONEDA} (opcional)`}
+          type="number"
+          inputMode="decimal"
+          min={0}
+          step={0.01}
+          placeholder="Sin precio"
+        />
       </div>
       {conEstado && (
         <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={form.activo}
-            onChange={(e) => setForm((f) => ({ ...f, activo: e.target.checked }))}
-          />
+          <input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} />
           Habilitado para nuevas reservas
         </label>
       )}
       {error && <ErrorMessage>{error}</ErrorMessage>}
       {exito && <SuccessMessage>{exito}</SuccessMessage>}
       <div className="form-actions">
-        <button type="submit" disabled={enviando} data-testid="btn-guardar-servicio">
-          {enviando ? textoBotonEnviando : textoBoton}
-        </button>
+        <Button type="submit" loading={enviando} data-testid="btn-guardar-servicio">
+          {textoBoton}
+        </Button>
       </div>
     </form>
   );

@@ -15,7 +15,6 @@ export function NuevoServicioPage() {
       />
       <FormularioServicio
         textoBoton="Crear servicio"
-        textoBotonEnviando="Creando…"
         conEstado
         onSubmit={async (datos) => {
           await crear(datos);
