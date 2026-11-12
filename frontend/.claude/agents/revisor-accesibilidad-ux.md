@@ -21,7 +21,7 @@ Para cada componente o página indicada, verifica en el código:
    - Tablas (usuarios, citas) con `th` y encabezados; `nav` con `aria-label`.
    - Imágenes con `alt` (o `alt=""` si son decorativas).
 3. **Visual**
-   - Contraste de texto 4.5:1 o más (3:1 para texto grande) en claro y oscuro, usando las variables del CSS global.
+   - Contraste de texto 4.5:1 o más (3:1 para texto grande) usando las variables del CSS global (paleta clara única).
    - El color nunca es el único indicador: el badge de estado lleva el texto exacto del PDF; errores con texto además de color.
    - Usable al 200 % de zoom y a 360 px de ancho sin scroll horizontal.
 4. **Formularios**
