@@ -1,8 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import type { CreateBlockRequest, UnavailableBlockResponse } from '@/api/types';
+import { Button } from '@/shared/components/Button';
+import { DateField } from '@/shared/components/DateField';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { TextField } from '@/shared/components/TextField';
+import { TimeField } from '@/shared/components/TimeField';
 import { useConfirm } from '@/shared/hooks/useConfirm';
+import { useForm } from '@/shared/hooks/useForm';
 import { fechaHoraLocalAIso, formatearFechaHora } from '@/shared/lib/dates';
+import { required } from '@/shared/lib/validators';
 
 type Props = {
   bloques: UnavailableBlockResponse[];
@@ -10,11 +16,23 @@ type Props = {
   borrar: (blockId: string) => Promise<void>;
 };
 
+const VACIO = { inicioFecha: '', inicioHora: '', finFecha: '', finHora: '', motivo: '' };
+
 // Pausas puntuales del odontólogo. Las fechas se escriben en hora de la clínica.
 export function SeccionBloques({ bloques, crear, borrar }: Props) {
-  const [inicio, setInicio] = useState('');
-  const [fin, setFin] = useState('');
-  const [motivo, setMotivo] = useState('');
+  const form = useForm(VACIO, {
+    inicioFecha: required('Elige la fecha de inicio'),
+    inicioHora: required('Elige la hora de inicio'),
+    finFecha: required('Elige la fecha de fin'),
+    finHora: (valor, v) =>
+      required('Elige la hora de fin')(valor) ??
+      (v.inicioFecha &&
+      v.inicioHora &&
+      v.finFecha &&
+      `${v.finFecha}T${valor}` <= `${v.inicioFecha}T${v.inicioHora}`
+        ? 'El fin debe ser posterior al inicio'
+        : null),
+  });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [quitando, setQuitando] = useState<string | null>(null);
@@ -23,16 +41,16 @@ export function SeccionBloques({ bloques, crear, borrar }: Props) {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!form.validate()) return;
+    const { inicioFecha, inicioHora, finFecha, finHora, motivo } = form.values;
     setEnviando(true);
     try {
       await crear({
-        inicio: fechaHoraLocalAIso(inicio),
-        fin: fechaHoraLocalAIso(fin),
+        inicio: fechaHoraLocalAIso(`${inicioFecha}T${inicioHora}`),
+        fin: fechaHoraLocalAIso(`${finFecha}T${finHora}`),
         ...(motivo.trim() ? { motivo: motivo.trim() } : {}),
       });
-      setInicio('');
-      setFin('');
-      setMotivo('');
+      form.reset();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -76,52 +94,37 @@ export function SeccionBloques({ bloques, crear, borrar }: Props) {
                 </strong>
                 {bloque.motivo && <span className="muted">{bloque.motivo}</span>}
               </div>
-              <button
-                type="button"
-                className="secondary danger"
-                disabled={quitando === bloque.id}
+              <Button
+                variant="danger-outline"
+                loading={quitando === bloque.id}
                 onClick={() => void quitar(bloque)}
               >
                 Quitar bloque
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
       )}
       <form
         className="form-bloque"
-        onSubmit={(e) => void onSubmit(e)}
+        onSubmit={onSubmit}
         aria-label="Nuevo bloque no disponible"
+        noValidate
       >
         <div className="form-row">
-          <label>
-            Inicio
-            <input
-              type="datetime-local"
-              value={inicio}
-              onChange={(e) => setInicio(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Fin
-            <input
-              type="datetime-local"
-              value={fin}
-              onChange={(e) => setFin(e.target.value)}
-              required
-            />
-          </label>
+          <DateField {...form.field('inicioFecha')} label="Fecha de inicio" />
+          <TimeField {...form.field('inicioHora')} label="Hora de inicio" />
         </div>
-        <label>
-          Motivo (opcional)
-          <input value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={200} />
-        </label>
+        <div className="form-row">
+          <DateField {...form.field('finFecha')} label="Fecha de fin" />
+          <TimeField {...form.field('finHora')} label="Hora de fin" />
+        </div>
+        <TextField {...form.field('motivo')} label="Motivo (opcional)" maxLength={200} />
         {error && <ErrorMessage>{error}</ErrorMessage>}
         <div className="form-actions">
-          <button type="submit" disabled={enviando} data-testid="btn-agregar-bloque">
-            {enviando ? 'Agregando…' : 'Agregar bloque'}
-          </button>
+          <Button type="submit" loading={enviando} data-testid="btn-agregar-bloque">
+            Agregar bloque
+          </Button>
         </div>
       </form>
       {dialog}

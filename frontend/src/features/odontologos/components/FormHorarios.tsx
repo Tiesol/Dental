@@ -1,11 +1,33 @@
 import { useState, type FormEvent } from 'react';
 import type { AvailabilityRuleRequest, AvailabilityRuleResponse } from '@/api/types';
+import { Button } from '@/shared/components/Button';
+import { Select, type SelectOption } from '@/shared/components/Select';
+import { TimeField } from '@/shared/components/TimeField';
+import { useFieldErrors, type FieldCheck } from '@/shared/hooks/useFieldErrors';
 import { horaAMinutos, minutosAHora } from '@/shared/lib/dates';
 import { useAccion } from '../hooks/useAccion';
 
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const OPCIONES_DIA: SelectOption<number>[] = DIAS.map((dia, valor) => ({
+  value: valor,
+  label: dia,
+}));
 
 type Tramo = { clave: number; diaSemana: number; desde: string; hasta: string };
+type CampoHora = 'desde' | 'hasta';
+
+const nombreCampo = (tramo: Tramo, campo: CampoHora) => `${tramo.clave}-${campo}`;
+
+const errorDe = (tramo: Tramo, campo: CampoHora): string | null => {
+  if (campo === 'desde') return tramo.desde ? null : 'Elige la hora de inicio';
+  if (!tramo.hasta) return 'Elige la hora de fin';
+  return tramo.desde && tramo.hasta <= tramo.desde ? 'Debe ser posterior a la de inicio' : null;
+};
+
+const checksDe = (tramo: Tramo): FieldCheck[] => [
+  [nombreCampo(tramo, 'desde'), errorDe(tramo, 'desde')],
+  [nombreCampo(tramo, 'hasta'), errorDe(tramo, 'hasta')],
+];
 
 type Props = {
   horarios: AvailabilityRuleResponse[];
@@ -13,7 +35,7 @@ type Props = {
 };
 
 // Edita la lista completa de tramos: guardar reemplaza todos los horarios del odontólogo.
-// Un horario partido son dos tramos del mismo día. Las reglas las valida el backend.
+// Un horario partido son dos tramos del mismo día. El backend vuelve a validar las reglas.
 export function FormHorarios({ horarios, guardar }: Props) {
   const [tramos, setTramos] = useState<Tramo[]>(() =>
     horarios.map((h, clave) => ({
@@ -25,9 +47,14 @@ export function FormHorarios({ horarios, guardar }: Props) {
   );
   const [siguienteClave, setSiguienteClave] = useState(horarios.length);
   const { enviando, ejecutar, mensajes } = useAccion();
+  const errores = useFieldErrors();
 
-  const cambiar = (clave: number, cambios: Partial<Tramo>) =>
-    setTramos((actuales) => actuales.map((t) => (t.clave === clave ? { ...t, ...cambios } : t)));
+  const cambiar = (clave: number, cambios: Partial<Tramo>) => {
+    const actualizados = tramos.map((t) => (t.clave === clave ? { ...t, ...cambios } : t));
+    setTramos(actualizados);
+    const tramo = actualizados.find((t) => t.clave === clave);
+    if (tramo) errores.revalidate(checksDe(tramo));
+  };
 
   const agregar = () => {
     setTramos((actuales) => [
@@ -37,9 +64,15 @@ export function FormHorarios({ horarios, guardar }: Props) {
     setSiguienteClave((clave) => clave + 1);
   };
 
-  const onSubmit = (e: FormEvent) => {
+  const quitar = (tramo: Tramo) => {
+    setTramos((actuales) => actuales.filter((t) => t.clave !== tramo.clave));
+    errores.clear([nombreCampo(tramo, 'desde'), nombreCampo(tramo, 'hasta')]);
+  };
+
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    void ejecutar(
+    if (!errores.validateAll(tramos.flatMap(checksDe))) return;
+    await ejecutar(
       () =>
         guardar(
           tramos.map((t) => ({
@@ -52,8 +85,24 @@ export function FormHorarios({ horarios, guardar }: Props) {
     );
   };
 
+  const campoHora = (tramo: Tramo, campo: CampoHora, etiqueta: string) => {
+    const nombre = nombreCampo(tramo, campo);
+    return (
+      <TimeField
+        label={etiqueta}
+        value={tramo[campo]}
+        onChange={(valor) =>
+          cambiar(tramo.clave, campo === 'desde' ? { desde: valor } : { hasta: valor })
+        }
+        onBlur={() => errores.blur(nombre, errorDe(tramo, campo))}
+        error={errores.errors[nombre]}
+        ref={errores.register(nombre)}
+      />
+    );
+  };
+
   return (
-    <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-horarios">
+    <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-horarios" noValidate>
       <div className="card-section">
         <h2 id="titulo-horarios">Horarios de atención</h2>
         <p className="muted">
@@ -70,55 +119,31 @@ export function FormHorarios({ horarios, guardar }: Props) {
           aria-label={`Tramo ${indice + 1}`}
           data-testid={`tramo-${indice}`}
         >
-          <label>
-            Día
-            <select
-              value={tramo.diaSemana}
-              onChange={(e) => cambiar(tramo.clave, { diaSemana: Number(e.target.value) })}
-            >
-              {DIAS.map((dia, valor) => (
-                <option key={dia} value={valor}>
-                  {dia}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Desde
-            <input
-              type="time"
-              value={tramo.desde}
-              onChange={(e) => cambiar(tramo.clave, { desde: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            Hasta
-            <input
-              type="time"
-              value={tramo.hasta}
-              onChange={(e) => cambiar(tramo.clave, { hasta: e.target.value })}
-              required
-            />
-          </label>
-          <button
-            type="button"
-            className="secondary danger"
+          <Select
+            label="Día"
+            value={tramo.diaSemana}
+            options={OPCIONES_DIA}
+            onChange={(diaSemana) => cambiar(tramo.clave, { diaSemana })}
+          />
+          {campoHora(tramo, 'desde', 'Desde')}
+          {campoHora(tramo, 'hasta', 'Hasta')}
+          <Button
+            variant="danger-outline"
             aria-label={`Quitar tramo ${indice + 1}`}
-            onClick={() => setTramos((actuales) => actuales.filter((t) => t.clave !== tramo.clave))}
+            onClick={() => quitar(tramo)}
           >
             Quitar
-          </button>
+          </Button>
         </div>
       ))}
       {mensajes}
       <div className="form-actions">
-        <button type="button" className="secondary" onClick={agregar}>
+        <Button variant="secondary" onClick={agregar}>
           Agregar tramo
-        </button>
-        <button type="submit" disabled={enviando} data-testid="btn-guardar-horarios">
-          {enviando ? 'Guardando…' : 'Guardar horarios'}
-        </button>
+        </Button>
+        <Button type="submit" loading={enviando} data-testid="btn-guardar-horarios">
+          Guardar horarios
+        </Button>
       </div>
     </form>
   );

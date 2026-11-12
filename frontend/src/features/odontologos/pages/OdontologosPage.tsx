@@ -4,6 +4,7 @@ import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
+import { Select } from '@/shared/components/Select';
 import { formatearDuracion } from '@/shared/lib/formato';
 import { useOdontologos } from '../hooks/useOdontologos';
 import { useServiciosParaElegir } from '../hooks/useServiciosParaElegir';
@@ -22,17 +23,16 @@ export function OdontologosPage() {
       />
       <section className="card card-flush">
         <div className="filters">
-          <label>
-            Servicio
-            <select value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-              <option value="">Todos los servicios</option>
-              {servicios.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            variant="filter"
+            label="Servicio"
+            value={serviceId}
+            options={[
+              { value: '', label: 'Todos los servicios' },
+              ...servicios.map((s) => ({ value: s.id, label: s.nombre })),
+            ]}
+            onChange={setServiceId}
+          />
         </div>
 
         {estado.status === 'cargando' && <LoadingState />}

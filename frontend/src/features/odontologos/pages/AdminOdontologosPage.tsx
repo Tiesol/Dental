@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ActiveBadge } from '@/shared/components/ActiveBadge';
 import { Avatar } from '@/shared/components/Avatar';
+import { Button } from '@/shared/components/Button';
+import { ButtonLink } from '@/shared/components/ButtonLink';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { Icon } from '@/shared/components/Icon';
@@ -41,10 +43,10 @@ export function AdminOdontologosPage() {
         title="Odontólogos"
         description="Profesionales de la clínica y los servicios que realizan."
         actions={
-          <Link to="/admin/odontologos/nuevo" className="button" data-testid="btn-nuevo-odontologo">
+          <ButtonLink to="/admin/odontologos/nuevo" data-testid="btn-nuevo-odontologo">
             <Icon name="plus" />
             Nuevo odontólogo
-          </Link>
+          </ButtonLink>
         }
       />
 
@@ -103,15 +105,14 @@ export function AdminOdontologosPage() {
                       <div className="actions">
                         <Link to={`/admin/odontologos/${d.id}`}>Editar</Link>
                         <Link to={`/admin/odontologos/${d.id}/horarios`}>Horarios</Link>
-                        <button
-                          type="button"
-                          className={d.activo ? 'secondary danger' : 'secondary'}
-                          disabled={procesando === d.id}
+                        <Button
+                          variant={d.activo ? 'danger-outline' : 'secondary'}
+                          loading={procesando === d.id}
                           onClick={() => void alternarEstado(d.id, d.nombre, d.activo)}
                           data-testid="btn-cambiar-estado-odontologo"
                         >
                           {d.activo ? 'Deshabilitar' : 'Habilitar'}
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>

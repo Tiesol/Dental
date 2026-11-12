@@ -2,10 +2,15 @@ import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { DentistAdminResponse, UpdateDentistRequest } from '@/api/types';
 import { ActiveBadge } from '@/shared/components/ActiveBadge';
+import { Button } from '@/shared/components/Button';
+import { ButtonLink } from '@/shared/components/ButtonLink';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
+import { TextField } from '@/shared/components/TextField';
 import { useConfirm } from '@/shared/hooks/useConfirm';
+import { useForm } from '@/shared/hooks/useForm';
+import { required } from '@/shared/lib/validators';
 import { SelectorServicios } from '../components/SelectorServicios';
 import { useAccion } from '../hooks/useAccion';
 import { useOdontologoAdmin } from '../hooks/useOdontologoAdmin';
@@ -35,9 +40,9 @@ export function EditarOdontologoPage() {
         description={odontologo.nombre}
         back={VOLVER}
         actions={
-          <Link to={`/admin/odontologos/${odontologo.id}/horarios`} className="button secondary">
+          <ButtonLink to={`/admin/odontologos/${odontologo.id}/horarios`} variant="secondary">
             Horarios y bloques
-          </Link>
+          </ButtonLink>
         }
       />
       <DatosProfesionales
@@ -62,17 +67,35 @@ function DatosProfesionales({
   odontologo: DentistAdminResponse;
   guardar: (cambios: UpdateDentistRequest) => Promise<void>;
 }) {
-  const [nombre, setNombre] = useState(odontologo.nombre);
-  const [especialidad, setEspecialidad] = useState(odontologo.especialidad);
+  const form = useForm(
+    { nombre: odontologo.nombre, especialidad: odontologo.especialidad },
+    {
+      nombre: required('Escribe el nombre'),
+      especialidad: required('Escribe la especialidad'),
+    },
+  );
   const { enviando, ejecutar, mensajes } = useAccion();
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    void ejecutar(() => guardar({ nombre, especialidad }), 'Datos guardados');
+    if (!form.validate()) return;
+    await ejecutar(
+      () =>
+        guardar({
+          nombre: form.values.nombre.trim(),
+          especialidad: form.values.especialidad.trim(),
+        }),
+      'Datos guardados',
+    );
   };
 
   return (
-    <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-datos-profesionales">
+    <form
+      className="card"
+      onSubmit={onSubmit}
+      aria-labelledby="titulo-datos-profesionales"
+      noValidate
+    >
       <h2 id="titulo-datos-profesionales">Datos profesionales</h2>
       <dl className="details">
         <dt>Email</dt>
@@ -84,30 +107,14 @@ function DatosProfesionales({
         </dd>
       </dl>
       <div className="form-row">
-        <label>
-          Nombre
-          <input
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            required
-            maxLength={100}
-          />
-        </label>
-        <label>
-          Especialidad
-          <input
-            value={especialidad}
-            onChange={(e) => setEspecialidad(e.target.value)}
-            required
-            maxLength={100}
-          />
-        </label>
+        <TextField {...form.field('nombre')} label="Nombre" maxLength={100} />
+        <TextField {...form.field('especialidad')} label="Especialidad" maxLength={100} />
       </div>
       {mensajes}
       <div className="form-actions">
-        <button type="submit" disabled={enviando} data-testid="btn-guardar-odontologo">
-          {enviando ? 'Guardando…' : 'Guardar datos'}
-        </button>
+        <Button type="submit" loading={enviando} data-testid="btn-guardar-odontologo">
+          Guardar datos
+        </Button>
       </div>
     </form>
   );
@@ -124,13 +131,13 @@ function ServiciosQueRealiza({
   const [seleccionados, setSeleccionados] = useState(odontologo.servicios.map((s) => s.id));
   const { enviando, ejecutar, mensajes } = useAccion();
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    void ejecutar(() => guardar(seleccionados), 'Servicios actualizados');
+    await ejecutar(() => guardar(seleccionados), 'Servicios actualizados');
   };
 
   return (
-    <form className="card" onSubmit={onSubmit}>
+    <form className="card" onSubmit={onSubmit} noValidate>
       <SelectorServicios
         servicios={servicios}
         seleccionados={seleccionados}
@@ -140,9 +147,9 @@ function ServiciosQueRealiza({
       {errorServicios && <ErrorMessage>{errorServicios}</ErrorMessage>}
       {mensajes}
       <div className="form-actions">
-        <button type="submit" disabled={enviando} data-testid="btn-guardar-servicios-odontologo">
-          {enviando ? 'Guardando…' : 'Guardar servicios'}
-        </button>
+        <Button type="submit" loading={enviando} data-testid="btn-guardar-servicios-odontologo">
+          Guardar servicios
+        </Button>
       </div>
     </form>
   );
@@ -169,7 +176,7 @@ function EstadoProfesional({
     ) {
       return;
     }
-    void ejecutar(
+    await ejecutar(
       () => cambiarEstado(!odontologo.activo),
       odontologo.activo ? 'Odontólogo deshabilitado' : 'Odontólogo habilitado',
     );
@@ -189,15 +196,14 @@ function EstadoProfesional({
       </div>
       {mensajes}
       <div className="form-actions">
-        <button
-          type="button"
-          className={odontologo.activo ? 'secondary danger' : 'secondary'}
-          disabled={enviando}
+        <Button
+          variant={odontologo.activo ? 'danger-outline' : 'secondary'}
+          loading={enviando}
           onClick={() => void alternar()}
           data-testid="btn-cambiar-estado-odontologo"
         >
           {odontologo.activo ? 'Deshabilitar odontólogo' : 'Habilitar odontólogo'}
-        </button>
+        </Button>
       </div>
       {dialog}
     </section>
