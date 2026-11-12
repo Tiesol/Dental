@@ -1,4 +1,5 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import type { UserEvent } from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { tokenStore } from '@/api/token';
@@ -26,4 +27,11 @@ export function renderWithProviders(
       <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
     </AuthProvider>,
   );
+}
+
+// Elige una opción de un Select propio: abre la lista desde su disparador y hace clic en la opción.
+// La lista vive en un portal, por eso la opción se busca en toda la pantalla.
+export async function elegirOpcion(user: UserEvent, disparador: HTMLElement, opcion: string) {
+  await user.click(disparador);
+  await user.click(await screen.findByRole('option', { name: opcion }));
 }

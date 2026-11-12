@@ -66,7 +66,9 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Ingresar' }));
 
     // Assert
-    expect(await screen.findByRole('button', { name: 'Ingresando…' })).toBeDisabled();
+    const boton = screen.getByRole('button', { name: 'Ingresar' });
+    expect(boton).toBeDisabled();
+    expect(boton).toHaveAttribute('aria-busy', 'true');
     await screen.findByRole('heading', { name: 'Inicio' });
   });
 });

@@ -98,7 +98,7 @@ describe('UsuariosPage', () => {
 
     await user.type(screen.getByLabelText('Buscar'), 'ana');
 
-    expect(screen.getByText('Mostrando 1 de 2 usuarios')).toBeInTheDocument();
+    expect(await screen.findByText('Mostrando 1 de 2 usuarios')).toBeInTheDocument();
     expect(screen.queryByTestId('usuario-admin')).not.toBeInTheDocument();
   });
 
@@ -111,7 +111,7 @@ describe('UsuariosPage', () => {
     await user.type(screen.getByLabelText('Buscar'), 'zzz');
 
     expect(
-      screen.getByRole('heading', { name: 'No hay usuarios que coincidan' }),
+      await screen.findByRole('heading', { name: 'No hay usuarios que coincidan' }),
     ).toBeInTheDocument();
   });
 

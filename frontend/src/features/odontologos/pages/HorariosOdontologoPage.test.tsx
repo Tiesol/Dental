@@ -7,7 +7,7 @@ import type { AvailabilityResponse } from '@/api/types';
 import { odontologoAdminDePrueba } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
-import { renderWithProviders } from '@/test/utils';
+import { elegirOpcion, renderWithProviders } from '@/test/utils';
 import { HorariosOdontologoPage } from './HorariosOdontologoPage';
 
 const CON_DATOS: AvailabilityResponse = {
@@ -65,6 +65,14 @@ function renderPagina(
   return { guardados, bloquesCreados, bloquesBorrados };
 }
 
+// Bloque del 13/11/2026 de 10:00 a 11:30, hora de la clínica.
+async function escribirBloque(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(await screen.findByLabelText('Fecha de inicio'), '13/11/2026');
+  await user.type(screen.getByLabelText('Hora de inicio'), '10:00');
+  await user.type(screen.getByLabelText('Fecha de fin'), '13/11/2026');
+  await user.type(screen.getByLabelText('Hora de fin'), '11:30');
+}
+
 describe('HorariosOdontologoPage', () => {
   it('muestra el título con el nombre del odontólogo', async () => {
     renderPagina();
@@ -80,7 +88,7 @@ describe('HorariosOdontologoPage', () => {
 
     const tramo = await screen.findByTestId('tramo-0');
 
-    expect(within(tramo).getByLabelText('Día')).toHaveValue('1');
+    expect(within(tramo).getByLabelText('Día')).toHaveTextContent('Lunes');
     expect(within(tramo).getByLabelText('Desde')).toHaveValue('09:00');
     expect(within(tramo).getByLabelText('Hasta')).toHaveValue('12:00');
   });
@@ -130,7 +138,7 @@ describe('HorariosOdontologoPage', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Agregar tramo' }));
     const nuevo = screen.getByTestId('tramo-1');
-    await user.selectOptions(within(nuevo).getByLabelText('Día'), 'Martes');
+    await elegirOpcion(user, within(nuevo).getByLabelText('Día'), 'Martes');
     await user.clear(within(nuevo).getByLabelText('Desde'));
     await user.type(within(nuevo).getByLabelText('Desde'), '14:00');
     await user.clear(within(nuevo).getByLabelText('Hasta'));
@@ -201,8 +209,7 @@ describe('HorariosOdontologoPage', () => {
     const { bloquesCreados } = renderPagina();
     const user = userEvent.setup();
 
-    await user.type(await screen.findByLabelText('Inicio'), '2026-11-13T10:00');
-    await user.type(screen.getByLabelText('Fin'), '2026-11-13T11:30');
+    await escribirBloque(user);
     await user.type(screen.getByLabelText('Motivo (opcional)'), 'Capacitación');
     await user.click(screen.getByRole('button', { name: 'Agregar bloque' }));
 
@@ -232,8 +239,7 @@ describe('HorariosOdontologoPage', () => {
     );
     const user = userEvent.setup();
 
-    await user.type(await screen.findByLabelText('Inicio'), '2026-11-13T10:00');
-    await user.type(screen.getByLabelText('Fin'), '2026-11-13T11:30');
+    await escribirBloque(user);
     await user.click(screen.getByRole('button', { name: 'Agregar bloque' }));
 
     expect(await screen.findByTestId('error-mensaje')).toHaveTextContent(

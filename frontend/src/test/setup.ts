@@ -11,6 +11,9 @@ HTMLDialogElement.prototype.close = function close() {
   this.open = false;
 };
 
+// jsdom tampoco implementa scrollIntoView, que los desplegables usan para mostrar la opción activa.
+Element.prototype.scrollIntoView = function scrollIntoView() {};
+
 // La API se simula con MSW en todos los tests de componentes (CONVENCIONES.md sección 6).
 // Cualquier petición sin handler falla el test: así ningún test depende de un backend real.
 // (MSW 3 llama "frame" a una petición HTTP o conexión WebSocket.)

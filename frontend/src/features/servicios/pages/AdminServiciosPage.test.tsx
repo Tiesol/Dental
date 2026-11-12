@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { servicioDePrueba } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
-import { renderWithProviders } from '@/test/utils';
+import { elegirOpcion, renderWithProviders } from '@/test/utils';
 import { AdminServiciosPage } from './AdminServiciosPage';
 
 function apiDeServicios(servicios = [servicioDePrueba()]) {
@@ -68,7 +68,7 @@ describe('AdminServiciosPage', () => {
     renderWithProviders(<AdminServiciosPage />);
     await screen.findByTestId('servicio-s1');
 
-    await user.selectOptions(screen.getByLabelText('Estado'), 'DESHABILITADOS');
+    await elegirOpcion(user, screen.getByLabelText('Estado'), 'Deshabilitados');
 
     expect(
       screen.getByRole('heading', { name: 'No hay servicios que coincidan' }),

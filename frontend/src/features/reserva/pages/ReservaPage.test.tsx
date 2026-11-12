@@ -55,7 +55,7 @@ async function hastaLaFecha(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: 'Elegir Dra. Laura Gómez' }));
   const fecha = await screen.findByLabelText('Fecha');
   await user.clear(fecha);
-  await user.type(fecha, '2026-11-10');
+  await user.type(fecha, '10/11/2026');
 }
 
 describe('ReservaPage', () => {

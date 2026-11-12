@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { odontologoPublicoDePrueba, servicioDePrueba } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
-import { renderWithProviders } from '@/test/utils';
+import { elegirOpcion, renderWithProviders } from '@/test/utils';
 import { OdontologosPage } from './OdontologosPage';
 
 function apiPublica() {
@@ -51,9 +51,8 @@ describe('OdontologosPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<OdontologosPage />);
     await screen.findByTestId('odontologo-d1');
-    await screen.findByRole('option', { name: 'Limpieza dental' });
 
-    await user.selectOptions(screen.getByLabelText('Servicio'), 'vacio');
+    await elegirOpcion(user, await screen.findByLabelText('Servicio'), 'Limpieza dental');
 
     expect(
       await screen.findByRole('heading', {

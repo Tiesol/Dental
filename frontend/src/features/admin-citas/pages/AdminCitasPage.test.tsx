@@ -6,7 +6,7 @@ import type { AppointmentResponse } from '@/api/types';
 import { citaDePrueba, odontologoAdminDePrueba, usuarioDePrueba } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
-import { renderWithProviders } from '@/test/utils';
+import { elegirOpcion, renderWithProviders } from '@/test/utils';
 import { AdminCitasPage } from './AdminCitasPage';
 
 function renderPagina(
@@ -180,12 +180,9 @@ describe('AdminCitasPage', () => {
     const user = userEvent.setup();
     await screen.findByTestId('cita-c1');
 
-    await user.type(screen.getByLabelText('Fecha'), '2026-11-10');
-    await user.selectOptions(screen.getByLabelText('Estado'), 'CONFIRMADA');
-    await user.selectOptions(
-      await screen.findByLabelText('Odontólogo'),
-      await screen.findByRole('option', { name: 'Dra. Laura Gómez' }),
-    );
+    await user.type(screen.getByLabelText('Fecha'), '10/11/2026');
+    await elegirOpcion(user, screen.getByLabelText('Estado'), 'CONFIRMADA');
+    await elegirOpcion(user, await screen.findByLabelText('Odontólogo'), 'Dra. Laura Gómez');
 
     await waitFor(() =>
       expect(consultas).toHaveBeenLastCalledWith({
@@ -207,7 +204,7 @@ describe('AdminCitasPage', () => {
     await user.click(screen.getByRole('button', { name: 'Siguiente' }));
     await waitFor(() => expect(consultas).toHaveBeenLastCalledWith({ limit: '50', offset: '50' }));
     await screen.findByTestId('cita-c0');
-    await user.selectOptions(screen.getByLabelText('Estado'), 'PENDIENTE');
+    await elegirOpcion(user, screen.getByLabelText('Estado'), 'PENDIENTE');
 
     await waitFor(() =>
       expect(consultas).toHaveBeenLastCalledWith({

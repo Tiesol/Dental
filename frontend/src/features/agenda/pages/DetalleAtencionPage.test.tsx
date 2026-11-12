@@ -72,7 +72,7 @@ describe('DetalleAtencionPage', () => {
     expect(screen.queryByTestId('btn-iniciar-atencion')).not.toBeInTheDocument();
   });
 
-  it('al guardar la observación, Finalizar no dice que está finalizando', async () => {
+  it('al guardar la observación, solo ese botón queda cargando', async () => {
     let liberar: () => void = () => undefined;
     renderPagina({ estado: 'EN_ATENCION' }, [
       http.post(`${API}/appointments/c1/observation`, async () => {
@@ -90,14 +90,10 @@ describe('DetalleAtencionPage', () => {
     await user.type(await screen.findByLabelText('Observación'), 'Bien');
     await user.click(screen.getByTestId('btn-registrar-observacion'));
 
-    expect(screen.getByTestId('btn-registrar-observacion')).toHaveTextContent('Guardando…');
-    expect(screen.getByTestId('btn-finalizar')).toHaveTextContent('Finalizar');
+    expect(screen.getByTestId('btn-registrar-observacion')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByTestId('btn-finalizar')).not.toHaveAttribute('aria-busy');
     liberar();
-    await waitFor(() =>
-      expect(screen.getByTestId('btn-registrar-observacion')).toHaveTextContent(
-        'Registrar observación',
-      ),
-    );
+    await waitFor(() => expect(screen.getByTestId('observacion-cita')).toHaveTextContent('Bien'));
   });
 
   it('muestra los datos del paciente y de la cita', async () => {
