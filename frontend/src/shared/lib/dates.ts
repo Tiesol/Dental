@@ -19,7 +19,7 @@ export function horaAMinutos(hora: string): number {
   return horas * 60 + minutos;
 }
 
-// Valor de un <input type="datetime-local">, en hora de la clínica, a ISO UTC.
+// Fecha y hora de la clínica ("yyyy-MM-ddTHH:mm") a ISO UTC.
 export function fechaHoraLocalAIso(valor: string): string {
   return fromZonedTime(valor, ZONA).toISOString();
 }
