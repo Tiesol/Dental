@@ -24,8 +24,13 @@ export function HorariosOdontologoPage() {
       {estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
       {estado.status === 'ok' && (
         <>
-          <FormHorarios horarios={estado.disponibilidad.horarios} guardar={guardarHorarios} />
+          <FormHorarios
+            key={`horarios-${id}`}
+            horarios={estado.disponibilidad.horarios}
+            guardar={guardarHorarios}
+          />
           <SeccionBloques
+            key={`bloques-${id}`}
             bloques={estado.disponibilidad.bloques}
             crear={crearBloque}
             borrar={borrarBloque}
