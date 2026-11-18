@@ -102,6 +102,19 @@ describe('UsuariosPage', () => {
     expect(screen.queryByTestId('usuario-admin')).not.toBeInTheDocument();
   });
 
+  it('busca por email sin distinguir mayúsculas ni minúsculas', async () => {
+    apiDeUsuarios([ADMIN, { ...ANA, email: 'Ana.Perez@Mail.com' }]);
+    const user = userEvent.setup();
+    renderPagina();
+    await screen.findByTestId('usuario-u1');
+
+    await user.type(screen.getByLabelText('Buscar'), 'ana.perez@mail');
+
+    expect(await screen.findByText('Mostrando 1 de 2 usuarios')).toBeInTheDocument();
+    expect(screen.getByTestId('usuario-u1')).toBeInTheDocument();
+    expect(screen.queryByTestId('usuario-admin')).not.toBeInTheDocument();
+  });
+
   it('muestra un estado vacío cuando nada coincide con la búsqueda', async () => {
     apiDeUsuarios();
     const user = userEvent.setup();
