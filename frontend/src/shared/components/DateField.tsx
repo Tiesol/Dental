@@ -30,8 +30,9 @@ type Props = {
 };
 
 // Fecha que se escribe como dd/mm/aaaa (las barras se ponen solas) o se elige en un calendario.
-// Avisa el valor en cuanto la fecha está completa; mientras está incompleta o es inválida avisa "".
-// El formato y el mínimo se validan al salir del campo, como el resto de los formularios.
+// Avisa el valor en cuanto la fecha está completa y cumple `min`; mientras está incompleta, es
+// inválida o queda antes de `min` avisa "". El formato y el mínimo se validan al salir del campo,
+// como el resto de los formularios.
 export function DateField({
   label,
   value,
@@ -75,7 +76,8 @@ export function DateField({
     const enmascarado = enmascararFecha(nuevo);
     setTexto(enmascarado);
     if (errorFormato && !validar(enmascarado)) setErrorFormato(null);
-    avisar(textoFechaAIso(enmascarado) ?? '');
+    const iso = textoFechaAIso(enmascarado);
+    avisar(iso && (!min || iso >= min) ? iso : '');
   };
 
   const elegir = (iso: string) => {

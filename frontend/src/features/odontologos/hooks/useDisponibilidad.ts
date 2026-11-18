@@ -14,17 +14,17 @@ type Estado =
 // Horarios y bloques de un odontólogo (ADMIN). Las acciones lanzan ApiError para que la página
 // muestre el mensaje.
 export function useDisponibilidad(dentistId: string) {
-  const [estado, setEstado] = useState<Estado>({ status: 'cargando' });
+  const [resultado, setResultado] = useState<{ dentistId: string; estado: Estado } | null>(null);
 
   useEffect(() => {
     let activo = true;
     availabilityApi
       .obtener(dentistId)
       .then((disponibilidad) => {
-        if (activo) setEstado({ status: 'ok', disponibilidad });
+        if (activo) setResultado({ dentistId, estado: { status: 'ok', disponibilidad } });
       })
       .catch((err: Error) => {
-        if (activo) setEstado({ status: 'error', mensaje: err.message });
+        if (activo) setResultado({ dentistId, estado: { status: 'error', mensaje: err.message } });
       });
     return () => {
       activo = false;
@@ -33,25 +33,28 @@ export function useDisponibilidad(dentistId: string) {
 
   const actualizarBloques = useCallback(
     (cambio: (bloques: AvailabilityResponse['bloques']) => AvailabilityResponse['bloques']) => {
-      setEstado((actual) =>
-        actual.status === 'ok'
+      setResultado((actual) =>
+        actual?.dentistId === dentistId && actual.estado.status === 'ok'
           ? {
-              status: 'ok',
-              disponibilidad: {
-                ...actual.disponibilidad,
-                bloques: cambio(actual.disponibilidad.bloques),
+              dentistId,
+              estado: {
+                status: 'ok',
+                disponibilidad: {
+                  ...actual.estado.disponibilidad,
+                  bloques: cambio(actual.estado.disponibilidad.bloques),
+                },
               },
             }
           : actual,
       );
     },
-    [],
+    [dentistId],
   );
 
   const guardarHorarios = useCallback(
     async (horarios: AvailabilityRuleRequest[]) => {
       const disponibilidad = await availabilityApi.reemplazarHorarios(dentistId, horarios);
-      setEstado({ status: 'ok', disponibilidad });
+      setResultado({ dentistId, estado: { status: 'ok', disponibilidad } });
     },
     [dentistId],
   );
@@ -73,6 +76,9 @@ export function useDisponibilidad(dentistId: string) {
     },
     [dentistId, actualizarBloques],
   );
+
+  const estado: Estado =
+    resultado?.dentistId === dentistId ? resultado.estado : { status: 'cargando' };
 
   return { estado, guardarHorarios, crearBloque, borrarBloque };
 }

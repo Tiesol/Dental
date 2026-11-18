@@ -1,11 +1,14 @@
 import {
   AccesoDenegadoACitaError,
+  AccesoDenegadoError,
   CitaNoModificableError,
   HorarioEnElPasadoError,
   HorarioNoDisponibleError,
+  ObservacionRequeridaError,
   OdontologoNoRealizaServicioError,
   RecursoNoEncontradoError,
   ServicioDeshabilitadoError,
+  TransicionDeEstadoInvalidaError,
 } from '../../common/errors/domain-error';
 import { AvailabilityService } from '../availability/availability.service';
 import { AppointmentsRepository } from './appointments.repository';
@@ -198,6 +201,102 @@ describe('AppointmentsService', () => {
       await expect(service.cancelar('c1', otro)).rejects.toThrow(AccesoDenegadoACitaError);
 
       expect(repository.withDentistLock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cambiarEstado', () => {
+    const admin = { userId: 'u-admin', email: 'admin@clinica.com', role: 'ADMIN' as const };
+    const odontologo = {
+      userId: 'u-doc',
+      email: 'doc@clinica.com',
+      role: 'ODONTOLOGO' as const,
+      dentistId: 'd1',
+    };
+    const citaCon = (estado: string, observacion: { texto: string } | null = null) => ({
+      id: 'c1',
+      estado,
+      paciente: { id: 'p1' },
+      odontologo: { id: 'd1' },
+      servicio: { id: 's1' },
+      observacion,
+    });
+
+    it('permite al ADMIN confirmar una cita pendiente dentro de la transacción', async () => {
+      repository.findById.mockResolvedValue(citaCon('PENDIENTE'));
+      repository.updateEstado.mockResolvedValue(citaCon('CONFIRMADA'));
+
+      const resultado = await service.cambiarEstado('c1', 'CONFIRMADA', admin);
+
+      expect(resultado).toEqual(citaCon('CONFIRMADA'));
+      expect(repository.withDentistLock).toHaveBeenCalledWith('d1', expect.any(Function));
+      expect(repository.findById).toHaveBeenLastCalledWith('c1', tx);
+      expect(repository.updateEstado).toHaveBeenCalledWith(tx, 'c1', 'CONFIRMADA');
+    });
+
+    it('permite al odontólogo asignado pasar a EN_ATENCION y finalizar con observación', async () => {
+      repository.findById.mockResolvedValue(citaCon('CONFIRMADA'));
+      await service.cambiarEstado('c1', 'EN_ATENCION', odontologo);
+      expect(repository.updateEstado).toHaveBeenCalledWith(tx, 'c1', 'EN_ATENCION');
+
+      repository.findById.mockResolvedValue(
+        citaCon('EN_ATENCION', { texto: 'Limpieza sin novedades' }),
+      );
+      await service.cambiarEstado('c1', 'FINALIZADA', odontologo);
+      expect(repository.updateEstado).toHaveBeenLastCalledWith(tx, 'c1', 'FINALIZADA');
+    });
+
+    it('impide finalizar una cita si no tiene observación registrada', async () => {
+      repository.findById.mockResolvedValue(citaCon('EN_ATENCION', null));
+
+      await expect(service.cambiarEstado('c1', 'FINALIZADA', odontologo)).rejects.toThrow(
+        ObservacionRequeridaError,
+      );
+
+      expect(repository.updateEstado).not.toHaveBeenCalled();
+    });
+
+    it('rechaza transiciones inválidas sin actualizar el estado', async () => {
+      repository.findById.mockResolvedValue(citaCon('FINALIZADA', { texto: 'Ok' }));
+
+      await expect(service.cambiarEstado('c1', 'PENDIENTE', admin)).rejects.toThrow(
+        TransicionDeEstadoInvalidaError,
+      );
+
+      expect(repository.updateEstado).not.toHaveBeenCalled();
+    });
+
+    it('rechaza una transición válida cuando el rol no está autorizado', async () => {
+      repository.findById.mockResolvedValue(citaCon('PENDIENTE'));
+
+      await expect(service.cambiarEstado('c1', 'CONFIRMADA', odontologo)).rejects.toThrow(
+        AccesoDenegadoError,
+      );
+
+      expect(repository.updateEstado).not.toHaveBeenCalled();
+    });
+
+    it('rechaza a otro odontólogo antes de bloquear al profesional', async () => {
+      repository.findById.mockResolvedValue(citaCon('CONFIRMADA'));
+      const otro = { ...odontologo, dentistId: 'd2' };
+
+      await expect(service.cambiarEstado('c1', 'EN_ATENCION', otro)).rejects.toThrow(
+        AccesoDenegadoACitaError,
+      );
+
+      expect(repository.withDentistLock).not.toHaveBeenCalled();
+    });
+
+    it('relee el estado dentro de la transacción: si cambió mientras esperaba, no actualiza', async () => {
+      repository.findById
+        .mockResolvedValueOnce(citaCon('PENDIENTE'))
+        .mockResolvedValueOnce(citaCon('CANCELADA'));
+
+      await expect(service.cambiarEstado('c1', 'CONFIRMADA', admin)).rejects.toThrow(
+        TransicionDeEstadoInvalidaError,
+      );
+
+      expect(repository.findById).toHaveBeenLastCalledWith('c1', tx);
+      expect(repository.updateEstado).not.toHaveBeenCalled();
     });
   });
 

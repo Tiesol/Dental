@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, http, type RequestHandler } from 'msw';
-import { Route, Routes } from 'react-router-dom';
+import { Link, Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import type { AvailabilityResponse } from '@/api/types';
 import { odontologoAdminDePrueba } from '@/test/factories';
@@ -286,5 +286,47 @@ describe('HorariosOdontologoPage', () => {
     expect(await screen.findByTestId('error-mensaje')).toHaveTextContent(
       'Odontólogo no encontrado',
     );
+  });
+
+  it('reinicia tramos y bloques al cambiar de odontólogo sin desmontar la página', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/dentists/d1`, () =>
+        HttpResponse.json(odontologoAdminDePrueba({ id: 'd1', nombre: 'Dra. Laura Gómez' })),
+      ),
+      http.get(`${API}/dentists/d1/availability`, () => HttpResponse.json(CON_DATOS)),
+      http.get(`${API}/dentists/d2`, () =>
+        HttpResponse.json(odontologoAdminDePrueba({ id: 'd2', nombre: 'Dr. Carlos Rojas' })),
+      ),
+      http.get(`${API}/dentists/d2/availability`, () =>
+        HttpResponse.json({
+          horarios: [{ id: 'h2', diaSemana: 3, minutoInicio: 840, minutoFin: 1080 }],
+          bloques: [],
+        }),
+      ),
+    );
+    renderWithProviders(
+      <>
+        <Link to="/admin/odontologos/d2/horarios">Ir a d2</Link>
+        <Routes>
+          <Route path="/admin/odontologos/:id/horarios" element={<HorariosOdontologoPage />} />
+        </Routes>
+      </>,
+      { route: '/admin/odontologos/d1/horarios' },
+    );
+
+    const tramo1 = await screen.findByTestId('tramo-0');
+    expect(within(tramo1).getByLabelText('Día')).toHaveTextContent('Lunes');
+
+    await user.click(screen.getByRole('link', { name: 'Ir a d2' }));
+
+    await waitFor(() =>
+      expect(within(screen.getByTestId('tramo-0')).getByLabelText('Día')).toHaveTextContent(
+        'Miércoles',
+      ),
+    );
+    expect(within(screen.getByTestId('tramo-0')).getByLabelText('Desde')).toHaveValue('14:00');
+    expect(within(screen.getByTestId('tramo-0')).getByLabelText('Hasta')).toHaveValue('18:00');
+    expect(screen.getByText('No hay bloques no disponibles')).toBeInTheDocument();
   });
 });

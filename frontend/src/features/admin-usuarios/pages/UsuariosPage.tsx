@@ -43,7 +43,7 @@ export function UsuariosPage() {
     return estado.usuarios.filter(
       (u) =>
         (filtroRol === 'TODOS' || u.role === filtroRol) &&
-        (!texto || u.nombre.toLowerCase().includes(texto) || u.email.includes(texto)),
+        (!texto || u.nombre.toLowerCase().includes(texto) || u.email.toLowerCase().includes(texto)),
     );
   }, [estado, filtroRol, busquedaAplicada]);
 

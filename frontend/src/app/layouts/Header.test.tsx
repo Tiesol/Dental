@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -17,34 +17,47 @@ function renderConRol(role: 'PACIENTE' | 'ODONTOLOGO' | 'ADMIN', nombre = 'Ana P
 }
 
 function enlacesDelMenu() {
-  return screen
-    .getAllByRole('link', { name: /Mi cuenta|Usuarios|Servicios|Odontólogos/ })
+  const nav = screen.getByRole('navigation', { name: 'Principal' });
+  return within(nav)
+    .getAllByRole('link')
     .map((a) => a.textContent);
 }
 
 describe('Header', () => {
-  it('el ADMIN ve Mi cuenta, Usuarios, Servicios y Odontólogos', async () => {
+  it('el ADMIN ve Mi cuenta, Citas, Usuarios, Servicios y Odontólogos', async () => {
     renderConRol('ADMIN');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual(['Mi cuenta', 'Usuarios', 'Servicios', 'Odontólogos']);
+    expect(enlacesDelMenu()).toEqual([
+      'Mi cuenta',
+      'Citas',
+      'Usuarios',
+      'Servicios',
+      'Odontólogos',
+    ]);
   });
 
-  it('el PACIENTE ve Mi cuenta, Servicios y Odontólogos, pero no Usuarios', async () => {
+  it('el PACIENTE ve Mi cuenta, Servicios, Odontólogos, Reservar cita y Mis citas', async () => {
     renderConRol('PACIENTE');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual(['Mi cuenta', 'Servicios', 'Odontólogos']);
+    expect(enlacesDelMenu()).toEqual([
+      'Mi cuenta',
+      'Servicios',
+      'Odontólogos',
+      'Reservar cita',
+      'Mis citas',
+    ]);
   });
 
-  it('el ODONTOLOGO ve solo Mi cuenta', async () => {
+  it('el ODONTOLOGO ve Mi cuenta y Agenda', async () => {
     renderConRol('ODONTOLOGO');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual(['Mi cuenta']);
+    expect(enlacesDelMenu()).toEqual(['Mi cuenta', 'Agenda']);
   });
 
   it('muestra el nombre del usuario, sus iniciales y su rol', async () => {
