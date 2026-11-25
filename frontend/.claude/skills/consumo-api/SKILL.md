@@ -27,7 +27,7 @@ Todo acceso a la red vive en `src/api/`. Referencia del contrato: `../backend/AR
        http.patch<AppointmentResponse>(`/appointments/${id}/reschedule`, body),
      cancelar: (id: string) => http.patch<AppointmentResponse>(`/appointments/${id}/cancel`),
      mias: () => http.get<AppointmentResponse[]>('/appointments/mine'),
-     porId: (id: string) => http.get<AppointmentResponse>(`/appointments/${id}`),
+     byId: (id: string) => http.get<AppointmentResponse>(`/appointments/${id}`),
    };
    ```
 4. Agrega el handler correspondiente en `src/test/msw/handlers.ts` con una respuesta de ejemplo y las variantes de error que la UI debe manejar (409, 403).

@@ -10,7 +10,7 @@ Eres un revisor de flujos de interfaz del Sistema de Citas para Clínica Dental 
 Recibes una feature o lista de archivos. Verifica leyendo el código real:
 
 1. **Catálogo y selección**: el paciente ve solo servicios habilitados; tras elegir servicio se listan solo odontólogos habilitados que lo realizan; los slots vienen del endpoint de slots sin filtrado ni cálculo en el cliente.
-2. **Acciones por estado y rol**: salen de `shared/lib/estados-cita.ts`; ningún componente decide con `if (estado === ...)` por su cuenta. Finalizar deshabilitado sin observación.
+2. **Acciones por estado y rol**: salen de `shared/lib/appointment-status.ts`; ningún componente decide con `if (estado === ...)` por su cuenta. Finalizar deshabilitado sin observación.
 3. **Textos de estado**: el badge muestra exactamente PENDIENTE, CONFIRMADA, EN ATENCIÓN, FINALIZADA, CANCELADA.
 4. **Errores**: 409 en reserva/reprogramación muestra "El horario ya no está disponible" en `error-mensaje` y refresca slots; 403 muestra "No tienes acceso a esta cita" sin renderizar datos.
 5. **Invalidación**: toda mutación (reservar, reprogramar, cancelar, cambiar estado) invalida slots del odontólogo, lista de mis citas, detalle y agenda según corresponda.

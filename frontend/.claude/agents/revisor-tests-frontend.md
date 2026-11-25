@@ -18,7 +18,7 @@ Procedimiento:
    - Asserts con auto-espera y texto exacto de estados.
    - E2E 02 verifica que no existe segunda cita; E2E 03 y 04 verifican liberación del slot; E2E 07 verifica 403 y ausencia de datos.
 4. Revisa tests unitarios y de componentes:
-   - Existe `it.each` para la tabla completa de acciones por estado y rol (`estados-cita.ts`).
+   - Existe `it.each` para la tabla completa de acciones por estado y rol (`appointment-status.ts`).
    - AAA, un `it` por comportamiento, nombres en español.
    - Asserts específicos; marca `toBeTruthy`/`toBeDefined` como único assert.
    - API simulada con MSW; sin mocks de hooks ni de `fetch`.

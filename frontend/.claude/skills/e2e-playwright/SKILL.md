@@ -11,8 +11,8 @@ El docente verifica: "Existen E2E automatizados", "Los E2E interactúan con la i
 
 - `playwright.config.ts` con `webServer` que levanta backend (`npm run start:test` en `../backend`, apuntando a la BD de E2E) y frontend (`npm run dev`). `baseURL` del frontend. Un solo navegador (Chromium) por defecto para que la evaluación sea rápida.
 - `e2e/fixtures/seed.ts`: antes de cada escenario llama al script o endpoint de seed del backend (solo habilitado con `NODE_ENV=test`) que deja: un admin, dos pacientes, un odontólogo activo con dos servicios y horario lunes a viernes 09:00-12:00, un servicio deshabilitado, y ninguna cita. Cada escenario crea las citas que necesita vía UI o vía API de seed.
-- `e2e/fixtures/auth.ts`: fixture `loginComo('paciente1' | 'paciente2' | 'odontologo' | 'admin')` que hace login por la interfaz real una vez y reutiliza `storageState`.
-- `e2e/pages/`: Page Objects con métodos de intención: `ReservaPage.elegirServicio('Limpieza dental')`, `elegirOdontologo(nombre)`, `elegirFecha(fecha)`, `elegirSlot('09:00')`, `confirmar()`; `MisCitasPage.abrirCita(n)`, `DetalleCitaPage.reprogramar()`, `cancelar()`, `estado()`; `AgendaPage.abrirCita(n)`, `iniciarAtencion()`, `registrarObservacion(texto)`, `finalizar()`.
+- `e2e/fixtures/auth.ts`: fixture `loginAs('paciente1' | 'paciente2' | 'odontologo' | 'admin')` que hace login por la interfaz real una vez y reutiliza `storageState`.
+- `e2e/pages/`: Page Objects con métodos de intención: `ReservaPage.chooseService('Limpieza dental')`, `chooseDentist(nombre)`, `chooseDate(fecha)`, `chooseSlot('09:00')`, `confirmar()`; `MisCitasPage.openAppointment(n)`, `DetalleCitaPage.reprogramar()`, `cancelar()`, `estado()`; `AgendaPage.openAppointment(n)`, `startCare()`, `registerObservation(texto)`, `finalizar()`.
 - Fecha fija: los escenarios reservan siempre para el "próximo lunes" calculado desde el reloj del backend de test, que está congelado (ver backend `Clock`), para que los slots existan y no caigan en el pasado.
 
 ## Escenarios obligatorios y archivo
@@ -30,11 +30,11 @@ El docente verifica: "Existen E2E automatizados", "Los E2E interactúan con la i
 ## Patrón
 
 ```ts
-test('E2E 04 - cancelar una cita libera el horario', async ({ page, seed, loginComo }) => {
+test('E2E 04 - cancelar una cita libera el horario', async ({ page, seed, loginAs }) => {
   // Arrange
   const cita = await seed.citaPendiente({ paciente: 'paciente1', hora: '09:00' });
-  await loginComo('paciente1');
-  const detalle = await new MisCitasPage(page).abrirCita(cita.id);
+  await loginAs('paciente1');
+  const detalle = await new MisCitasPage(page).openAppointment(cita.id);
 
   // Act
   await detalle.cancelar();

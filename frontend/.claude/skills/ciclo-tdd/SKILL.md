@@ -45,11 +45,11 @@ Casos típicos: `VITE_API_URL` sin el prefijo `/api/v1`; token vencido (`/auth/m
 
 ## 4. Qué se prueba y cómo
 
-- Nivel más bajo que capture el comportamiento: utilidades puras y `estados-cita.ts` con Vitest sin render; componentes con RTL + MSW; solo los 7 escenarios del PDF como E2E.
+- Nivel más bajo que capture el comportamiento: utilidades puras y `appointment-status.ts` con Vitest sin render; componentes con RTL + MSW; solo los 7 escenarios del PDF como E2E.
 - Mockear solo en el borde: la red, con MSW. Nunca hooks de la feature ni `fetch` a mano.
 - Consultar por rol y nombre accesible (`getByRole('button', { name: 'Cancelar' })`); `data-testid` solo para badge, slots y mensajes de error.
 - Interacciones con `@testing-library/user-event`; esperas con `findBy*` / `await expect(...)`, nunca `setTimeout` ni `waitForTimeout`.
-- DAMP antes que DRY: cada `it` se entiende solo. Factories (`citaDePrueba`, `odontologoDePrueba`) para datos, no para esconder el assert.
+- DAMP antes que DRY: cada `it` se entiende solo. Factories (`testAppointment`, `odontologoDePrueba`) para datos, no para esconder el assert.
 - Un `it` por comportamiento, nombre en español.
 - Cubrir: camino feliz, lista vacía, error de la API (409, 403, sin conexión), estado de carga, cada estado de cita por rol.
 
@@ -68,7 +68,7 @@ Casos típicos: `VITE_API_URL` sin el prefijo `/api/v1`; token vencido (`/auth/m
 
 **Correctitud**
 
-- [ ] La pantalla refleja la regla del PDF (skill `reglas-de-negocio-citas`): acciones por estado y rol desde `estados-cita.ts`, textos exactos de estados, manejo de 409 y 403.
+- [ ] La pantalla refleja la regla del PDF (skill `reglas-de-negocio-citas`): acciones por estado y rol desde `appointment-status.ts`, textos exactos de estados, manejo de 409 y 403.
 - [ ] Tests que fallan sin el cambio y pasan con él; si es un flujo del PDF, su E2E.
 - [ ] Verificado en el navegador real contra el backend (no solo en tests): consola sin errores.
 

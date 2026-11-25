@@ -14,7 +14,7 @@ Procedimiento:
 1. **Lee primero los tests** del cambio (componentes y E2E): revelan la intención. Luego el código.
 2. Evalúa los cinco ejes:
    - **Correctitud**: ¿la pantalla hace lo que el escenario del PDF exige? ¿Estados de carga, vacío y error? ¿Maneja 409 y 403 aunque la UI "creyera" que la acción era válida? ¿Las mutaciones refrescan slots y listas? ¿Los tests verifican lo que el usuario ve?
-   - **Legibilidad**: componentes pequeños con una responsabilidad; nombres según `CONVENCIONES.md` sección 1; sin lógica de negocio en JSX; sin `if (estado === ...)` sueltos (va en `estados-cita.ts`).
+   - **Legibilidad**: componentes pequeños con una responsabilidad; nombres según `CONVENCIONES.md` sección 1; sin lógica de negocio en JSX; sin `if (estado === ...)` sueltos (va en `appointment-status.ts`).
    - **Arquitectura**: red solo en `src/api/`; features exponen su API pública por `index.ts`; `shared/` y `api/` no importan de `features/`; páginas solo componen; alias `@/` en lugar de rutas relativas largas.
    - **Seguridad**: sin decodificar el JWT en el cliente para decidir permisos; sin datos sensibles en URL ni en `localStorage` aparte del token; sin `dangerouslySetInnerHTML`; `RequireRole` en cada grupo de rutas; mensajes de error del backend mostrados tal cual, nunca stack traces.
    - **Rendimiento**: efectos sin cancelación (`activo = false` en cleanup); re-renders por objetos nuevos en cada render pasados a `useEffect`/`useCallback`; listas sin `key` estable; peticiones duplicadas por dependencias mal declaradas.
