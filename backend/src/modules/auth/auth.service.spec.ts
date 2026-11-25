@@ -2,9 +2,9 @@ import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { compare, hash } from 'bcryptjs';
 import {
-  CredencialesInvalidasError,
-  EmailYaRegistradoError,
-  UsuarioNoDisponibleError,
+  InvalidCredentialsError,
+  EmailAlreadyRegisteredError,
+  UserUnavailableError,
 } from '../../common/errors/domain-error';
 import { NewPatientUser, UserRecord } from '../users/domain/user';
 import { UsersService } from '../users/users.service';
@@ -20,14 +20,14 @@ describe('AuthService', () => {
   };
   const jwt = { signAsync: jest.fn<Promise<string>, [object]>() };
 
-  const registro = {
+  const registration = {
     email: 'ana@mail.com',
     password: 'secreta123',
     nombre: 'Ana',
     apellido: 'Pérez',
   };
 
-  function usuarioGuardado(extra: Partial<UserRecord> = {}): UserRecord {
+  function savedUser(extra: Partial<UserRecord> = {}): UserRecord {
     return {
       id: 'u1',
       email: 'ana@mail.com',
@@ -46,7 +46,7 @@ describe('AuthService', () => {
     users.findByEmail.mockResolvedValue(null);
     users.createPatient.mockImplementation((data) =>
       Promise.resolve(
-        usuarioGuardado({
+        savedUser({
           email: data.email,
           passwordHash: data.passwordHash,
           patient: {
@@ -70,39 +70,41 @@ describe('AuthService', () => {
     service = moduleRef.get(AuthService);
   });
 
-  const datosCreados = () => users.createPatient.mock.calls[0][0];
+  const createdData = () => users.createPatient.mock.calls[0][0];
 
   describe('register', () => {
     it('crea el usuario con la contraseña hasheada, nunca en claro', async () => {
-      await service.register(registro);
+      await service.register(registration);
 
-      const data = datosCreados();
-      expect(data.passwordHash).not.toBe(registro.password);
-      expect(await compare(registro.password, data.passwordHash)).toBe(true);
+      const data = createdData();
+      expect(data.passwordHash).not.toBe(registration.password);
+      expect(await compare(registration.password, data.passwordHash)).toBe(true);
     });
 
     it('normaliza el email a minúsculas y sin espacios', async () => {
-      await service.register({ ...registro, email: '  Ana@MAIL.com ' });
+      await service.register({ ...registration, email: '  Ana@MAIL.com ' });
 
-      expect(datosCreados().email).toBe('ana@mail.com');
+      expect(createdData().email).toBe('ana@mail.com');
     });
 
     it('crea un paciente con nombre, apellido y teléfono aunque el cliente intente mandar un rol', async () => {
-      await service.register({ ...registro, telefono: '700', role: 'ADMIN' } as never);
+      await service.register({ ...registration, telefono: '700', role: 'ADMIN' } as never);
 
-      expect(datosCreados()).toMatchObject({ nombre: 'Ana', apellido: 'Pérez', telefono: '700' });
-      expect(datosCreados()).not.toHaveProperty('role');
+      expect(createdData()).toMatchObject({ nombre: 'Ana', apellido: 'Pérez', telefono: '700' });
+      expect(createdData()).not.toHaveProperty('role');
     });
 
-    it('lanza EmailYaRegistradoError si el email ya existe y no crea nada', async () => {
-      users.findByEmail.mockResolvedValue(usuarioGuardado({ id: 'otro' }));
+    it('lanza EmailAlreadyRegisteredError si el email ya existe y no crea nada', async () => {
+      users.findByEmail.mockResolvedValue(savedUser({ id: 'otro' }));
 
-      await expect(service.register(registro)).rejects.toBeInstanceOf(EmailYaRegistradoError);
+      await expect(service.register(registration)).rejects.toBeInstanceOf(
+        EmailAlreadyRegisteredError,
+      );
       expect(users.createPatient).not.toHaveBeenCalled();
     });
 
     it('devuelve el usuario público: sin passwordHash, con rol PACIENTE y nombre completo', async () => {
-      const user = await service.register(registro);
+      const user = await service.register(registration);
 
       expect(user).not.toHaveProperty('passwordHash');
       expect(user).toMatchObject({
@@ -116,9 +118,7 @@ describe('AuthService', () => {
 
   describe('login', () => {
     beforeEach(async () => {
-      users.findByEmail.mockResolvedValue(
-        usuarioGuardado({ passwordHash: await hash('secreta123', 4) }),
-      );
+      users.findByEmail.mockResolvedValue(savedUser({ passwordHash: await hash('secreta123', 4) }));
       jwt.signAsync.mockResolvedValue('token-firmado');
     });
 
@@ -135,35 +135,35 @@ describe('AuthService', () => {
       expect(result.user).not.toHaveProperty('passwordHash');
     });
 
-    it('lanza CredencialesInvalidasError si el email no existe', async () => {
+    it('lanza InvalidCredentialsError si el email no existe', async () => {
       users.findByEmail.mockResolvedValue(null);
 
       await expect(
         service.login({ email: 'nadie@mail.com', password: 'secreta123' }),
-      ).rejects.toBeInstanceOf(CredencialesInvalidasError);
+      ).rejects.toBeInstanceOf(InvalidCredentialsError);
     });
 
-    it('lanza CredencialesInvalidasError si la contraseña es incorrecta y no firma token', async () => {
+    it('lanza InvalidCredentialsError si la contraseña es incorrecta y no firma token', async () => {
       await expect(
         service.login({ email: 'ana@mail.com', password: 'incorrecta' }),
-      ).rejects.toBeInstanceOf(CredencialesInvalidasError);
+      ).rejects.toBeInstanceOf(InvalidCredentialsError);
       expect(jwt.signAsync).not.toHaveBeenCalled();
     });
 
-    it('lanza CredencialesInvalidasError si el usuario está inactivo', async () => {
+    it('lanza InvalidCredentialsError si el usuario está inactivo', async () => {
       users.findByEmail.mockResolvedValue(
-        usuarioGuardado({ activo: false, passwordHash: await hash('secreta123', 4) }),
+        savedUser({ activo: false, passwordHash: await hash('secreta123', 4) }),
       );
 
       await expect(
         service.login({ email: 'ana@mail.com', password: 'secreta123' }),
-      ).rejects.toBeInstanceOf(CredencialesInvalidasError);
+      ).rejects.toBeInstanceOf(InvalidCredentialsError);
     });
   });
 
   describe('me', () => {
     it('devuelve el usuario público si existe y está activo', async () => {
-      users.findById.mockResolvedValue(usuarioGuardado());
+      users.findById.mockResolvedValue(savedUser());
 
       const user = await service.me('u1');
 
@@ -171,12 +171,12 @@ describe('AuthService', () => {
       expect(user).not.toHaveProperty('passwordHash');
     });
 
-    it('lanza UsuarioNoDisponibleError si el usuario no existe o está inactivo', async () => {
+    it('lanza UserUnavailableError si el usuario no existe o está inactivo', async () => {
       users.findById.mockResolvedValueOnce(null);
-      await expect(service.me('u1')).rejects.toBeInstanceOf(UsuarioNoDisponibleError);
+      await expect(service.me('u1')).rejects.toBeInstanceOf(UserUnavailableError);
 
-      users.findById.mockResolvedValueOnce(usuarioGuardado({ activo: false }));
-      await expect(service.me('u1')).rejects.toBeInstanceOf(UsuarioNoDisponibleError);
+      users.findById.mockResolvedValueOnce(savedUser({ activo: false }));
+      await expect(service.me('u1')).rejects.toBeInstanceOf(UserUnavailableError);
     });
   });
 });

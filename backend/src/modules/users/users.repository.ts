@@ -86,10 +86,10 @@ export class UsersRepository {
     return toRecord(row);
   }
 
-  async setActivo(id: string, activo: boolean): Promise<UserRecord> {
+  async setActive(id: string, active: boolean): Promise<UserRecord> {
     const row = await this.prisma.user.update({
       where: { id },
-      data: { activo },
+      data: { activo: active },
       include: withProfiles,
     });
     return toRecord(row);

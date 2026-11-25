@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { HorarioNoDisponibleError } from '../../common/errors/domain-error';
+import { SlotUnavailableError } from '../../common/errors/domain-error';
 import { lockDentist } from '../../prisma/dentist-lock';
 import { PrismaService, Tx } from '../../prisma/prisma.service';
 import {
@@ -9,7 +9,7 @@ import {
   AppointmentView,
   NewAppointment,
 } from './domain/appointment';
-import { Intervalo } from './domain/overlap';
+import { Interval } from './domain/overlap';
 
 const withRelations = {
   service: { select: { id: true, nombre: true, duracionMin: true } },
@@ -34,32 +34,36 @@ export class AppointmentsRepository {
     });
   }
 
-  async create(tx: Tx, datos: NewAppointment): Promise<AppointmentView> {
+  async create(tx: Tx, data: NewAppointment): Promise<AppointmentView> {
     try {
-      return toView(await tx.appointment.create({ data: datos, include: withRelations }));
+      return toView(await tx.appointment.create({ data, include: withRelations }));
     } catch (error) {
-      throw traducirSolapamiento(error);
+      throw translateOverlapError(error);
     }
   }
 
   // Actualiza la misma fila: si el horario nuevo choca, la cita conserva el anterior (PDF sección 8).
-  async updateHorario(
+  async updateTimes(
     tx: Tx,
     id: string,
-    horario: { horaInicio: Date; horaFin: Date },
+    times: { horaInicio: Date; horaFin: Date },
   ): Promise<AppointmentView> {
     try {
       return toView(
-        await tx.appointment.update({ where: { id }, data: horario, include: withRelations }),
+        await tx.appointment.update({ where: { id }, data: times, include: withRelations }),
       );
     } catch (error) {
-      throw traducirSolapamiento(error);
+      throw translateOverlapError(error);
     }
   }
 
-  async updateEstado(tx: Tx, id: string, estado: AppointmentStatus): Promise<AppointmentView> {
+  async updateStatus(tx: Tx, id: string, status: AppointmentStatus): Promise<AppointmentView> {
     return toView(
-      await tx.appointment.update({ where: { id }, data: { estado }, include: withRelations }),
+      await tx.appointment.update({
+        where: { id },
+        data: { estado: status },
+        include: withRelations,
+      }),
     );
   }
 
@@ -79,12 +83,12 @@ export class AppointmentsRepository {
     return rows.map(toView);
   }
 
-  async findAgenda(dentistId: string, rango: Intervalo): Promise<AppointmentView[]> {
+  async findAgenda(dentistId: string, range: Interval): Promise<AppointmentView[]> {
     const rows = await this.prisma.appointment.findMany({
       where: {
         dentistId,
         estado: { not: 'CANCELADA' },
-        horaInicio: { gte: rango.inicio, lt: rango.fin },
+        horaInicio: { gte: range.inicio, lt: range.fin },
       },
       include: withRelations,
       orderBy: { horaInicio: 'asc' },
@@ -93,12 +97,12 @@ export class AppointmentsRepository {
   }
 
   // Misma definición de "próxima" que en el historial del paciente.
-  async findUpcoming(dentistId: string, ahora: Date, limit: number): Promise<AppointmentView[]> {
+  async findUpcoming(dentistId: string, now: Date, limit: number): Promise<AppointmentView[]> {
     const rows = await this.prisma.appointment.findMany({
       where: {
         dentistId,
         estado: { notIn: ['CANCELADA', 'FINALIZADA'] },
-        horaInicio: { gt: ahora },
+        horaInicio: { gt: now },
       },
       include: withRelations,
       orderBy: { horaInicio: 'asc' },
@@ -108,16 +112,16 @@ export class AppointmentsRepository {
   }
 
   async findAll({
-    rango,
-    estado,
+    range,
+    estado: status,
     dentistId,
     limit,
     offset,
   }: AppointmentFilters): Promise<AppointmentView[]> {
     const rows = await this.prisma.appointment.findMany({
       where: {
-        ...(rango ? { horaInicio: { gte: rango.inicio, lt: rango.fin } } : {}),
-        ...(estado ? { estado } : {}),
+        ...(range ? { horaInicio: { gte: range.inicio, lt: range.fin } } : {}),
+        ...(status ? { estado: status } : {}),
         ...(dentistId ? { dentistId } : {}),
       },
       include: withRelations,
@@ -130,9 +134,9 @@ export class AppointmentsRepository {
 }
 
 // Última línea de defensa: si la validación falla, PostgreSQL rechaza el solapamiento.
-function traducirSolapamiento(error: unknown): unknown {
+function translateOverlapError(error: unknown): unknown {
   return error instanceof Error && error.message.includes('appointment_no_overlap')
-    ? new HorarioNoDisponibleError()
+    ? new SlotUnavailableError()
     : error;
 }
 

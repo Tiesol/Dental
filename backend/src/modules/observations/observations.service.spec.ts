@@ -1,13 +1,13 @@
 import {
-  AccesoDenegadoACitaError,
-  CitaNoEnAtencionError,
-  ObservacionYaRegistradaError,
+  AppointmentAccessDeniedError,
+  AppointmentNotInProgressError,
+  ObservationAlreadyRegisteredError,
 } from '../../common/errors/domain-error';
 import { AppointmentsService } from '../appointments/appointments.service';
 import { ObservationsRepository } from './observations.repository';
 import { ObservationsService } from './observations.service';
 
-describe('ObservationsService.registrar', () => {
+describe('ObservationsService.register', () => {
   const user = { userId: 'u1', email: 'a@mail.com', role: 'ODONTOLOGO' as const, dentistId: 'd1' };
   const repository = { create: jest.fn() };
   const appointments = { findOne: jest.fn() };
@@ -19,21 +19,23 @@ describe('ObservationsService.registrar', () => {
   beforeEach(() => jest.resetAllMocks());
 
   it('guarda el texto sin espacios sobrantes en una cita EN_ATENCION', async () => {
-    const creada = { texto: 'Sin novedades', createdAt: new Date('2026-11-09T14:00:00Z') };
+    const created = { texto: 'Sin novedades', createdAt: new Date('2026-11-09T14:00:00Z') };
     appointments.findOne.mockResolvedValue({ estado: 'EN_ATENCION', observacion: null });
-    repository.create.mockResolvedValue(creada);
+    repository.create.mockResolvedValue(created);
 
-    const resultado = await service.registrar('c1', '  Sin novedades  ', user);
+    const result = await service.register('c1', '  Sin novedades  ', user);
 
-    expect(resultado).toEqual(creada);
+    expect(result).toEqual(created);
     expect(appointments.findOne).toHaveBeenCalledWith('c1', user);
     expect(repository.create).toHaveBeenCalledWith('c1', 'Sin novedades');
   });
 
   it('no guarda nada si la cita es de otro odontólogo', async () => {
-    appointments.findOne.mockRejectedValue(new AccesoDenegadoACitaError());
+    appointments.findOne.mockRejectedValue(new AppointmentAccessDeniedError());
 
-    await expect(service.registrar('c1', 'Texto', user)).rejects.toThrow(AccesoDenegadoACitaError);
+    await expect(service.register('c1', 'Texto', user)).rejects.toThrow(
+      AppointmentAccessDeniedError,
+    );
 
     expect(repository.create).not.toHaveBeenCalled();
   });
@@ -41,7 +43,9 @@ describe('ObservationsService.registrar', () => {
   it('no guarda nada si la cita no está en atención', async () => {
     appointments.findOne.mockResolvedValue({ estado: 'CONFIRMADA', observacion: null });
 
-    await expect(service.registrar('c1', 'Texto', user)).rejects.toThrow(CitaNoEnAtencionError);
+    await expect(service.register('c1', 'Texto', user)).rejects.toThrow(
+      AppointmentNotInProgressError,
+    );
 
     expect(repository.create).not.toHaveBeenCalled();
   });
@@ -52,8 +56,8 @@ describe('ObservationsService.registrar', () => {
       observacion: { texto: 'Primera', createdAt: new Date('2026-11-09T14:00:00Z') },
     });
 
-    await expect(service.registrar('c1', 'Otra', user)).rejects.toThrow(
-      ObservacionYaRegistradaError,
+    await expect(service.register('c1', 'Otra', user)).rejects.toThrow(
+      ObservationAlreadyRegisteredError,
     );
 
     expect(repository.create).not.toHaveBeenCalled();

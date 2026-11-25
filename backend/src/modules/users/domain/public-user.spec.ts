@@ -1,7 +1,7 @@
-import { nombreParaMostrar, toPublicUser } from './public-user';
+import { displayName, toPublicUser } from './public-user';
 import { UserRecord } from './user';
 
-function usuario(extra: Partial<UserRecord> = {}): UserRecord {
+function buildUser(extra: Partial<UserRecord> = {}): UserRecord {
   return {
     id: 'u1',
     email: 'ana@mail.com',
@@ -15,50 +15,50 @@ function usuario(extra: Partial<UserRecord> = {}): UserRecord {
   };
 }
 
-describe('nombreParaMostrar', () => {
+describe('displayName', () => {
   it('para un paciente une nombre y apellido', () => {
-    expect(nombreParaMostrar(usuario())).toBe('Ana Pérez');
+    expect(displayName(buildUser())).toBe('Ana Pérez');
   });
 
   it('para un odontólogo usa el nombre del perfil de odontólogo', () => {
-    const odontologo = usuario({
+    const dentist = buildUser({
       role: 'ODONTOLOGO',
       patient: null,
       dentist: { id: 'd1', nombre: 'Dra. Laura Gómez', especialidad: 'General', activo: true },
     });
 
-    expect(nombreParaMostrar(odontologo)).toBe('Dra. Laura Gómez');
+    expect(displayName(dentist)).toBe('Dra. Laura Gómez');
   });
 
   it('para un administrador sin perfil devuelve el rótulo fijo', () => {
-    expect(nombreParaMostrar(usuario({ role: 'ADMIN', patient: null }))).toBe('Administrador');
+    expect(displayName(buildUser({ role: 'ADMIN', patient: null }))).toBe('Administrador');
   });
 });
 
 describe('toPublicUser', () => {
   it('no incluye passwordHash', () => {
-    const publico = toPublicUser(usuario());
+    const publicView = toPublicUser(buildUser());
 
-    expect(publico).not.toHaveProperty('passwordHash');
+    expect(publicView).not.toHaveProperty('passwordHash');
   });
 
   it('incluye patientId cuando el usuario es paciente y omite dentistId', () => {
-    const publico = toPublicUser(usuario());
+    const publicView = toPublicUser(buildUser());
 
-    expect(publico).toMatchObject({ id: 'u1', role: 'PACIENTE', patientId: 'p1' });
-    expect(publico).not.toHaveProperty('dentistId');
+    expect(publicView).toMatchObject({ id: 'u1', role: 'PACIENTE', patientId: 'p1' });
+    expect(publicView).not.toHaveProperty('dentistId');
   });
 
   it('incluye dentistId cuando el usuario es odontólogo y omite patientId', () => {
-    const publico = toPublicUser(
-      usuario({
+    const publicView = toPublicUser(
+      buildUser({
         role: 'ODONTOLOGO',
         patient: null,
         dentist: { id: 'd1', nombre: 'Dra. Laura Gómez', especialidad: 'General', activo: true },
       }),
     );
 
-    expect(publico).toMatchObject({ role: 'ODONTOLOGO', dentistId: 'd1' });
-    expect(publico).not.toHaveProperty('patientId');
+    expect(publicView).toMatchObject({ role: 'ODONTOLOGO', dentistId: 'd1' });
+    expect(publicView).not.toHaveProperty('patientId');
   });
 });

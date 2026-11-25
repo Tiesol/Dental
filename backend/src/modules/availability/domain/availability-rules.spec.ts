@@ -1,53 +1,53 @@
-import { FechaInvalidaError, HorarioInvalidoError } from '../../../common/errors/domain-error';
+import { InvalidDateError, InvalidScheduleError } from '../../../common/errors/domain-error';
 import { AvailabilityRuleInput } from './availability';
-import {
-  assertBloqueValido,
-  assertHorariosValidos,
-  toPublicAvailability,
-} from './availability-rules';
+import { assertValidBlock, assertValidSchedule, toPublicAvailability } from './availability-rules';
 
-const LUNES = 1;
-const MARTES = 2;
+const MONDAY = 1;
+const TUESDAY = 2;
 
-const tramo = (
-  minutoInicio: number,
-  minutoFin: number,
-  diaSemana = LUNES,
-): AvailabilityRuleInput => ({ diaSemana, minutoInicio, minutoFin });
+const timeRange = (
+  startMinute: number,
+  endMinute: number,
+  weekday = MONDAY,
+): AvailabilityRuleInput => ({
+  diaSemana: weekday,
+  minutoInicio: startMinute,
+  minutoFin: endMinute,
+});
 
-describe('assertHorariosValidos', () => {
+describe('assertValidSchedule', () => {
   describe('horarios aceptados', () => {
     it('acepta una lista vacía, que deja al odontólogo sin horarios', () => {
-      expect(() => assertHorariosValidos([])).not.toThrow();
+      expect(() => assertValidSchedule([])).not.toThrow();
     });
 
     it('acepta un horario partido en dos tramos separados del mismo día', () => {
-      expect(() => assertHorariosValidos([tramo(480, 720), tramo(840, 1080)])).not.toThrow();
+      expect(() => assertValidSchedule([timeRange(480, 720), timeRange(840, 1080)])).not.toThrow();
     });
 
     it('acepta tramos consecutivos, donde uno termina cuando empieza el otro', () => {
-      expect(() => assertHorariosValidos([tramo(540, 720), tramo(720, 900)])).not.toThrow();
+      expect(() => assertValidSchedule([timeRange(540, 720), timeRange(720, 900)])).not.toThrow();
     });
 
     it('acepta tramos válidos aunque lleguen desordenados', () => {
-      expect(() => assertHorariosValidos([tramo(840, 1080), tramo(480, 720)])).not.toThrow();
+      expect(() => assertValidSchedule([timeRange(840, 1080), timeRange(480, 720)])).not.toThrow();
     });
 
     it('acepta el mismo tramo en días distintos', () => {
-      const horarios = [tramo(540, 720, LUNES), tramo(540, 720, MARTES)];
+      const schedule = [timeRange(540, 720, MONDAY), timeRange(540, 720, TUESDAY)];
 
-      expect(() => assertHorariosValidos(horarios)).not.toThrow();
+      expect(() => assertValidSchedule(schedule)).not.toThrow();
     });
 
     it.each([
       ['domingo', 0],
       ['sábado', 6],
-    ])('acepta el %s como día válido', (_nombre, dia) => {
-      expect(() => assertHorariosValidos([tramo(540, 720, dia)])).not.toThrow();
+    ])('acepta el %s como día válido', (_name, day) => {
+      expect(() => assertValidSchedule([timeRange(540, 720, day)])).not.toThrow();
     });
 
     it('acepta un tramo que ocupa el día completo, de 0 a 1440', () => {
-      expect(() => assertHorariosValidos([tramo(0, 1440)])).not.toThrow();
+      expect(() => assertValidSchedule([timeRange(0, 1440)])).not.toThrow();
     });
   });
 
@@ -56,8 +56,8 @@ describe('assertHorariosValidos', () => {
       ['menor que 0', -1],
       ['mayor que 6', 7],
       ['con decimales', 1.5],
-    ])('rechaza un día de la semana %s', (_caso, dia) => {
-      expect(() => assertHorariosValidos([tramo(540, 720, dia)])).toThrow(HorarioInvalidoError);
+    ])('rechaza un día de la semana %s', (_testCase, day) => {
+      expect(() => assertValidSchedule([timeRange(540, 720, day)])).toThrow(InvalidScheduleError);
     });
 
     it.each([
@@ -65,116 +65,123 @@ describe('assertHorariosValidos', () => {
       ['fin mayor que 1440', 540, 1441],
       ['inicio con decimales', 540.5, 720],
       ['fin con decimales', 540, 720.5],
-    ])('rechaza minutos fuera de rango: %s', (_caso, inicio, fin) => {
-      expect(() => assertHorariosValidos([tramo(inicio, fin)])).toThrow(HorarioInvalidoError);
+    ])('rechaza minutos fuera de rango: %s', (_testCase, start, end) => {
+      expect(() => assertValidSchedule([timeRange(start, end)])).toThrow(InvalidScheduleError);
     });
 
     it('rechaza un tramo cuyo inicio es igual a su fin', () => {
-      expect(() => assertHorariosValidos([tramo(540, 540)])).toThrow(HorarioInvalidoError);
+      expect(() => assertValidSchedule([timeRange(540, 540)])).toThrow(InvalidScheduleError);
     });
 
     it('rechaza un tramo cuyo inicio es posterior a su fin', () => {
-      expect(() => assertHorariosValidos([tramo(720, 540)])).toThrow(HorarioInvalidoError);
+      expect(() => assertValidSchedule([timeRange(720, 540)])).toThrow(InvalidScheduleError);
     });
 
     it('rechaza dos tramos del mismo día que se solapan parcialmente', () => {
-      const horarios = [tramo(540, 720), tramo(700, 900)];
+      const schedule = [timeRange(540, 720), timeRange(700, 900)];
 
-      expect(() => assertHorariosValidos(horarios)).toThrow(HorarioInvalidoError);
+      expect(() => assertValidSchedule(schedule)).toThrow(InvalidScheduleError);
     });
 
     it('rechaza un tramo contenido dentro de otro del mismo día', () => {
-      const horarios = [tramo(540, 900), tramo(600, 660)];
+      const schedule = [timeRange(540, 900), timeRange(600, 660)];
 
-      expect(() => assertHorariosValidos(horarios)).toThrow(HorarioInvalidoError);
+      expect(() => assertValidSchedule(schedule)).toThrow(InvalidScheduleError);
     });
 
     it('rechaza dos tramos idénticos en el mismo día', () => {
-      const horarios = [tramo(540, 720), tramo(540, 720)];
+      const schedule = [timeRange(540, 720), timeRange(540, 720)];
 
-      expect(() => assertHorariosValidos(horarios)).toThrow(HorarioInvalidoError);
+      expect(() => assertValidSchedule(schedule)).toThrow(InvalidScheduleError);
     });
 
     it('detecta el solapamiento aunque los tramos lleguen desordenados', () => {
-      const horarios = [tramo(700, 900), tramo(100, 200), tramo(540, 720)];
+      const schedule = [timeRange(700, 900), timeRange(100, 200), timeRange(540, 720)];
 
-      expect(() => assertHorariosValidos(horarios)).toThrow(HorarioInvalidoError);
+      expect(() => assertValidSchedule(schedule)).toThrow(InvalidScheduleError);
     });
 
     it('detecta el solapamiento aunque otro día tenga un tramo a una hora intermedia', () => {
-      const horarios = [tramo(540, 720, LUNES), tramo(600, 660, MARTES), tramo(700, 900, LUNES)];
+      const schedule = [
+        timeRange(540, 720, MONDAY),
+        timeRange(600, 660, TUESDAY),
+        timeRange(700, 900, MONDAY),
+      ];
 
-      expect(() => assertHorariosValidos(horarios)).toThrow(HorarioInvalidoError);
+      expect(() => assertValidSchedule(schedule)).toThrow(InvalidScheduleError);
     });
   });
 });
 
 describe('toPublicAvailability', () => {
   it('quita el motivo de los bloques y conserva horarios y fechas', () => {
-    const horarios = [{ id: 'h1', ...tramo(540, 720) }];
-    const inicio = new Date('2026-11-10T14:00:00Z');
-    const fin = new Date('2026-11-10T15:00:00Z');
+    const schedule = [{ id: 'h1', ...timeRange(540, 720) }];
+    const start = new Date('2026-11-10T14:00:00Z');
+    const end = new Date('2026-11-10T15:00:00Z');
 
-    const resultado = toPublicAvailability({
-      horarios,
-      bloques: [{ id: 'b1', inicio, fin, motivo: 'Cirugía personal' }],
+    const result = toPublicAvailability({
+      horarios: schedule,
+      bloques: [{ id: 'b1', inicio: start, fin: end, motivo: 'Cirugía personal' }],
     });
 
-    expect(resultado).toEqual({ horarios, bloques: [{ id: 'b1', inicio, fin }] });
+    expect(result).toEqual({
+      horarios: schedule,
+      bloques: [{ id: 'b1', inicio: start, fin: end }],
+    });
   });
 });
 
-describe('assertBloqueValido', () => {
-  const ahora = new Date('2026-11-09T14:00:00Z');
+describe('assertValidBlock', () => {
+  const now = new Date('2026-11-09T14:00:00Z');
 
   it('acepta un bloque futuro', () => {
-    const bloque = {
+    const block = {
       inicio: new Date('2026-11-10T14:00:00Z'),
       fin: new Date('2026-11-10T15:00:00Z'),
     };
 
-    expect(() => assertBloqueValido(bloque, ahora)).not.toThrow();
+    expect(() => assertValidBlock(block, now)).not.toThrow();
   });
 
   it('acepta un bloque que ya empezó pero todavía no termina', () => {
-    const bloque = {
+    const block = {
       inicio: new Date('2026-11-09T13:00:00Z'),
       fin: new Date('2026-11-09T15:00:00Z'),
     };
 
-    expect(() => assertBloqueValido(bloque, ahora)).not.toThrow();
+    expect(() => assertValidBlock(block, now)).not.toThrow();
   });
 
   it('rechaza un bloque cuyo fin es igual a su inicio', () => {
-    const bloque = {
+    const block = {
       inicio: new Date('2026-11-10T14:00:00Z'),
       fin: new Date('2026-11-10T14:00:00Z'),
     };
 
-    expect(() => assertBloqueValido(bloque, ahora)).toThrow(FechaInvalidaError);
+    expect(() => assertValidBlock(block, now)).toThrow(InvalidDateError);
   });
 
   it('rechaza un bloque cuyo fin es anterior a su inicio', () => {
-    const bloque = {
+    const block = {
       inicio: new Date('2026-11-10T15:00:00Z'),
       fin: new Date('2026-11-10T14:00:00Z'),
     };
 
-    expect(() => assertBloqueValido(bloque, ahora)).toThrow(FechaInvalidaError);
+    expect(() => assertValidBlock(block, now)).toThrow(InvalidDateError);
   });
 
   it('rechaza un bloque que ya terminó', () => {
-    const bloque = {
+    const block = {
       inicio: new Date('2026-11-08T14:00:00Z'),
       fin: new Date('2026-11-08T15:00:00Z'),
     };
 
-    expect(() => assertBloqueValido(bloque, ahora)).toThrow(FechaInvalidaError);
+    expect(() => assertValidBlock(block, now)).toThrow(InvalidDateError);
   });
 
   it('rechaza un bloque que termina exactamente ahora, porque el intervalo es semiabierto', () => {
-    const bloque = { inicio: new Date('2026-11-09T13:00:00Z'), fin: ahora };
+    const block = { inicio: new Date('2026-11-09T13:00:00Z'), fin: now };
 
-    expect(() => assertBloqueValido(bloque, ahora)).toThrow(FechaInvalidaError);
+    expect(() => assertValidBlock(block, now)).toThrow(InvalidDateError);
   });
 });

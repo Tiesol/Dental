@@ -20,7 +20,7 @@ export class AppointmentsController {
   @Roles('PACIENTE')
   @ApiOperation({ summary: 'Reserva una cita (solo PACIENTE)' })
   create(@CurrentUser() user: CurrentUserData, @Body() dto: CreateAppointmentDto) {
-    return this.appointmentsService.reservar(dto, user.patientId!);
+    return this.appointmentsService.book(dto, user.patientId!);
   }
 
   // Declarada antes que :id para que "mine" no se interprete como un id.
@@ -52,14 +52,14 @@ export class AppointmentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RescheduleAppointmentDto,
   ) {
-    return this.appointmentsService.reprogramar(id, dto.horaInicio, user);
+    return this.appointmentsService.reschedule(id, dto.horaInicio, user);
   }
 
   @Patch(':id/cancel')
   @Roles('PACIENTE', 'ADMIN')
   @ApiOperation({ summary: 'Cancela una cita y libera el horario (paciente dueño o ADMIN)' })
   cancel(@CurrentUser() user: CurrentUserData, @Param('id', ParseUUIDPipe) id: string) {
-    return this.appointmentsService.cancelar(id, user);
+    return this.appointmentsService.cancel(id, user);
   }
 
   @Patch(':id/status')
@@ -70,6 +70,6 @@ export class AppointmentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ChangeStatusDto,
   ) {
-    return this.appointmentsService.cambiarEstado(id, dto.estado, user);
+    return this.appointmentsService.changeStatus(id, dto.estado, user);
   }
 }

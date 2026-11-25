@@ -1,52 +1,52 @@
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
-import { FechaInvalidaError } from '../../../common/errors/domain-error';
-import { Intervalo } from '../../appointments/domain/overlap';
+import { InvalidDateError } from '../../../common/errors/domain-error';
+import { Interval } from '../../appointments/domain/overlap';
 import { AvailabilityRuleInput } from './availability';
 
 // Fecha (YYYY-MM-DD) como medianoche UTC: sirve para operar con el calendario, sin ninguna zona.
-const comoCalendario = (fecha: string) => new Date(`${fecha}T00:00:00.000Z`);
+const asCalendar = (date: string) => new Date(`${date}T00:00:00.000Z`);
 
 // Instante real de un minuto del día en la zona de la clínica. El minuto 1440 cae en el día
 // siguiente, y fromZonedTime aplica el desfase vigente en esa fecha.
-function instanteEnZona(fecha: string, minuto: number, zona: string): Date {
-  const reloj = new Date(comoCalendario(fecha).getTime() + minuto * 60_000);
-  return fromZonedTime(reloj.toISOString().slice(0, 19), zona);
+function instantInZone(date: string, minute: number, zone: string): Date {
+  const clock = new Date(asCalendar(date).getTime() + minute * 60_000);
+  return fromZonedTime(clock.toISOString().slice(0, 19), zone);
 }
 
 // Limita el año para que el día siguiente de cualquier fecha aceptada siga siendo representable.
-function existeEnElCalendario(fecha: string): boolean {
-  if (!/^[12]\d{3}-\d{2}-\d{2}$/.test(fecha)) return false;
-  const calendario = comoCalendario(fecha);
+function existsInCalendar(date: string): boolean {
+  if (!/^[12]\d{3}-\d{2}-\d{2}$/.test(date)) return false;
+  const calendar = asCalendar(date);
   // Date puede correr 2026-02-30 a marzo: por eso se compara de vuelta contra el texto.
-  return !isNaN(calendario.getTime()) && calendario.toISOString().slice(0, 10) === fecha;
+  return !isNaN(calendar.getTime()) && calendar.toISOString().slice(0, 10) === date;
 }
 
-export function assertFechaValida(fecha: string): void {
-  if (!existeEnElCalendario(fecha)) {
-    throw new FechaInvalidaError('La fecha debe tener el formato YYYY-MM-DD y existir');
+export function assertValidDate(date: string): void {
+  if (!existsInCalendar(date)) {
+    throw new InvalidDateError('La fecha debe tener el formato YYYY-MM-DD y existir');
   }
 }
 
 // El día de la semana depende solo de la fecha del calendario, no de la zona del servidor.
-export function diaSemanaDe(fecha: string): number {
-  return comoCalendario(fecha).getUTCDay();
+export function weekdayOf(date: string): number {
+  return asCalendar(date).getUTCDay();
 }
 
-export function tramosDelDia(
-  fecha: string,
-  horarios: AvailabilityRuleInput[],
-  zona: string,
-): Intervalo[] {
-  return horarios.map(({ minutoInicio, minutoFin }) => ({
-    inicio: instanteEnZona(fecha, minutoInicio, zona),
-    fin: instanteEnZona(fecha, minutoFin, zona),
+export function dayTimeRanges(
+  date: string,
+  schedule: AvailabilityRuleInput[],
+  zone: string,
+): Interval[] {
+  return schedule.map(({ minutoInicio: startMinute, minutoFin: endMinute }) => ({
+    inicio: instantInZone(date, startMinute, zone),
+    fin: instantInZone(date, endMinute, zone),
   }));
 }
 
-export function rangoDelDia(fecha: string, zona: string): Intervalo {
-  return { inicio: instanteEnZona(fecha, 0, zona), fin: instanteEnZona(fecha, 1440, zona) };
+export function dayRange(date: string, zone: string): Interval {
+  return { inicio: instantInZone(date, 0, zone), fin: instantInZone(date, 1440, zone) };
 }
 
-export function fechaEnZona(instante: Date, zona: string): string {
-  return formatInTimeZone(instante, zona, 'yyyy-MM-dd');
+export function dateInZone(instant: Date, zone: string): string {
+  return formatInTimeZone(instant, zone, 'yyyy-MM-dd');
 }

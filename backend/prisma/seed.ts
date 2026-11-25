@@ -5,15 +5,15 @@ import { hash } from 'bcryptjs';
 // Los pacientes se registran desde el frontend o con POST /api/v1/auth/register.
 const prisma = new PrismaClient();
 
-const tramo = (desde: number, hasta: number): [number, number] => [desde * 60, hasta * 60];
+const timeRange = (from: number, until: number): [number, number] => [from * 60, until * 60];
 
-function proximoViernesUtc(horaUtc: number): Date {
-  const fecha = new Date();
-  const VIERNES = 5;
-  const diasHastaViernes = (VIERNES - fecha.getUTCDay() + 7) % 7 || 7;
-  fecha.setUTCDate(fecha.getUTCDate() + diasHastaViernes);
-  fecha.setUTCHours(horaUtc, 0, 0, 0);
-  return fecha;
+function nextFridayUtc(utcHour: number): Date {
+  const date = new Date();
+  const FRIDAY = 5;
+  const daysUntilFriday = (FRIDAY - date.getUTCDay() + 7) % 7 || 7;
+  date.setUTCDate(date.getUTCDate() + daysUntilFriday);
+  date.setUTCHours(utcHour, 0, 0, 0);
+  return date;
 }
 
 async function main() {
@@ -27,7 +27,7 @@ async function main() {
     },
   });
 
-  const odontologo = await prisma.user.upsert({
+  const dentist = await prisma.user.upsert({
     where: { email: 'odontologo@clinica.com' },
     update: {},
     create: {
@@ -41,7 +41,7 @@ async function main() {
   });
 
   // Catálogo inicial con los ejemplos del PDF (sección 3). Precios referenciales opcionales.
-  const servicios = [
+  const services = [
     {
       nombre: 'Limpieza dental',
       descripcion: 'Profilaxis y eliminación de sarro y placa bacteriana.',
@@ -73,16 +73,16 @@ async function main() {
       precioReferencial: 600,
     },
   ];
-  for (const servicio of servicios) {
+  for (const service of services) {
     await prisma.service.upsert({
-      where: { nombre: servicio.nombre },
+      where: { nombre: service.nombre },
       update: {},
-      create: servicio,
+      create: service,
     });
   }
 
   // Segundo odontólogo, para tener con quién comparar al filtrar por servicio.
-  const ortodoncista = await prisma.user.upsert({
+  const orthodontist = await prisma.user.upsert({
     where: { email: 'ortodoncista@clinica.com' },
     update: {},
     create: {
@@ -94,14 +94,14 @@ async function main() {
   });
 
   // Servicios que realiza cada odontólogo (PDF sección 4). upsert: el seed se puede repetir.
-  const asignaciones: Record<string, string[]> = {
-    [odontologo.id]: ['Limpieza dental', 'Consulta y diagnóstico', 'Extracción dental'],
-    [ortodoncista.id]: ['Consulta y diagnóstico', 'Ortodoncia', 'Blanqueamiento'],
+  const assignments: Record<string, string[]> = {
+    [dentist.id]: ['Limpieza dental', 'Consulta y diagnóstico', 'Extracción dental'],
+    [orthodontist.id]: ['Consulta y diagnóstico', 'Ortodoncia', 'Blanqueamiento'],
   };
-  for (const [userId, nombres] of Object.entries(asignaciones)) {
+  for (const [userId, names] of Object.entries(assignments)) {
     const dentist = await prisma.dentist.findUniqueOrThrow({ where: { userId } });
-    for (const nombre of nombres) {
-      const service = await prisma.service.findUniqueOrThrow({ where: { nombre } });
+    for (const name of names) {
+      const service = await prisma.service.findUniqueOrThrow({ where: { nombre: name } });
       await prisma.dentistService.upsert({
         where: { dentistId_serviceId: { dentistId: dentist.id, serviceId: service.id } },
         update: {},
@@ -111,43 +111,43 @@ async function main() {
   }
 
   // Horarios de atención en minutos desde las 00:00 en la zona de la clínica (PDF sección 5).
-  const LUNES_A_VIERNES = [1, 2, 3, 4, 5];
-  const horarios: Record<string, { dias: number[]; tramos: [number, number][] }> = {
-    [odontologo.id]: { dias: LUNES_A_VIERNES, tramos: [tramo(8, 12), tramo(14, 18)] },
-    [ortodoncista.id]: { dias: [1, 3, 5], tramos: [tramo(9, 13), tramo(15, 19)] },
+  const MONDAY_TO_FRIDAY = [1, 2, 3, 4, 5];
+  const schedule: Record<string, { days: number[]; timeRanges: [number, number][] }> = {
+    [dentist.id]: { days: MONDAY_TO_FRIDAY, timeRanges: [timeRange(8, 12), timeRange(14, 18)] },
+    [orthodontist.id]: { days: [1, 3, 5], timeRanges: [timeRange(9, 13), timeRange(15, 19)] },
   };
-  for (const [userId, { dias, tramos }] of Object.entries(horarios)) {
+  for (const [userId, { days, timeRanges }] of Object.entries(schedule)) {
     const dentist = await prisma.dentist.findUniqueOrThrow({ where: { userId } });
     if ((await prisma.availabilityRule.count({ where: { dentistId: dentist.id } })) > 0) continue;
     await prisma.availabilityRule.createMany({
-      data: dias.flatMap((diaSemana) =>
-        tramos.map(([minutoInicio, minutoFin]) => ({
+      data: days.flatMap((weekday) =>
+        timeRanges.map(([startMinute, endMinute]) => ({
           dentistId: dentist.id,
-          diaSemana,
-          minutoInicio,
-          minutoFin,
+          diaSemana: weekday,
+          minutoInicio: startMinute,
+          minutoFin: endMinute,
         })),
       ),
     });
   }
 
   // Un bloque no disponible de ejemplo: el próximo viernes de 10:00 a 11:00 (La Paz, UTC-4).
-  const laura = await prisma.dentist.findUniqueOrThrow({ where: { userId: odontologo.id } });
+  const laura = await prisma.dentist.findUniqueOrThrow({ where: { userId: dentist.id } });
   if ((await prisma.unavailableBlock.count({ where: { dentistId: laura.id } })) === 0) {
-    const inicio = proximoViernesUtc(14);
+    const start = nextFridayUtc(14);
     await prisma.unavailableBlock.create({
       data: {
         dentistId: laura.id,
-        inicio,
-        fin: new Date(inicio.getTime() + 60 * 60 * 1000),
+        inicio: start,
+        fin: new Date(start.getTime() + 60 * 60 * 1000),
         motivo: 'Reunión de equipo',
       },
     });
   }
 
   console.log(
-    `Seed listo: ${admin.email}, ${odontologo.email}, ${ortodoncista.email}, ` +
-      `${servicios.length} servicios y horarios de atención`,
+    `Seed listo: ${admin.email}, ${dentist.email}, ${orthodontist.email}, ` +
+      `${services.length} servicios y horarios de atención`,
   );
 }
 

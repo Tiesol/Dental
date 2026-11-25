@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { RecursoNoEncontradoError } from '../../common/errors/domain-error';
+import { ResourceNotFoundError } from '../../common/errors/domain-error';
 import { Clock } from '../../common/time/clock';
 import { CurrentUserData } from '../../common/types/current-user';
 import type { Tx } from '../../prisma/prisma.service';
 import { AvailabilityService } from '../availability/availability.service';
 import { AppointmentsRepository } from './appointments.repository';
-import { AppointmentStatus, AppointmentView, CuandoCitas } from './domain/appointment';
+import { AppointmentStatus, AppointmentView, AppointmentWhen } from './domain/appointment';
 import {
-  assertCitaModificable,
-  assertHorarioReservable,
-  assertPuedeVerCita,
-  filtrarPorCuando,
+  assertAppointmentModifiable,
+  assertSlotBookable,
+  assertCanViewAppointment,
+  filterByWhen,
 } from './domain/appointment-rules';
-import { assertPuedeFinalizar, assertTransicionPermitida } from './domain/appointment-status';
-import { calcularHoraFin } from './domain/end-time';
+import { assertCanFinish, assertTransitionAllowed } from './domain/appointment-status';
+import { calculateEndTime } from './domain/end-time';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { ListAppointmentsQuery } from './dto/list-appointments.query';
 
@@ -28,21 +28,21 @@ export class AppointmentsService {
 
   // Todo dentro de la transacción con el odontólogo bloqueado: se vuelve a validar justo antes de
   // insertar, para resistir dos solicitudes casi simultáneas (PDF sección 6).
-  reservar(dto: CreateAppointmentDto, patientId: string): Promise<AppointmentView> {
-    const horaInicio = new Date(dto.horaInicio);
+  book(dto: CreateAppointmentDto, patientId: string): Promise<AppointmentView> {
+    const startsAt = new Date(dto.horaInicio);
     return this.appointments.withDentistLock(dto.dentistId, async (tx) => {
-      const { duracionMin } = await this.availability.assertReservable(
+      const { duracionMin: durationMin } = await this.availability.assertBookable(
         dto.dentistId,
         dto.serviceId,
         tx,
       );
-      await this.assertDisponible(dto.dentistId, horaInicio, duracionMin, tx);
+      await this.assertAvailable(dto.dentistId, startsAt, durationMin, tx);
       return this.appointments.create(tx, {
         patientId,
         dentistId: dto.dentistId,
         serviceId: dto.serviceId,
-        horaInicio,
-        horaFin: calcularHoraFin(horaInicio, duracionMin),
+        horaInicio: startsAt,
+        horaFin: calculateEndTime(startsAt, durationMin),
       });
     });
   }
@@ -50,63 +50,65 @@ export class AppointmentsService {
   // Misma transacción y mismas validaciones que reservar. Se excluye la propia cita al calcular
   // los horarios libres, para poder moverla a uno que se cruza con el suyo. Conserva estado,
   // odontólogo y servicio (D4 de PLAN.md).
-  async reprogramar(
-    id: string,
-    nuevaHora: string,
-    user: CurrentUserData,
-  ): Promise<AppointmentView> {
-    const horaInicio = new Date(nuevaHora);
-    return this.modificar(id, user, async (cita, tx) => {
-      const { duracionMin } = await this.availability.assertReservable(
-        cita.odontologo.id,
-        cita.servicio.id,
+  async reschedule(id: string, newStart: string, user: CurrentUserData): Promise<AppointmentView> {
+    const startsAt = new Date(newStart);
+    return this.modifyAppointment(id, user, async (appointment, tx) => {
+      const { duracionMin: durationMin } = await this.availability.assertBookable(
+        appointment.odontologo.id,
+        appointment.servicio.id,
         tx,
       );
-      await this.assertDisponible(cita.odontologo.id, horaInicio, duracionMin, tx, cita.id);
-      return this.appointments.updateHorario(tx, cita.id, {
-        horaInicio,
-        horaFin: calcularHoraFin(horaInicio, duracionMin),
+      await this.assertAvailable(
+        appointment.odontologo.id,
+        startsAt,
+        durationMin,
+        tx,
+        appointment.id,
+      );
+      return this.appointments.updateTimes(tx, appointment.id, {
+        horaInicio: startsAt,
+        horaFin: calculateEndTime(startsAt, durationMin),
       });
     });
   }
 
   // El horario queda libre de inmediato: una cita CANCELADA no ocupa la agenda.
-  cancelar(id: string, user: CurrentUserData): Promise<AppointmentView> {
-    return this.modificar(id, user, (cita, tx) =>
-      this.appointments.updateEstado(tx, cita.id, 'CANCELADA'),
+  cancel(id: string, user: CurrentUserData): Promise<AppointmentView> {
+    return this.modifyAppointment(id, user, (appointment, tx) =>
+      this.appointments.updateStatus(tx, appointment.id, 'CANCELADA'),
     );
   }
 
   // Primero la propiedad (403), luego la transición. El estado y la observación se releen con el
   // odontólogo bloqueado, por si otra petición los cambió mientras esta esperaba.
-  async cambiarEstado(
+  async changeStatus(
     id: string,
-    hacia: AppointmentStatus,
+    to: AppointmentStatus,
     user: CurrentUserData,
   ): Promise<AppointmentView> {
-    const { odontologo } = await this.findOne(id, user);
-    return this.appointments.withDentistLock(odontologo.id, async (tx) => {
-      const cita = await this.getOrThrow(id, tx);
-      assertTransicionPermitida(cita.estado, hacia, user.role);
-      assertPuedeFinalizar(hacia, cita.observacion);
-      return this.appointments.updateEstado(tx, id, hacia);
+    const { odontologo: dentist } = await this.findOne(id, user);
+    return this.appointments.withDentistLock(dentist.id, async (tx) => {
+      const appointment = await this.getOrThrow(id, tx);
+      assertTransitionAllowed(appointment.estado, to, user.role);
+      assertCanFinish(to, appointment.observacion);
+      return this.appointments.updateStatus(tx, id, to);
     });
   }
 
-  async findMine(patientId: string, cuando?: CuandoCitas): Promise<AppointmentView[]> {
-    const citas = await this.appointments.findByPatient(patientId);
-    return filtrarPorCuando(citas, cuando, this.clock.now());
+  async findMine(patientId: string, when?: AppointmentWhen): Promise<AppointmentView[]> {
+    const appointments = await this.appointments.findByPatient(patientId);
+    return filterByWhen(appointments, when, this.clock.now());
   }
 
   async findOne(id: string, user: CurrentUserData): Promise<AppointmentView> {
-    const cita = await this.getOrThrow(id);
-    assertPuedeVerCita(cita, user);
-    return cita;
+    const appointment = await this.getOrThrow(id);
+    assertCanViewAppointment(appointment, user);
+    return appointment;
   }
 
   findAll(query: ListAppointmentsQuery): Promise<AppointmentView[]> {
     return this.appointments.findAll({
-      rango: query.fecha ? this.availability.rangoDeFecha(query.fecha) : undefined,
+      range: query.fecha ? this.availability.dateRange(query.fecha) : undefined,
       estado: query.estado,
       dentistId: query.dentistId,
       limit: query.limit,
@@ -116,51 +118,51 @@ export class AppointmentsService {
 
   // Reglas comunes a reprogramar y cancelar. El estado se relee con el odontólogo bloqueado, por
   // si otra petición cambió la cita mientras esta esperaba.
-  private async modificar(
+  private async modifyAppointment(
     id: string,
     user: CurrentUserData,
-    cambio: (cita: AppointmentView, tx: Tx) => Promise<AppointmentView>,
+    change: (appointment: AppointmentView, tx: Tx) => Promise<AppointmentView>,
   ): Promise<AppointmentView> {
-    const { odontologo } = await this.findOne(id, user);
-    return this.appointments.withDentistLock(odontologo.id, async (tx) => {
-      const cita = await this.getOrThrow(id, tx);
-      assertCitaModificable(cita.estado);
-      return cambio(cita, tx);
+    const { odontologo: dentist } = await this.findOne(id, user);
+    return this.appointments.withDentistLock(dentist.id, async (tx) => {
+      const appointment = await this.getOrThrow(id, tx);
+      assertAppointmentModifiable(appointment.estado);
+      return change(appointment, tx);
     });
   }
 
   // Sin CANCELADA (D8 de PLAN.md). "Hoy" se calcula en la zona de la clínica.
-  agendaDelDia(dentistId: string, fecha?: string): Promise<AppointmentView[]> {
-    const dia = fecha ?? this.availability.fechaClinica(this.clock.now());
-    return this.appointments.findAgenda(dentistId, this.availability.rangoDeFecha(dia));
+  dayAgenda(dentistId: string, date?: string): Promise<AppointmentView[]> {
+    const day = date ?? this.availability.clinicDate(this.clock.now());
+    return this.appointments.findAgenda(dentistId, this.availability.dateRange(day));
   }
 
-  proximasDelOdontologo(dentistId: string, limit: number): Promise<AppointmentView[]> {
+  upcomingForDentist(dentistId: string, limit: number): Promise<AppointmentView[]> {
     return this.appointments.findUpcoming(dentistId, this.clock.now(), limit);
   }
 
-  private async assertDisponible(
+  private async assertAvailable(
     dentistId: string,
-    horaInicio: Date,
-    duracionMin: number,
+    startsAt: Date,
+    durationMin: number,
     tx: Tx,
-    excluirCitaId?: string,
+    excludeAppointmentId?: string,
   ): Promise<void> {
-    const slots = await this.availability.slotsDelDia({
+    const slots = await this.availability.daySlots({
       dentistId,
-      fecha: this.availability.fechaClinica(horaInicio),
-      duracionMin,
+      fecha: this.availability.clinicDate(startsAt),
+      duracionMin: durationMin,
       tx,
-      excluirCitaId,
+      excludeAppointmentId,
     });
-    assertHorarioReservable(horaInicio, slots, this.clock.now());
+    assertSlotBookable(startsAt, slots, this.clock.now());
   }
 
   private async getOrThrow(id: string, tx?: Tx): Promise<AppointmentView> {
-    const cita = await this.appointments.findById(id, tx);
-    if (!cita) {
-      throw new RecursoNoEncontradoError('Cita');
+    const appointment = await this.appointments.findById(id, tx);
+    if (!appointment) {
+      throw new ResourceNotFoundError('Cita');
     }
-    return cita;
+    return appointment;
   }
 }

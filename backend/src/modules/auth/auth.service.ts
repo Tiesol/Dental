@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import {
-  CredencialesInvalidasError,
-  EmailYaRegistradoError,
-  UsuarioNoDisponibleError,
+  InvalidCredentialsError,
+  EmailAlreadyRegisteredError,
+  UserUnavailableError,
 } from '../../common/errors/domain-error';
 import { toPublicUser } from '../users/domain/public-user';
 import { PublicUser, UserRecord } from '../users/domain/user';
@@ -18,7 +18,7 @@ export type LoginResult = { accessToken: string; user: PublicUser };
 
 // Hash bcrypt (costo 10, igual al real) de un texto aleatorio que nadie conoce. Solo sirve para
 // gastar el mismo tiempo de bcrypt cuando el email no existe.
-const HASH_DE_RELLENO = '$2b$10$FphyStJOYScq5b7s3TgjdewYAgw91JkjyxIC1.hB/BQ3NMfdr69uO';
+const PLACEHOLDER_HASH = '$2b$10$FphyStJOYScq5b7s3TgjdewYAgw91JkjyxIC1.hB/BQ3NMfdr69uO';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +32,7 @@ export class AuthService {
   async register(dto: RegisterDto): Promise<PublicUser> {
     const email = normalizeEmail(dto.email);
     if (await this.users.findByEmail(email)) {
-      throw new EmailYaRegistradoError();
+      throw new EmailAlreadyRegisteredError();
     }
 
     const passwordHash = await this.hasher.hash(dto.password);
@@ -52,10 +52,10 @@ export class AuthService {
     // lo mismo exista o no el email, y no se pueda averiguar qué cuentas existen midiendo tiempos.
     const passwordOk = await this.hasher.compare(
       dto.password,
-      user?.passwordHash ?? HASH_DE_RELLENO,
+      user?.passwordHash ?? PLACEHOLDER_HASH,
     );
     if (!user || !user.activo || !passwordOk) {
-      throw new CredencialesInvalidasError();
+      throw new InvalidCredentialsError();
     }
 
     const accessToken = await this.jwt.signAsync(buildPayload(user));
@@ -65,7 +65,7 @@ export class AuthService {
   async me(userId: string): Promise<PublicUser> {
     const user = await this.users.findById(userId);
     if (!user || !user.activo) {
-      throw new UsuarioNoDisponibleError();
+      throw new UserUnavailableError();
     }
     return toPublicUser(user);
   }

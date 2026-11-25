@@ -3,15 +3,15 @@ import { PrismaClient } from '@prisma/client';
 import { compare } from 'bcryptjs';
 import request from 'supertest';
 import { createTestApp } from '../helpers/app';
-import { conToken, loginComo, ruta } from '../helpers/auth';
+import { withToken, loginAs, apiPath } from '../helpers/auth';
 import { resetDb } from '../helpers/db';
-import { crearAdmin, crearPaciente } from '../helpers/factories';
+import { createAdmin, createPatient } from '../helpers/factories';
 
 describe('Auth (integración)', () => {
   let app: INestApplication;
   const prisma = new PrismaClient();
 
-  const registro = {
+  const registration = {
     email: 'Ana@Mail.com',
     password: 'secreta123',
     nombre: 'Ana',
@@ -35,7 +35,7 @@ describe('Auth (integración)', () => {
   describe('POST /auth/register', () => {
     it('responde 201 y persiste usuario PACIENTE con perfil Patient y password hasheado', async () => {
       // Act
-      const res = await http().post(ruta('/auth/register')).send(registro).expect(201);
+      const res = await http().post(apiPath('/auth/register')).send(registration).expect(201);
 
       // Assert (respuesta)
       expect(res.body).toMatchObject({
@@ -46,25 +46,25 @@ describe('Auth (integración)', () => {
       expect(res.body).not.toHaveProperty('passwordHash');
 
       // Assert (persistencia)
-      const enBd = await prisma.user.findUnique({
+      const inDb = await prisma.user.findUnique({
         where: { email: 'ana@mail.com' },
         include: { patient: true },
       });
-      expect(enBd).not.toBeNull();
-      expect(enBd!.role).toBe('PACIENTE');
-      expect(enBd!.patient).toMatchObject({
+      expect(inDb).not.toBeNull();
+      expect(inDb!.role).toBe('PACIENTE');
+      expect(inDb!.patient).toMatchObject({
         nombre: 'Ana',
         apellido: 'Pérez',
         telefono: '70000000',
       });
-      expect(enBd!.passwordHash).not.toBe(registro.password);
-      expect(await compare(registro.password, enBd!.passwordHash)).toBe(true);
+      expect(inDb!.passwordHash).not.toBe(registration.password);
+      expect(await compare(registration.password, inDb!.passwordHash)).toBe(true);
     });
 
     it('responde 409 con formato de error uniforme si el email ya está registrado', async () => {
-      await http().post(ruta('/auth/register')).send(registro).expect(201);
+      await http().post(apiPath('/auth/register')).send(registration).expect(201);
 
-      const res = await http().post(ruta('/auth/register')).send(registro).expect(409);
+      const res = await http().post(apiPath('/auth/register')).send(registration).expect(409);
 
       expect(res.body).toEqual({
         statusCode: 409,
@@ -75,15 +75,15 @@ describe('Auth (integración)', () => {
 
     it('responde 400 si el body es inválido', async () => {
       await http()
-        .post(ruta('/auth/register'))
+        .post(apiPath('/auth/register'))
         .send({ email: 'no-es-email', password: '123', nombre: '', apellido: '' })
         .expect(400);
     });
 
     it('responde 400 si el cliente intenta enviar un rol (campo no permitido)', async () => {
       await http()
-        .post(ruta('/auth/register'))
-        .send({ ...registro, role: 'ADMIN' })
+        .post(apiPath('/auth/register'))
+        .send({ ...registration, role: 'ADMIN' })
         .expect(400);
 
       expect(await prisma.user.count()).toBe(0);
@@ -91,12 +91,12 @@ describe('Auth (integración)', () => {
   });
 
   describe('POST /auth/login', () => {
-    beforeEach(() => http().post(ruta('/auth/register')).send(registro));
+    beforeEach(() => http().post(apiPath('/auth/register')).send(registration));
 
     it('responde 200 con accessToken y usuario público si las credenciales son correctas', async () => {
       const res = await http()
-        .post(ruta('/auth/login'))
-        .send({ email: 'ana@mail.com', password: registro.password })
+        .post(apiPath('/auth/login'))
+        .send({ email: 'ana@mail.com', password: registration.password })
         .expect(200);
 
       expect(res.body.accessToken).toEqual(expect.any(String));
@@ -106,7 +106,7 @@ describe('Auth (integración)', () => {
 
     it('responde 401 si la contraseña es incorrecta', async () => {
       const res = await http()
-        .post(ruta('/auth/login'))
+        .post(apiPath('/auth/login'))
         .send({ email: 'ana@mail.com', password: 'incorrecta' })
         .expect(401);
 
@@ -117,32 +117,32 @@ describe('Auth (integración)', () => {
       await prisma.user.update({ where: { email: 'ana@mail.com' }, data: { activo: false } });
 
       await http()
-        .post(ruta('/auth/login'))
-        .send({ email: 'ana@mail.com', password: registro.password })
+        .post(apiPath('/auth/login'))
+        .send({ email: 'ana@mail.com', password: registration.password })
         .expect(401);
     });
   });
 
   describe('GET /auth/me', () => {
     it('responde 401 sin token', async () => {
-      await http().get(ruta('/auth/me')).expect(401);
+      await http().get(apiPath('/auth/me')).expect(401);
     });
 
     it('responde 401 con token inválido', async () => {
-      await conToken(http().get(ruta('/auth/me')), 'token-falso').expect(401);
+      await withToken(http().get(apiPath('/auth/me')), 'token-falso').expect(401);
     });
 
     it('responde 200 con los datos del usuario del token', async () => {
-      const paciente = await crearPaciente(prisma, { nombre: 'Ana', apellido: 'Pérez' });
-      const token = await loginComo(app, paciente);
+      const patient = await createPatient(prisma, { nombre: 'Ana', apellido: 'Pérez' });
+      const token = await loginAs(app, patient);
 
-      const res = await conToken(http().get(ruta('/auth/me')), token).expect(200);
+      const res = await withToken(http().get(apiPath('/auth/me')), token).expect(200);
 
       expect(res.body).toMatchObject({
-        email: paciente.email,
+        email: patient.email,
         nombre: 'Ana Pérez',
         role: 'PACIENTE',
-        patientId: paciente.patient!.id,
+        patientId: patient.patient!.id,
       });
       expect(res.body).not.toHaveProperty('passwordHash');
     });
@@ -150,22 +150,22 @@ describe('Auth (integración)', () => {
 
   describe('GET /users', () => {
     it('responde 401 sin token', async () => {
-      await http().get(ruta('/users')).expect(401);
+      await http().get(apiPath('/users')).expect(401);
     });
 
     it('responde 403 con token de PACIENTE', async () => {
-      const paciente = await crearPaciente(prisma);
-      const token = await loginComo(app, paciente);
+      const patient = await createPatient(prisma);
+      const token = await loginAs(app, patient);
 
-      await conToken(http().get(ruta('/users')), token).expect(403);
+      await withToken(http().get(apiPath('/users')), token).expect(403);
     });
 
     it('responde 200 con la lista de usuarios públicos con token de ADMIN', async () => {
-      await crearPaciente(prisma);
-      const admin = await crearAdmin(prisma);
-      const token = await loginComo(app, admin);
+      await createPatient(prisma);
+      const admin = await createAdmin(prisma);
+      const token = await loginAs(app, admin);
 
-      const res = await conToken(http().get(ruta('/users')), token).expect(200);
+      const res = await withToken(http().get(apiPath('/users')), token).expect(200);
 
       expect(res.body).toHaveLength(2);
       for (const u of res.body as object[]) {

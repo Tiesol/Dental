@@ -1,17 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BloqueConCitasError, RecursoNoEncontradoError } from '../../common/errors/domain-error';
+import { BlockHasAppointmentsError, ResourceNotFoundError } from '../../common/errors/domain-error';
 import { Clock } from '../../common/time/clock';
 import { Role } from '../../common/types/role';
 import type { Tx } from '../../prisma/prisma.service';
-import { Intervalo } from '../appointments/domain/overlap';
+import { Interval } from '../appointments/domain/overlap';
 import {
-  assertOdontologoAceptaCitas,
-  assertRealizaServicio,
+  assertDentistAcceptsAppointments,
+  assertOffersService,
 } from '../dentists/domain/dentist-rules';
 import { DentistsService } from '../dentists/dentists.service';
 import { ServiceRecord } from '../services/domain/service';
-import { assertServicioHabilitado } from '../services/domain/service-rules';
+import { assertServiceEnabled } from '../services/domain/service-rules';
 import { ServicesService } from '../services/services.service';
 import { AvailabilityRepository } from './availability.repository';
 import {
@@ -21,18 +21,18 @@ import {
   UnavailableBlockRecord,
 } from './domain/availability';
 import {
-  assertBloqueValido,
-  assertHorariosValidos,
+  assertValidBlock,
+  assertValidSchedule,
   toPublicAvailability,
 } from './domain/availability-rules';
 import {
-  assertFechaValida,
-  diaSemanaDe,
-  fechaEnZona,
-  rangoDelDia,
-  tramosDelDia,
+  assertValidDate,
+  weekdayOf,
+  dateInZone,
+  dayRange,
+  dayTimeRanges,
 } from './domain/clinic-time';
-import { calcularSlots, PASO_SLOTS_MIN } from './domain/slots';
+import { calculateSlots, SLOT_STEP_MIN } from './domain/slots';
 import { CreateBlockDto } from './dto/create-block.dto';
 
 // Casos de uso de la disponibilidad: consulta para todos y gestión por el ADMIN.
@@ -46,106 +46,108 @@ export class AvailabilityService {
     private readonly config: ConfigService,
   ) {}
 
-  async findSlots(dentistId: string, serviceId: string, fecha: string): Promise<Intervalo[]> {
-    assertFechaValida(fecha);
-    const { duracionMin } = await this.assertReservable(dentistId, serviceId);
-    return this.slotsDelDia({ dentistId, fecha, duracionMin });
+  async findSlots(dentistId: string, serviceId: string, date: string): Promise<Interval[]> {
+    assertValidDate(date);
+    const { duracionMin: durationMin } = await this.assertBookable(dentistId, serviceId);
+    return this.daySlots({ dentistId, fecha: date, duracionMin: durationMin });
   }
 
   // Reglas comunes a consultar horarios, reservar y reprogramar (PDF secciones 3, 4 y 6).
-  async assertReservable(dentistId: string, serviceId: string, tx?: Tx): Promise<ServiceRecord> {
-    const servicio = await this.services.getOrThrow(serviceId, tx);
-    const odontologo = await this.dentists.getOrThrow(dentistId, tx);
-    assertServicioHabilitado(servicio);
-    assertOdontologoAceptaCitas(odontologo);
-    assertRealizaServicio(odontologo, serviceId);
-    return servicio;
+  async assertBookable(dentistId: string, serviceId: string, tx?: Tx): Promise<ServiceRecord> {
+    const service = await this.services.getOrThrow(serviceId, tx);
+    const dentist = await this.dentists.getOrThrow(dentistId, tx);
+    assertServiceEnabled(service);
+    assertDentistAcceptsAppointments(dentist);
+    assertOffersService(dentist, serviceId);
+    return service;
   }
 
-  async slotsDelDia({
+  async daySlots({
     dentistId,
-    fecha,
-    duracionMin,
+    fecha: date,
+    duracionMin: durationMin,
     tx,
-    excluirCitaId,
+    excludeAppointmentId,
   }: {
     dentistId: string;
     fecha: string;
     duracionMin: number;
     tx?: Tx;
-    excluirCitaId?: string;
-  }): Promise<Intervalo[]> {
-    const zona = this.zonaClinica();
-    const { horarios, bloques, citas } = await this.availability.findSlotInputs(
-      dentistId,
-      diaSemanaDe(fecha),
-      rangoDelDia(fecha, zona),
-      { tx, excluirCitaId },
-    );
-    return calcularSlots({
-      tramos: tramosDelDia(fecha, horarios, zona),
-      bloques,
-      citas,
-      duracionMin,
-      ahora: this.clock.now(),
-      pasoMin: PASO_SLOTS_MIN,
+    excludeAppointmentId?: string;
+  }): Promise<Interval[]> {
+    const zone = this.clinicZone();
+    const {
+      horarios: schedule,
+      bloques: blocks,
+      citas: appointments,
+    } = await this.availability.findSlotInputs(dentistId, weekdayOf(date), dayRange(date, zone), {
+      tx,
+      excludeAppointmentId,
+    });
+    return calculateSlots({
+      timeRanges: dayTimeRanges(date, schedule, zone),
+      blocks,
+      appointments,
+      duracionMin: durationMin,
+      now: this.clock.now(),
+      stepMin: SLOT_STEP_MIN,
     });
   }
 
   // Rango de un día de la clínica, para filtrar por fecha. Valida que la fecha exista.
-  rangoDeFecha(fecha: string): Intervalo {
-    assertFechaValida(fecha);
-    return rangoDelDia(fecha, this.zonaClinica());
+  dateRange(date: string): Interval {
+    assertValidDate(date);
+    return dayRange(date, this.clinicZone());
   }
 
   // Día de la clínica al que pertenece un instante (ej.: la hora de inicio de una reserva).
-  fechaClinica(instante: Date): string {
-    return fechaEnZona(instante, this.zonaClinica());
+  clinicDate(instant: Date): string {
+    return dateInZone(instant, this.clinicZone());
   }
 
-  private zonaClinica(): string {
+  private clinicZone(): string {
     return this.config.getOrThrow<string>('CLINIC_TIMEZONE');
   }
 
   // Misma visibilidad que GET /dentists/:id: quien no es ADMIN recibe 404 si no acepta citas.
   async find(dentistId: string, role: Role): Promise<AvailabilityView | PublicAvailabilityView> {
     await this.dentists.findOne(dentistId, role);
-    const vista = await this.availability.findByDentist(dentistId, this.clock.now());
-    return role === 'ADMIN' ? vista : toPublicAvailability(vista);
+    const view = await this.availability.findByDentist(dentistId, this.clock.now());
+    return role === 'ADMIN' ? view : toPublicAvailability(view);
   }
 
   // Las citas ya creadas fuera del horario nuevo se conservan (decisión D6 de PLAN.md).
-  async replaceHorarios(
+  async replaceSchedule(
     dentistId: string,
-    horarios: AvailabilityRuleInput[],
+    schedule: AvailabilityRuleInput[],
   ): Promise<AvailabilityView> {
     await this.dentists.findOne(dentistId, 'ADMIN');
-    assertHorariosValidos(horarios);
-    await this.availability.replaceRules(dentistId, horarios);
+    assertValidSchedule(schedule);
+    await this.availability.replaceRules(dentistId, schedule);
     return this.availability.findByDentist(dentistId, this.clock.now());
   }
 
   async createBlock(dentistId: string, dto: CreateBlockDto): Promise<UnavailableBlockRecord> {
     await this.dentists.findOne(dentistId, 'ADMIN');
-    const inicio = new Date(dto.inicio);
-    const fin = new Date(dto.fin);
-    assertBloqueValido({ inicio, fin }, this.clock.now());
-    const bloque = await this.availability.createBlockIfFree(dentistId, {
-      inicio,
-      fin,
+    const start = new Date(dto.inicio);
+    const end = new Date(dto.fin);
+    assertValidBlock({ inicio: start, fin: end }, this.clock.now());
+    const block = await this.availability.createBlockIfFree(dentistId, {
+      inicio: start,
+      fin: end,
       motivo: dto.motivo ?? null,
     });
-    if (!bloque) {
-      throw new BloqueConCitasError();
+    if (!block) {
+      throw new BlockHasAppointmentsError();
     }
-    return bloque;
+    return block;
   }
 
   async deleteBlock(dentistId: string, blockId: string): Promise<void> {
     await this.dentists.findOne(dentistId, 'ADMIN');
     const borrado = await this.availability.deleteBlock(dentistId, blockId);
     if (!borrado) {
-      throw new RecursoNoEncontradoError('Bloque');
+      throw new ResourceNotFoundError('Bloque');
     }
   }
 }

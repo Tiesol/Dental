@@ -1,14 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import {
-  RecursoNoEncontradoError,
-  ServiciosInexistentesError,
-} from '../../common/errors/domain-error';
+import { ResourceNotFoundError, ServicesNotFoundError } from '../../common/errors/domain-error';
 import { Role } from '../../common/types/role';
 import type { Tx } from '../../prisma/prisma.service';
 import { ServicesService } from '../services/services.service';
 import { UsersService } from '../users/users.service';
 import { DentistChanges, DentistPublicView, DentistRecord } from './domain/dentist';
-import { idsUnicos, puedeVerOdontologo, toPublicView } from './domain/dentist-rules';
+import { uniqueIds, canViewDentist, toPublicView } from './domain/dentist-rules';
 import { CreateDentistDto } from './dto/create-dentist.dto';
 import { UpdateDentistDto } from './dto/update-dentist.dto';
 import { DentistsRepository } from './dentists.repository';
@@ -26,23 +23,23 @@ export class DentistsService {
   ) {}
 
   async findAll(role: Role, serviceId?: string): Promise<DentistView[]> {
-    const esAdmin = role === 'ADMIN';
-    const rows = await this.dentists.findAll({ soloDisponibles: !esAdmin, serviceId });
-    return esAdmin ? rows : rows.map(toPublicView);
+    const isAdmin = role === 'ADMIN';
+    const rows = await this.dentists.findAll({ onlyAvailable: !isAdmin, serviceId });
+    return isAdmin ? rows : rows.map(toPublicView);
   }
 
   // Un odontólogo que no acepta citas responde 404 a quien no es ADMIN.
   async findOne(id: string, role: Role): Promise<DentistView> {
     const dentist = await this.dentists.findById(id);
-    if (!dentist || !puedeVerOdontologo(role, dentist)) {
-      throw new RecursoNoEncontradoError('Odontólogo');
+    if (!dentist || !canViewDentist(role, dentist)) {
+      throw new ResourceNotFoundError('Odontólogo');
     }
     return role === 'ADMIN' ? dentist : toPublicView(dentist);
   }
 
   async create(dto: CreateDentistDto): Promise<DentistRecord> {
-    const serviceIds = idsUnicos(dto.serviceIds);
-    await this.assertServiciosExisten(serviceIds);
+    const serviceIds = uniqueIds(dto.serviceIds);
+    await this.assertServicesExist(serviceIds);
     const user = await this.users.createDentist({ ...dto, serviceIds });
     return this.getOrThrow(user.dentist!.id);
   }
@@ -56,15 +53,15 @@ export class DentistsService {
   }
 
   // Deshabilitar no toca sus citas: solo impide nuevas reservas con este profesional.
-  async changeStatus(id: string, activo: boolean): Promise<DentistRecord> {
+  async changeStatus(id: string, active: boolean): Promise<DentistRecord> {
     await this.getOrThrow(id);
-    return this.dentists.setActivo(id, activo);
+    return this.dentists.setActive(id, active);
   }
 
   async setServices(id: string, ids: string[]): Promise<DentistRecord> {
     await this.getOrThrow(id);
-    const serviceIds = idsUnicos(ids);
-    await this.assertServiciosExisten(serviceIds);
+    const serviceIds = uniqueIds(ids);
+    await this.assertServicesExist(serviceIds);
     return this.dentists.replaceServices(id, serviceIds);
   }
 
@@ -72,16 +69,16 @@ export class DentistsService {
   async getOrThrow(id: string, tx?: Tx): Promise<DentistRecord> {
     const dentist = await this.dentists.findById(id, tx);
     if (!dentist) {
-      throw new RecursoNoEncontradoError('Odontólogo');
+      throw new ResourceNotFoundError('Odontólogo');
     }
     return dentist;
   }
 
-  private async assertServiciosExisten(ids: string[]): Promise<void> {
+  private async assertServicesExist(ids: string[]): Promise<void> {
     if (ids.length === 0) return;
-    const faltantes = await this.services.findMissingIds(ids);
-    if (faltantes.length > 0) {
-      throw new ServiciosInexistentesError(faltantes);
+    const missing = await this.services.findMissingIds(ids);
+    if (missing.length > 0) {
+      throw new ServicesNotFoundError(missing);
     }
   }
 }
