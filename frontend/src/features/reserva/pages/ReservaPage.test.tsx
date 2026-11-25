@@ -162,9 +162,42 @@ describe('ReservaPage', () => {
 
     await hastaLaFecha(user);
 
-    expect(await screen.findByTestId('slot-09:00')).toHaveTextContent('09:00 - 09:30');
-    expect(screen.getByTestId('slot-09:15')).toHaveTextContent('09:15 - 09:45');
+    const manana = await screen.findByRole('list', { name: 'Mañana' });
+    expect(within(manana).getByRole('button', { name: '09:00 a 09:30' })).toHaveTextContent(
+      /^09:00$/,
+    );
+    expect(within(manana).getByRole('button', { name: '09:15 a 09:45' })).toHaveTextContent(
+      /^09:15$/,
+    );
+    expect(screen.getByText('Cada cita dura 30 min. Elige a qué hora empezar.')).toBeVisible();
     expect(consultasDeSlots).toHaveBeenLastCalledWith('s1', '2026-11-10');
+  });
+
+  it('separa los horarios de la mañana y de la tarde', async () => {
+    renderPagina([
+      http.get(`${API}/dentists/d1/slots`, () =>
+        HttpResponse.json([
+          { inicio: '2026-11-10T13:00:00.000Z', fin: '2026-11-10T13:30:00.000Z' },
+          { inicio: '2026-11-10T19:00:00.000Z', fin: '2026-11-10T19:30:00.000Z' },
+        ]),
+      ),
+    ]);
+    const user = userEvent.setup();
+
+    await hastaLaFecha(user);
+
+    const manana = await screen.findByRole('list', { name: 'Mañana' });
+    const tarde = screen.getByRole('list', { name: 'Tarde' });
+    expect(
+      within(manana)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['09:00']);
+    expect(
+      within(tarde)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['15:00']);
   });
 
   it('avisa si no hay horarios para la fecha', async () => {
