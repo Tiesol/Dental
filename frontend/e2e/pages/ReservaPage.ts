@@ -8,7 +8,11 @@ export class ReservaPage {
   }
 
   async abrir() {
-    await this.page.getByRole('link', { name: 'Reservar cita' }).click();
+    // Desde el menú: Mis citas, donde entra el paciente, tiene además su propio botón "Reservar cita".
+    await this.page
+      .getByRole('navigation', { name: 'Principal' })
+      .getByRole('link', { name: 'Reservar cita' })
+      .click();
     await expect(this.page.getByRole('heading', { name: 'Reservar cita' })).toBeVisible();
   }
 
