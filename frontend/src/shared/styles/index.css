@@ -709,6 +709,11 @@ button {
   background: var(--primary-soft);
 }
 
+/* Sobre el fondo activo, el círculo del avatar se perdería: pasa a blanco. */
+.sidebar-account.active .avatar {
+  background: var(--surface);
+}
+
 .sidebar-user-text {
   display: none;
   min-width: 0;
@@ -727,6 +732,27 @@ button {
   .sidebar-nav a .icon {
     display: none;
   }
+
+  .sidebar {
+    column-gap: var(--space-2);
+  }
+
+  .sidebar-user {
+    gap: var(--space-2);
+  }
+}
+
+/* Por debajo de 375 px la marca, la cuenta y salir no caben en una fila: queda solo el logo. El
+   nombre sigue disponible para lectores de pantalla. */
+@media (max-width: 23.375rem) {
+  .brand-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .sidebar-user-text span {
@@ -738,6 +764,12 @@ button {
   padding: var(--space-2) var(--space-3);
   font-weight: 500;
   white-space: nowrap;
+}
+
+@media (max-width: 55.99rem) {
+  .sidebar .logout {
+    padding-inline: var(--space-2);
+  }
 }
 
 .content {
@@ -801,9 +833,15 @@ button {
     border-top: 1px solid var(--border);
   }
 
+  /* Misma barra de "estás aquí" que los ítems del menú. */
   .sidebar-account {
     flex: 1 1 100%;
     padding: var(--space-2);
+    border-left: 3px solid transparent;
+  }
+
+  .sidebar-account.active {
+    border-left-color: var(--primary);
   }
 
   .sidebar-user-text {

@@ -32,7 +32,7 @@ export function Header() {
     <header className="sidebar">
       <Link to="/" className="brand">
         <Icon name="tooth" />
-        Clínica Dental
+        <span className="brand-text">Clínica Dental</span>
       </Link>
       <nav aria-label="Principal" className="sidebar-nav">
         <ul>
