@@ -55,7 +55,7 @@ No están en el PDF. Las marcadas "(confirmado)" ya las decidió el equipo; las 
 | #   | Tema                                                  | Por defecto                                                                                                           | Tarea |
 | --- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----- |
 | D1  | ¿El ADMIN puede cancelar una cita `EN_ATENCION`?      | No: si ya está en atención no se cancela (confirmado)                                                                 | T4    |
-| D2  | ¿El ODONTOLOGO puede confirmar sus citas `PENDIENTE`? | No, solo el ADMIN                                                                                                     | T5    |
+| D2  | ¿El ODONTOLOGO puede confirmar sus citas `PENDIENTE`? | Sí, las suyas, igual que el ADMIN (confirmado)                                                                        | T5    |
 | D3  | Cada cuánto se ofrece un horario                      | Cada 15 minutos, en una constante `PASO_SLOTS_MIN`. El PDF no lo fija: solo exige considerar la duración del servicio | T2    |
 | D4  | Estado de la cita al reprogramarla                    | Conserva su estado: `CONFIRMADA` sigue confirmada y `PENDIENTE` sigue pendiente (confirmado)                          | T4    |
 | D5  | Segunda observación sobre la misma cita               | Se rechaza con `409`                                                                                                  | T5    |

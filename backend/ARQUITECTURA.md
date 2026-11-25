@@ -198,7 +198,7 @@ PENDIENTE ──> CONFIRMADA ──> EN_ATENCION ──> FINALIZADA
 
 | Transición               | Quién puede                                      |
 | ------------------------ | ------------------------------------------------ |
-| PENDIENTE → CONFIRMADA   | ADMIN                                            |
+| PENDIENTE → CONFIRMADA   | ODONTOLOGO (dueño de la cita), ADMIN             |
 | CONFIRMADA → EN_ATENCION | ODONTOLOGO (dueño de la cita)                    |
 | EN_ATENCION → FINALIZADA | ODONTOLOGO (dueño de la cita); exige observación |
 | PENDIENTE → CANCELADA    | PACIENTE (dueño), ADMIN                          |
@@ -206,7 +206,7 @@ PENDIENTE ──> CONFIRMADA ──> EN_ATENCION ──> FINALIZADA
 
 Todo lo demás es inválido y devuelve `409 Conflict`. En particular: FINALIZADA no se cancela ni vuelve a PENDIENTE; CANCELADA es terminal. Reprogramar solo se permite desde PENDIENTE o CONFIRMADA.
 
-> **Confirmado:** EN_ATENCION → CANCELADA no se permite, tampoco para el ADMIN. **Pendiente de confirmar:** si el ODONTOLOGO puede confirmar sus propias citas PENDIENTE (por defecto solo ADMIN, porque el PDF asigna "confirmar o cancelar citas" al administrador).
+> **Confirmado:** EN_ATENCION → CANCELADA no se permite, tampoco para el ADMIN. **Confirmado (D2):** el ODONTOLOGO confirma sus propias citas PENDIENTE, igual que el ADMIN. El PDF le da "confirmar o cancelar citas" al administrador y "cambiar estados permitidos" al odontólogo, sin hacer exclusivo lo primero; así una cita no queda trabada si el ADMIN no la confirma.
 
 La máquina de estados es una tabla en `domain/appointment-status.ts` y se prueba unitariamente con todos los casos positivos y negativos.
 
