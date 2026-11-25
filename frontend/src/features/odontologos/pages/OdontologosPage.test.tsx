@@ -30,6 +30,18 @@ describe('OdontologosPage', () => {
     expect(tarjeta.getByText('Limpieza dental · 30 min')).toBeInTheDocument();
   });
 
+  it('cada odontólogo tiene un enlace que abre la reserva con él ya elegido', async () => {
+    apiPublica();
+
+    renderWithProviders(<OdontologosPage />);
+
+    const tarjeta = within(await screen.findByTestId('odontologo-d1'));
+    expect(tarjeta.getByRole('link', { name: 'Reservar con Dra. Laura Gómez' })).toHaveAttribute(
+      'href',
+      '/reservar?odontologo=d1',
+    );
+  });
+
   it('muestra un estado vacío cuando no hay odontólogos', async () => {
     server.use(
       http.get(`${API}/services`, () => HttpResponse.json([])),

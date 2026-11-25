@@ -32,12 +32,12 @@ describe('Header', () => {
     expect(enlacesDelMenu()).toEqual(['Citas', 'Usuarios', 'Servicios', 'Odontólogos']);
   });
 
-  it('el PACIENTE ve Servicios, Odontólogos, Reservar cita y Mis citas', async () => {
+  it('el PACIENTE ve Mis citas, Servicios y Odontólogos: reserva desde los catálogos', async () => {
     renderConRol('PACIENTE');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual(['Servicios', 'Odontólogos', 'Reservar cita', 'Mis citas']);
+    expect(enlacesDelMenu()).toEqual(['Mis citas', 'Servicios', 'Odontólogos']);
   });
 
   it('el ODONTOLOGO ve Agenda', async () => {
