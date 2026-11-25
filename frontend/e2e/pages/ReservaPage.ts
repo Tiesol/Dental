@@ -7,12 +7,13 @@ export class ReservaPage {
     this.page = page;
   }
 
+  // La reserva no está en el menú: se abre desde el botón "Reservar cita" de Mis citas.
   async abrir() {
-    // Desde el menú: Mis citas, donde entra el paciente, tiene además su propio botón "Reservar cita".
     await this.page
       .getByRole('navigation', { name: 'Principal' })
-      .getByRole('link', { name: 'Reservar cita' })
+      .getByRole('link', { name: 'Mis citas' })
       .click();
+    await this.page.getByTestId('link-reservar').click();
     await expect(this.page.getByRole('heading', { name: 'Reservar cita' })).toBeVisible();
   }
 

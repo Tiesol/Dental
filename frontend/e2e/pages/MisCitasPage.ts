@@ -7,8 +7,12 @@ export class MisCitasPage {
     this.page = page;
   }
 
+  // Desde el menú: la reserva también tiene un enlace "Mis citas" para volver.
   async abrir() {
-    await this.page.getByRole('link', { name: 'Mis citas' }).click();
+    await this.page
+      .getByRole('navigation', { name: 'Principal' })
+      .getByRole('link', { name: 'Mis citas' })
+      .click();
     await expect(this.page.getByRole('heading', { name: 'Mis citas' })).toBeVisible();
   }
 
