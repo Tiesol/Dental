@@ -141,6 +141,7 @@ Toda página con sesión sigue esta forma. El `h1` lo pone `PageHeader`, nunca e
 | `filters-count`                  | "Mostrando 3 de 7 usuarios"                                       |
 | `table-scroll`                   | Envuelve toda `table`; apila las filas en pantallas angostas      |
 | `actions`                        | Celda de acciones de una fila                                     |
+| `acciones-apiladas`              | Editar encima de Deshabilitar, del mismo ancho                    |
 | `cell-person`, `cell-primary`    | Avatar con nombre y dato secundario; texto destacado de la fila   |
 | `service-list`, `service`        | Lista de filas con texto y datos a la derecha                     |
 | `service-con-accion`             | Fila con una acción al final, como "Reservar" en los catálogos    |
@@ -198,14 +199,20 @@ if (!ok) return;
 
 Siempre con `Button` (o `ButtonLink` para navegar); los estilos viven en `.btn` y no se repiten por pantalla.
 
-| `variant`        | Uso                                                      |
-| ---------------- | -------------------------------------------------------- |
-| `primary`        | Acción principal de la zona (valor por defecto)          |
-| `secondary`      | Acción alternativa                                       |
-| `danger-outline` | Acción destructiva dentro de una página o fila           |
-| `danger`         | Solo la confirmación dentro del diálogo                  |
-| `tab`            | Pestañas (`role="tab"`); la elegida va subrayada         |
-| `ghost`          | Botón de icono, como las flechas del calendario o cerrar |
+| `variant`        | Uso                                              |
+| ---------------- | ------------------------------------------------ |
+| `primary`        | Acción principal de la zona (valor por defecto)  |
+| `secondary`      | Acción alternativa                               |
+| `danger-outline` | Acción destructiva dentro de una página o fila   |
+| `danger`         | Solo la confirmación dentro del diálogo          |
+| `tab`            | Pestañas (`role="tab"`); la elegida va subrayada |
+
+**Acciones de fila**
+
+- Toda acción de una fila de tabla es un botón (`Button` o `ButtonLink` `secondary`), nunca un enlace de texto suelto: "Abrir ›" en la agenda y "Ver detalle ›" en Mis citas llevan la flecha `chevron-right`.
+- En las tablas de admin, Editar y Deshabilitar van uno encima del otro, del mismo ancho, dentro de `acciones-apiladas`. Una acción distinta, como Horarios, va aparte a la izquierda y con su ícono (`clock`).
+- Los íconos de las acciones de fila van en `--primary`.
+  | `ghost` | Botón de icono, como las flechas del calendario o cerrar |
 
 - La etiqueta dice la acción: "Deshabilitar cuenta", no "Sí" ni "Aceptar".
 - Hover cambia fondo o borde; al presionar se oscurece y se achica a `scale(0.97)`.

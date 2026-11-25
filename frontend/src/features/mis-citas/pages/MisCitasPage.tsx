@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type KeyboardEvent } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { appointmentsApi } from '@/api/endpoints/appointments';
 import type { CuandoCitas } from '@/api/types';
 import { Button } from '@/shared/components/Button';
@@ -7,6 +7,7 @@ import { ButtonLink } from '@/shared/components/ButtonLink';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { EstadoCitaBadge } from '@/shared/components/EstadoCitaBadge';
+import { Icon } from '@/shared/components/Icon';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { SuccessMessage } from '@/shared/components/SuccessMessage';
@@ -116,12 +117,16 @@ export function MisCitasPage() {
                     </td>
                     <td>
                       <div className="actions">
-                        <Link
+                        <ButtonLink
+                          variant="secondary"
                           to={`/mis-citas/${cita.id}`}
                           aria-label={`Ver detalle de ${cita.servicio.nombre}`}
                         >
-                          Ver detalle
-                        </Link>
+                          <span className="btn-label">
+                            Ver detalle
+                            <Icon name="chevron-right" />
+                          </span>
+                        </ButtonLink>
                       </div>
                     </td>
                   </tr>

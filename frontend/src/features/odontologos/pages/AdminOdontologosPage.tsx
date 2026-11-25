@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ActiveBadge } from '@/shared/components/ActiveBadge';
 import { Avatar } from '@/shared/components/Avatar';
 import { Button } from '@/shared/components/Button';
@@ -103,16 +102,25 @@ export function AdminOdontologosPage() {
                     </td>
                     <td>
                       <div className="actions">
-                        <Link to={`/admin/odontologos/${d.id}`}>Editar</Link>
-                        <Link to={`/admin/odontologos/${d.id}/horarios`}>Horarios</Link>
-                        <Button
-                          variant={d.activo ? 'danger-outline' : 'secondary'}
-                          loading={procesando === d.id}
-                          onClick={() => void alternarEstado(d.id, d.nombre, d.activo)}
-                          data-testid="btn-cambiar-estado-odontologo"
-                        >
-                          {d.activo ? 'Deshabilitar' : 'Habilitar'}
-                        </Button>
+                        <ButtonLink variant="secondary" to={`/admin/odontologos/${d.id}/horarios`}>
+                          <span className="btn-label">
+                            <Icon name="clock" />
+                            Horarios
+                          </span>
+                        </ButtonLink>
+                        <div className="acciones-apiladas">
+                          <ButtonLink variant="secondary" to={`/admin/odontologos/${d.id}`}>
+                            Editar
+                          </ButtonLink>
+                          <Button
+                            variant={d.activo ? 'danger-outline' : 'secondary'}
+                            loading={procesando === d.id}
+                            onClick={() => void alternarEstado(d.id, d.nombre, d.activo)}
+                            data-testid="btn-cambiar-estado-odontologo"
+                          >
+                            {d.activo ? 'Deshabilitar' : 'Habilitar'}
+                          </Button>
+                        </div>
                       </div>
                     </td>
                   </tr>

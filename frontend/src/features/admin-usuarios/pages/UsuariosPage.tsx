@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import type { Role } from '@/api/types';
 import { useAuth } from '@/features/auth';
 import { ActiveBadge } from '@/shared/components/ActiveBadge';
@@ -146,17 +145,21 @@ export function UsuariosPage() {
                       </td>
                       <td>
                         <div className="actions">
-                          <Link to={`/admin/usuarios/${u.id}`}>Editar</Link>
-                          <Button
-                            variant={u.activo ? 'danger-outline' : 'secondary'}
-                            loading={procesando === u.id}
-                            disabled={esYo}
-                            title={esYo ? 'No puedes deshabilitar tu propia cuenta' : undefined}
-                            onClick={() => void alternarEstado(u.id, u.nombre, u.activo)}
-                            data-testid="btn-cambiar-estado"
-                          >
-                            {u.activo ? 'Deshabilitar' : 'Habilitar'}
-                          </Button>
+                          <div className="acciones-apiladas">
+                            <ButtonLink variant="secondary" to={`/admin/usuarios/${u.id}`}>
+                              Editar
+                            </ButtonLink>
+                            <Button
+                              variant={u.activo ? 'danger-outline' : 'secondary'}
+                              loading={procesando === u.id}
+                              disabled={esYo}
+                              title={esYo ? 'No puedes deshabilitar tu propia cuenta' : undefined}
+                              onClick={() => void alternarEstado(u.id, u.nombre, u.activo)}
+                              data-testid="btn-cambiar-estado"
+                            >
+                              {u.activo ? 'Deshabilitar' : 'Habilitar'}
+                            </Button>
+                          </div>
                         </div>
                       </td>
                     </tr>
