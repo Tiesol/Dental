@@ -218,7 +218,7 @@ Rama `feat/estados-y-observacion`. Ámbitos: `appointments` y `observations`. Cr
 
 **Tests unitarios (PDF 12):** todas las transiciones permitidas y rechazadas, por estado y por rol.
 
-**Tests de integración:** recorrer `PENDIENTE` → `CONFIRMADA` → `EN_ATENCION` → `FINALIZADA`; finalizar sin observación da `409`; otro odontólogo da `403`; `FINALIZADA` no vuelve a `PENDIENTE`.
+**Tests de integración:** recorrer `PENDIENTE` → `CONFIRMADA` → `EN_ATENCION` → `FINALIZADA`; finalizar sin observación da `409`; otro odontólogo da `403`; el odontólogo asignado confirma su cita `PENDIENTE` (`200`) y uno ajeno recibe `403` (D2); `FINALIZADA` no vuelve a `PENDIENTE`.
 
 ---
 
