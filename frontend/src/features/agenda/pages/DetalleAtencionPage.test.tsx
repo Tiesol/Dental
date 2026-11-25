@@ -105,14 +105,26 @@ describe('DetalleAtencionPage', () => {
     expect(datos).toHaveTextContent('Limpieza dental');
   });
 
-  it('una cita PENDIENTE es de solo lectura', async () => {
+  it('una cita PENDIENTE solo ofrece confirmarla', async () => {
     renderPagina({ estado: 'PENDIENTE' });
 
-    await screen.findByTestId('datos-cita');
-
+    expect(await screen.findByTestId('btn-confirmar-cita')).toBeInTheDocument();
     expect(screen.queryByTestId('btn-iniciar-atencion')).not.toBeInTheDocument();
     expect(screen.queryByTestId('btn-finalizar')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Observación')).not.toBeInTheDocument();
+  });
+
+  it('confirma una cita PENDIENTE y luego ofrece iniciar la atención', async () => {
+    const { cambios } = renderPagina({ estado: 'PENDIENTE' });
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('btn-confirmar-cita'));
+
+    await waitFor(() => expect(screen.getByTestId('estado-cita')).toHaveTextContent('CONFIRMADA'));
+    expect(cambios).toEqual([{ estado: 'CONFIRMADA' }]);
+    expect(screen.getByText('Cita confirmada')).toBeInTheDocument();
+    expect(screen.queryByTestId('btn-confirmar-cita')).not.toBeInTheDocument();
+    expect(screen.getByTestId('btn-iniciar-atencion')).toBeInTheDocument();
   });
 
   it('inicia la atención de una cita CONFIRMADA', async () => {

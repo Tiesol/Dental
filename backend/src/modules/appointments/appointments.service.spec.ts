@@ -233,6 +233,16 @@ describe('AppointmentsService', () => {
       expect(repository.updateEstado).toHaveBeenCalledWith(tx, 'c1', 'CONFIRMADA');
     });
 
+    it('permite al odontólogo asignado confirmar su cita pendiente (D2)', async () => {
+      repository.findById.mockResolvedValue(citaCon('PENDIENTE'));
+      repository.updateEstado.mockResolvedValue(citaCon('CONFIRMADA'));
+
+      const resultado = await service.cambiarEstado('c1', 'CONFIRMADA', odontologo);
+
+      expect(resultado).toEqual(citaCon('CONFIRMADA'));
+      expect(repository.updateEstado).toHaveBeenCalledWith(tx, 'c1', 'CONFIRMADA');
+    });
+
     it('permite al odontólogo asignado pasar a EN_ATENCION y finalizar con observación', async () => {
       repository.findById.mockResolvedValue(citaCon('CONFIRMADA'));
       await service.cambiarEstado('c1', 'EN_ATENCION', odontologo);
@@ -266,25 +276,31 @@ describe('AppointmentsService', () => {
     });
 
     it('rechaza una transición válida cuando el rol no está autorizado', async () => {
-      repository.findById.mockResolvedValue(citaCon('PENDIENTE'));
+      repository.findById.mockResolvedValue(citaCon('CONFIRMADA'));
 
-      await expect(service.cambiarEstado('c1', 'CONFIRMADA', odontologo)).rejects.toThrow(
+      await expect(service.cambiarEstado('c1', 'EN_ATENCION', admin)).rejects.toThrow(
         AccesoDenegadoError,
       );
 
       expect(repository.updateEstado).not.toHaveBeenCalled();
     });
 
-    it('rechaza a otro odontólogo antes de bloquear al profesional', async () => {
-      repository.findById.mockResolvedValue(citaCon('CONFIRMADA'));
-      const otro = { ...odontologo, dentistId: 'd2' };
+    it.each([
+      ['PENDIENTE', 'CONFIRMADA'],
+      ['CONFIRMADA', 'EN_ATENCION'],
+    ] as const)(
+      'rechaza a otro odontólogo en %s -> %s antes de bloquear al profesional',
+      async (desde, hacia) => {
+        repository.findById.mockResolvedValue(citaCon(desde));
+        const otro = { ...odontologo, dentistId: 'd2' };
 
-      await expect(service.cambiarEstado('c1', 'EN_ATENCION', otro)).rejects.toThrow(
-        AccesoDenegadoACitaError,
-      );
+        await expect(service.cambiarEstado('c1', hacia, otro)).rejects.toThrow(
+          AccesoDenegadoACitaError,
+        );
 
-      expect(repository.withDentistLock).not.toHaveBeenCalled();
-    });
+        expect(repository.withDentistLock).not.toHaveBeenCalled();
+      },
+    );
 
     it('relee el estado dentro de la transacción: si cambió mientras esperaba, no actualiza', async () => {
       repository.findById

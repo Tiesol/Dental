@@ -19,7 +19,7 @@ const ESTADOS: Record<
     clase: 'badge-pendiente',
     acciones: {
       PACIENTE: ['reprogramar', 'cancelar'],
-      ODONTOLOGO: [],
+      ODONTOLOGO: ['confirmar'],
       ADMIN: ['confirmar', 'cancelar'],
     },
   },

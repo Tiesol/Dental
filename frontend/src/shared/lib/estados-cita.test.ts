@@ -29,7 +29,7 @@ describe('claseEstado', () => {
 // La tabla de ARQUITECTURA.md sección 7.
 const TABLA: [EstadoCita, Role, AccionCita[]][] = [
   ['PENDIENTE', 'PACIENTE', ['reprogramar', 'cancelar']],
-  ['PENDIENTE', 'ODONTOLOGO', []],
+  ['PENDIENTE', 'ODONTOLOGO', ['confirmar']],
   ['PENDIENTE', 'ADMIN', ['confirmar', 'cancelar']],
   ['CONFIRMADA', 'PACIENTE', ['reprogramar', 'cancelar']],
   ['CONFIRMADA', 'ODONTOLOGO', ['iniciar-atencion']],
