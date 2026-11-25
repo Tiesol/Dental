@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Avatar } from '@/shared/components/Avatar';
+import { ButtonLink } from '@/shared/components/ButtonLink';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
@@ -49,7 +50,11 @@ export function OdontologosPage() {
         {estado.status === 'ok' && estado.odontologos.length > 0 && (
           <ul className="service-list">
             {estado.odontologos.map((d) => (
-              <li key={d.id} className="service" data-testid={`odontologo-${d.id}`}>
+              <li
+                key={d.id}
+                className="service service-con-accion"
+                data-testid={`odontologo-${d.id}`}
+              >
                 <div className="cell-person">
                   <Avatar name={d.nombre} />
                   <div className="service-text">
@@ -68,6 +73,13 @@ export function OdontologosPage() {
                 ) : (
                   <p className="muted">Sin servicios asignados.</p>
                 )}
+                <ButtonLink
+                  variant="secondary"
+                  to={`/reservar?odontologo=${d.id}`}
+                  aria-label={`Reservar con ${d.nombre}`}
+                >
+                  Reservar
+                </ButtonLink>
               </li>
             ))}
           </ul>

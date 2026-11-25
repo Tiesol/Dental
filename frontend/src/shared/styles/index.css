@@ -1343,6 +1343,11 @@ tbody tr:last-child td {
     align-items: center;
   }
 
+  /* Fila con acción a la derecha, como "Reservar" en los catálogos del paciente. */
+  .service-con-accion {
+    grid-template-columns: minmax(0, 1fr) 17rem auto;
+  }
+
   .service-meta {
     display: grid;
     grid-template-columns: 7rem minmax(0, 1fr);
