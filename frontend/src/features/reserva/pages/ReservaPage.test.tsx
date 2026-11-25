@@ -54,6 +54,11 @@ function renderPagina(extras: RequestHandler[] = [], route = '/reservar') {
   return { reservas, consultasDeSlots, consultasDeOdontologos };
 }
 
+function pasos() {
+  const lista = screen.getByRole('list', { name: 'Pasos de la reserva' });
+  return within(lista).getAllByRole('listitem');
+}
+
 async function hastaLaFecha(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: 'Elegir Limpieza dental' }));
   await user.click(await screen.findByRole('button', { name: 'Elegir Dra. Laura Gómez' }));
@@ -77,6 +82,37 @@ describe('ReservaPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Reservar cita' })).toBeVisible();
     expect(await screen.findByRole('button', { name: 'Elegir Ortodoncia' })).toBeInTheDocument();
+  });
+
+  it('muestra los pasos de la reserva y marca el actual a medida que avanza', async () => {
+    renderPagina();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Elegir Limpieza dental' }));
+    expect(pasos().map((p) => p.textContent)).toEqual([
+      'Servicio',
+      'Odontólogo',
+      'Horario',
+      'Confirmar',
+    ]);
+    await screen.findByRole('button', { name: 'Elegir Dra. Laura Gómez' });
+
+    expect(pasos()[1]).toHaveAttribute('aria-current', 'step');
+    expect(pasos()[0]).not.toHaveAttribute('aria-current');
+  });
+
+  it('desde un odontólogo, los pasos empiezan por él', async () => {
+    renderPagina([], '/reservar?odontologo=d1');
+
+    await screen.findByRole('heading', { name: '2. Elige un servicio de Dra. Laura Gómez' });
+
+    expect(pasos().map((p) => p.textContent)).toEqual([
+      'Odontólogo',
+      'Servicio',
+      'Horario',
+      'Confirmar',
+    ]);
+    expect(pasos()[1]).toHaveAttribute('aria-current', 'step');
   });
 
   it('desde un servicio del catálogo llega con ese servicio elegido y pide el odontólogo', async () => {
@@ -223,6 +259,7 @@ describe('ReservaPage', () => {
     expect(resumen).toHaveTextContent('Dra. Laura Gómez');
     expect(resumen).toHaveTextContent('martes, 10 de noviembre de 2026');
     expect(resumen).toHaveTextContent('09:15 - 09:45');
+    expect(pasos()[3]).toHaveAttribute('aria-current', 'step');
   });
 
   it('al confirmar envía el inicio tal como lo devolvió el backend y va a Mis citas', async () => {
