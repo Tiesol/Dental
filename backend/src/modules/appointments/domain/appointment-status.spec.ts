@@ -60,7 +60,7 @@ describe('assertTransicionPermitida', () => {
     );
   });
 
-  it('el odontólogo confirma sus citas PENDIENTE (D2)', () => {
+  it('el rol ODONTOLOGO puede pasar PENDIENTE -> CONFIRMADA; la propiedad la revisa el service (D2)', () => {
     expect(() => assertTransicionPermitida('PENDIENTE', 'CONFIRMADA', 'ODONTOLOGO')).not.toThrow();
   });
 });
