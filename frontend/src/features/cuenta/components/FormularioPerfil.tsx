@@ -54,7 +54,7 @@ export function FormularioPerfil({ perfil, guardar }: Props) {
 
   return (
     <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-perfil" noValidate>
-      <h2 id="titulo-perfil">Editar perfil</h2>
+      <h2 id="titulo-perfil">Datos personales</h2>
       <div className="form-row">
         {campos.includes('nombre') && (
           <TextField
@@ -86,7 +86,7 @@ export function FormularioPerfil({ perfil, guardar }: Props) {
       {exito && <SuccessMessage>{exito}</SuccessMessage>}
       <div className="form-actions">
         <Button type="submit" loading={enviando} data-testid="btn-guardar-perfil">
-          Guardar perfil
+          Guardar cambios
         </Button>
       </div>
     </form>
