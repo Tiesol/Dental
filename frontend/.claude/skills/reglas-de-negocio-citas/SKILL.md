@@ -47,6 +47,7 @@ Solo citas: servicios, odontólogos, disponibilidad, reservas, seguimiento. **No
 Tabla en `ARQUITECTURA.md` sección 7. Resumen:
 
 - PENDIENTE / CONFIRMADA: paciente ve Reprogramar y Cancelar.
+- PENDIENTE: odontólogo ve "Confirmar cita" (solo en sus citas; el backend responde 403 en las ajenas).
 - CONFIRMADA: odontólogo ve "Iniciar atención".
 - EN_ATENCION: odontólogo ve "Registrar observación" y "Finalizar" (Finalizar deshabilitado hasta que haya observación).
 - FINALIZADA y CANCELADA: sin acciones para nadie.

@@ -143,7 +143,7 @@ reserva/
 
 | Estado      | PACIENTE ve                            | ODONTOLOGO ve                    | ADMIN ve            |
 | ----------- | -------------------------------------- | -------------------------------- | ------------------- |
-| PENDIENTE   | Reprogramar, Cancelar                  | solo lectura                     | Confirmar, Cancelar |
+| PENDIENTE   | Reprogramar, Cancelar                  | Confirmar                        | Confirmar, Cancelar |
 | CONFIRMADA  | Reprogramar, Cancelar                  | Iniciar atención                 | Cancelar            |
 | EN_ATENCION | solo lectura                           | Registrar observación, Finalizar | solo lectura        |
 | FINALIZADA  | solo lectura (detalle con observación) | solo lectura                     | solo lectura        |
