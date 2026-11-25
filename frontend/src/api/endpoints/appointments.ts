@@ -3,44 +3,45 @@ import type {
   AppointmentFiltersRequest,
   AppointmentResponse,
   CreateAppointmentRequest,
-  CuandoCitas,
-  EstadoCita,
+  AppointmentWhen,
+  AppointmentStatus,
 } from '../types';
 
-const conFiltros = (filtros: AppointmentFiltersRequest) => {
+const withFilters = (filters: AppointmentFiltersRequest) => {
   const query = new URLSearchParams(
-    Object.entries(filtros)
-      .filter(([, valor]) => valor !== undefined && valor !== '')
-      .map(([clave, valor]) => [clave, String(valor)]),
+    Object.entries(filters)
+      .filter(([, value]) => value !== undefined && value !== '')
+      .map(([key, value]) => [key, String(value)]),
   ).toString();
   return query ? `/appointments?${query}` : '/appointments';
 };
 
 export const appointmentsApi = {
-  reservar: (body: CreateAppointmentRequest) =>
-    http.post<AppointmentResponse>('/appointments', body),
-  mias: (cuando: CuandoCitas, signal?: AbortSignal) =>
-    http.get<AppointmentResponse[]>(`/appointments/mine?cuando=${cuando}`, signal),
-  porId: (id: string, signal?: AbortSignal) =>
+  book: (body: CreateAppointmentRequest) => http.post<AppointmentResponse>('/appointments', body),
+  mine: (when: AppointmentWhen, signal?: AbortSignal) =>
+    http.get<AppointmentResponse[]>(`/appointments/mine?cuando=${when}`, signal),
+  byId: (id: string, signal?: AbortSignal) =>
     http.get<AppointmentResponse>(`/appointments/${id}`, signal),
-  reprogramar: (id: string, horaInicio: string) =>
-    http.patch<AppointmentResponse>(`/appointments/${id}/reschedule`, { horaInicio }),
-  cancelar: (id: string) => http.patch<AppointmentResponse>(`/appointments/${id}/cancel`),
-  cambiarEstado: (id: string, estado: EstadoCita) =>
-    http.patch<AppointmentResponse>(`/appointments/${id}/status`, { estado }),
-  registrarObservacion: (id: string, texto: string) =>
-    http.post<{ texto: string; createdAt: string }>(`/appointments/${id}/observation`, { texto }),
+  reschedule: (id: string, startsAt: string) =>
+    http.patch<AppointmentResponse>(`/appointments/${id}/reschedule`, { horaInicio: startsAt }),
+  cancel: (id: string) => http.patch<AppointmentResponse>(`/appointments/${id}/cancel`),
+  changeStatus: (id: string, status: AppointmentStatus) =>
+    http.patch<AppointmentResponse>(`/appointments/${id}/status`, { estado: status }),
+  registerObservation: (id: string, text: string) =>
+    http.post<{ texto: string; createdAt: string }>(`/appointments/${id}/observation`, {
+      texto: text,
+    }),
 
   // Solo ADMIN
-  todas: (filtros: AppointmentFiltersRequest = {}, signal?: AbortSignal) =>
-    http.get<AppointmentResponse[]>(conFiltros(filtros), signal),
+  all: (filters: AppointmentFiltersRequest = {}, signal?: AbortSignal) =>
+    http.get<AppointmentResponse[]>(withFilters(filters), signal),
 
   // Solo ODONTOLOGO
-  agenda: (fecha?: string, signal?: AbortSignal) =>
+  agenda: (date?: string, signal?: AbortSignal) =>
     http.get<AppointmentResponse[]>(
-      fecha ? `/dentists/me/agenda?fecha=${encodeURIComponent(fecha)}` : '/dentists/me/agenda',
+      date ? `/dentists/me/agenda?fecha=${encodeURIComponent(date)}` : '/dentists/me/agenda',
       signal,
     ),
-  agendaProximas: (signal?: AbortSignal) =>
+  upcomingAgenda: (signal?: AbortSignal) =>
     http.get<AppointmentResponse[]>('/dentists/me/agenda/upcoming', signal),
 };

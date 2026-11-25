@@ -2,72 +2,72 @@ import { ApiError } from '@/api/errors';
 
 // Datos de un error inesperado para que el usuario se los copie al administrador del sistema.
 export type ErrorReport = {
-  fecha: string;
-  pantalla: string;
-  usuario: string | null;
-  nombre: string;
-  mensaje: string;
-  estadoHttp: number | null;
-  codigo: string | null;
+  date: string;
+  screen: string;
+  user: string | null;
+  name: string;
+  message: string;
+  httpStatus: number | null;
+  code: string | null;
   stack: string | null;
-  componentes: string | null;
+  components: string | null;
 };
 
 // Quién usa la aplicación, para el detalle técnico. Lo actualiza AuthProvider al cambiar la sesión.
-let usuarioActual: string | null = null;
+let currentUser: string | null = null;
 
-export function setErrorReportUser(usuario: string | null): void {
-  usuarioActual = usuario;
+export function setErrorReportUser(user: string | null): void {
+  currentUser = user;
 }
 
-function codigoDelBackend(error: ApiError): string | null {
+function backendCode(error: ApiError): string | null {
   const { details } = error;
   if (details && typeof details === 'object' && 'error' in details) {
-    const { error: codigo } = details as { error: unknown };
-    if (typeof codigo === 'string') return codigo;
+    const { error: code } = details as { error: unknown };
+    if (typeof code === 'string') return code;
   }
   return null;
 }
 
-export function buildErrorReport(error: unknown, componentes?: string | null): ErrorReport {
+export function buildErrorReport(error: unknown, components?: string | null): ErrorReport {
   const err = error instanceof Error ? error : new Error(String(error));
   const api = error instanceof ApiError ? error : null;
   return {
-    fecha: new Date().toISOString(),
-    pantalla: `${window.location.pathname}${window.location.search}`,
-    usuario: usuarioActual,
-    nombre: err.name,
-    mensaje: err.message,
-    estadoHttp: api ? api.statusCode : null,
-    codigo: api ? codigoDelBackend(api) : null,
+    date: new Date().toISOString(),
+    screen: `${window.location.pathname}${window.location.search}`,
+    user: currentUser,
+    name: err.name,
+    message: err.message,
+    httpStatus: api ? api.statusCode : null,
+    code: api ? backendCode(api) : null,
     stack: err.stack ?? null,
-    componentes: componentes?.trim() || null,
+    components: components?.trim() || null,
   };
 }
 
-export function formatErrorReport(reporte: ErrorReport): string {
+export function formatErrorReport(report: ErrorReport): string {
   return [
-    `Fecha: ${reporte.fecha}`,
-    `Pantalla: ${reporte.pantalla}`,
-    `Usuario: ${reporte.usuario ?? 'sin sesión'}`,
-    `Error: ${reporte.nombre}: ${reporte.mensaje}`,
-    reporte.estadoHttp !== null ? `Estado HTTP: ${reporte.estadoHttp}` : null,
-    reporte.codigo ? `Código: ${reporte.codigo}` : null,
-    reporte.stack ? `Stack:\n${reporte.stack}` : null,
-    reporte.componentes ? `Componentes:\n${reporte.componentes}` : null,
+    `Fecha: ${report.date}`,
+    `Pantalla: ${report.screen}`,
+    `Usuario: ${report.user ?? 'sin sesión'}`,
+    `Error: ${report.name}: ${report.message}`,
+    report.httpStatus !== null ? `Estado HTTP: ${report.httpStatus}` : null,
+    report.code ? `Código: ${report.code}` : null,
+    report.stack ? `Stack:\n${report.stack}` : null,
+    report.components ? `Componentes:\n${report.components}` : null,
   ]
-    .filter((linea) => linea !== null)
+    .filter((line) => line !== null)
     .join('\n');
 }
 
-const RUIDO_DEL_NAVEGADOR = [/ResizeObserver loop/i, /^Script error\.?$/i];
+const BROWSER_NOISE = [/ResizeObserver loop/i, /^Script error\.?$/i];
 const EXTENSION = /(chrome|moz|safari(-web)?)-extension:\/\//;
 
 // Cancelaciones de peticiones y ruido del navegador o de extensiones: no son fallos de la aplicación.
-export function isIgnorableError(error: unknown, origen?: string): boolean {
+export function isIgnorableError(error: unknown, source?: string): boolean {
   if (error instanceof Error && error.name === 'AbortError') return true;
-  const mensaje = error instanceof Error ? error.message : String(error ?? '');
-  if (RUIDO_DEL_NAVEGADOR.some((patron) => patron.test(mensaje))) return true;
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  if (BROWSER_NOISE.some((pattern) => pattern.test(message))) return true;
   const stack = error instanceof Error ? (error.stack ?? '') : '';
-  return EXTENSION.test(origen ?? '') || EXTENSION.test(stack);
+  return EXTENSION.test(source ?? '') || EXTENSION.test(stack);
 }

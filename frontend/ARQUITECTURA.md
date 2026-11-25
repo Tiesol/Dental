@@ -65,10 +65,10 @@ frontend/
 │   │   └── admin-citas/               # todas las citas, confirmar/cancelar (hecho)
 │   ├── shared/
 │   │   ├── components/                # PageHeader, EmptyState, LoadingState, ErrorMessage, SuccessMessage, ActiveBadge, Avatar, Icon, ConfirmDialog, EstadoCitaBadge, DatosCita (hechos)
-│   │   ├── hooks/                     # useConfirm (<dialog> nativo) y useCarga (consultas con estado de carga) (hechos)
+│   │   ├── hooks/                     # useConfirm (<dialog> nativo) y useLoader (consultas con estado de carga) (hechos)
 │   │   ├── lib/
 │   │   │   ├── dates.ts               # formateo y conversión UTC <-> zona de la clínica (hecho)
-│   │   │   └── estados-cita.ts        # etiquetas, colores y acciones permitidas por estado y rol (hecho)
+│   │   │   └── appointment-status.ts        # etiquetas, colores y acciones permitidas por estado y rol (hecho)
 │   │   └── styles/                    # index.css global (hecho)
 │   └── test/                          # setup.ts, msw/ (handlers, server), factories.ts, utils.tsx (hecho)
 │       ├── setup.ts                   # jest-dom, limpieza, MSW
@@ -92,7 +92,7 @@ reserva/
 │   ├── PasoFechaHora.tsx              # calendario + lista de slots disponibles
 │   └── ResumenConfirmacion.tsx
 ├── hooks/
-│   ├── useSlotsDisponibles.ts         # consulta GET /dentists/:id/slots
+│   ├── useAvailableSlots.ts         # consulta GET /dentists/:id/slots
 │   └── useReservarCita.ts             # mutación POST /appointments + invalidación de slots y mis citas
 ├── reserva.types.ts
 └── index.ts                           # exporta solo lo público
@@ -130,7 +130,7 @@ reserva/
 
 ## 6. Datos del servidor y sincronización
 
-- Las consultas usan hooks simples con estado `cargando | ok | error` (`shared/hooks/useCarga.ts`). Una capa de caché como TanStack Query sigue siendo una propuesta (ver "Decisiones" en el README raíz).
+- Las consultas usan hooks simples con estado `cargando | ok | error` (`shared/hooks/useLoader.ts`). Una capa de caché como TanStack Query sigue siendo una propuesta (ver "Decisiones" en el README raíz).
 - Claves de caché por recurso: `['services']`, `['dentists']`, `['slots', dentistId, serviceId, fecha]`, `['appointments','mine']`, `['appointment', id]`, `['agenda', fecha]`.
 - Tras reservar, cancelar o reprogramar se invalidan **siempre**: `slots` del odontólogo afectado, `appointments/mine`, `appointment/:id`. Es la implementación en el cliente de "actualizar disponibilidad después de reservar, cancelar o reprogramar".
 - La lista de slots no se filtra en el cliente: se muestra tal cual la devuelve el backend (que ya excluye pasado, bloques y solapamientos).
@@ -139,7 +139,7 @@ reserva/
 
 ## 7. Estados de la cita en la interfaz
 
-`shared/lib/estados-cita.ts` centraliza, por estado y rol, qué acciones se muestran:
+`shared/lib/appointment-status.ts` centraliza, por estado y rol, qué acciones se muestran:
 
 | Estado      | PACIENTE ve                            | ODONTOLOGO ve                    | ADMIN ve            |
 | ----------- | -------------------------------------- | -------------------------------- | ------------------- |
@@ -168,7 +168,7 @@ El componente `EstadoCitaBadge` muestra el estado con el texto exacto del PDF (P
 
 | Nivel       | Herramienta                                              | Qué cubre                                                                                                                                                                                                           | Dónde                          |
 | ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| Unitario    | Vitest                                                   | `shared/lib/dates.ts`, `estados-cita.ts` (acciones permitidas por estado y rol), validaciones de formularios, hooks puros.                                                                                          | junto al archivo, `*.test.ts`  |
+| Unitario    | Vitest                                                   | `shared/lib/dates.ts`, `appointment-status.ts` (acciones permitidas por estado y rol), validaciones de formularios, hooks puros.                                                                                    | junto al archivo, `*.test.ts`  |
 | Componentes | Vitest + RTL + MSW                                       | Páginas y componentes con la API simulada: el asistente de reserva muestra solo odontólogos que realizan el servicio, el detalle oculta "Cancelar" si está FINALIZADA, el mensaje 409 aparece y se refrescan slots. | junto al archivo, `*.test.tsx` |
 | E2E         | Playwright contra frontend + backend + PostgreSQL reales | Los 7 escenarios del PDF, interactuando con la interfaz real.                                                                                                                                                       | `e2e/`                         |
 

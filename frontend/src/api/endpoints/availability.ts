@@ -8,25 +8,19 @@ import type {
 } from '../types';
 
 export const availabilityApi = {
-  obtener: (dentistId: string) =>
-    http.get<AvailabilityResponse>(`/dentists/${dentistId}/availability`),
+  get: (dentistId: string) => http.get<AvailabilityResponse>(`/dentists/${dentistId}/availability`),
 
-  horariosDisponibles: (
-    dentistId: string,
-    serviceId: string,
-    fecha: string,
-    signal?: AbortSignal,
-  ) =>
+  availableSlots: (dentistId: string, serviceId: string, date: string, signal?: AbortSignal) =>
     http.get<SlotResponse[]>(
-      `/dentists/${dentistId}/slots?serviceId=${encodeURIComponent(serviceId)}&fecha=${encodeURIComponent(fecha)}`,
+      `/dentists/${dentistId}/slots?serviceId=${encodeURIComponent(serviceId)}&fecha=${encodeURIComponent(date)}`,
       signal,
     ),
 
   // Solo ADMIN
-  reemplazarHorarios: (dentistId: string, horarios: AvailabilityRuleRequest[]) =>
-    http.put<AvailabilityResponse>(`/dentists/${dentistId}/availability`, { horarios }),
-  crearBloque: (dentistId: string, body: CreateBlockRequest) =>
+  replaceSchedule: (dentistId: string, schedule: AvailabilityRuleRequest[]) =>
+    http.put<AvailabilityResponse>(`/dentists/${dentistId}/availability`, { horarios: schedule }),
+  createBlock: (dentistId: string, body: CreateBlockRequest) =>
     http.post<UnavailableBlockResponse>(`/dentists/${dentistId}/blocks`, body),
-  borrarBloque: (dentistId: string, blockId: string) =>
+  deleteBlock: (dentistId: string, blockId: string) =>
     http.delete<null>(`/dentists/${dentistId}/blocks/${blockId}`),
 };

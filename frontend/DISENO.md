@@ -52,7 +52,7 @@ La barra lateral usa `--surface` y se separa del contenido con un borde disconti
 
 ### Estados de la cita
 
-El texto del badge es el exacto del PDF, porque los E2E lo verifican. El mapa de estado a clase se define una sola vez en `shared/lib/estados-cita.ts`, y `EstadoCitaBadge` lo usa con `data-testid="estado-cita"`.
+El texto del badge es el exacto del PDF, porque los E2E lo verifican. El mapa de estado a clase se define una sola vez en `shared/lib/appointment-status.ts`, y `EstadoCitaBadge` lo usa con `data-testid="estado-cita"`.
 
 Todo badge se ve como un sello de tinta: borde de 2px y texto del color del estado, sin fondo, en mayúsculas y con `--text-xs`.
 
@@ -218,7 +218,7 @@ Siempre con `Button` (o `ButtonLink` para navegar); los estilos viven en `.btn` 
 - La etiqueta dice la acción: "Deshabilitar cuenta", no "Sí" ni "Aceptar".
 - Hover cambia fondo o borde; al presionar se oscurece y se achica a `scale(0.97)`.
 - `loading` solo en botones que esperan respuesta (guardar, enviar, cambiar estado): muestra un spinner en lugar del texto, sin cambiar el ancho, con `disabled` y `aria-busy="true"`. Se enciende al hacer clic y se apaga en el `finally`. Los botones de acción inmediata (cancelar, abrir un diálogo, cambiar de pestaña, navegar, copiar) no llevan `loading`.
-- Las acciones de una cita salen de `shared/lib/estados-cita.ts`, nunca de un `if` en el componente.
+- Las acciones de una cita salen de `shared/lib/appointment-status.ts`, nunca de un `if` en el componente.
 
 **Formularios**
 
@@ -239,7 +239,7 @@ Siempre con `Button` (o `ButtonLink` para navegar); los estilos viven en `.btn` 
 
 **Carga de datos**
 
-- Los requests de una pantalla se cancelan al salir de ella o al cambiar un filtro (`useCarga` pasa un `AbortSignal`).
+- Los requests de una pantalla se cancelan al salir de ella o al cambiar un filtro (`useLoader` pasa un `AbortSignal`).
 - La búsqueda por texto espera 300 ms sin teclear (`useDebouncedValue`) antes de pedir.
 - Una acción sobre una fila actualiza solo esa fila con la respuesta del backend, sin recargar el listado.
 

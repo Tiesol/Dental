@@ -8,7 +8,7 @@ import type {
 } from '@/api/types';
 
 // Datos de prueba con valores por defecto sensatos. Cada test sobreescribe lo que le importa.
-export function usuarioDePrueba(overrides: Partial<UserResponse> = {}): UserResponse {
+export function testUser(overrides: Partial<UserResponse> = {}): UserResponse {
   return {
     id: 'u1',
     email: 'ana@mail.com',
@@ -21,16 +21,16 @@ export function usuarioDePrueba(overrides: Partial<UserResponse> = {}): UserResp
   };
 }
 
-export function usuarioDetalleDePrueba(overrides: Partial<UserDetail> = {}): UserDetail {
+export function testUserDetail(overrides: Partial<UserDetail> = {}): UserDetail {
   return {
-    ...usuarioDePrueba(),
+    ...testUser(),
     paciente: { nombre: 'Ana', apellido: 'Pérez', telefono: null },
     odontologo: null,
     ...overrides,
   };
 }
 
-export function servicioDePrueba(overrides: Partial<ServiceResponse> = {}): ServiceResponse {
+export function testService(overrides: Partial<ServiceResponse> = {}): ServiceResponse {
   return {
     id: 's1',
     nombre: 'Limpieza dental',
@@ -42,7 +42,7 @@ export function servicioDePrueba(overrides: Partial<ServiceResponse> = {}): Serv
   };
 }
 
-export function odontologoAdminDePrueba(
+export function testAdminDentist(
   overrides: Partial<DentistAdminResponse> = {},
 ): DentistAdminResponse {
   return {
@@ -58,7 +58,7 @@ export function odontologoAdminDePrueba(
   };
 }
 
-export function odontologoPublicoDePrueba(
+export function testPublicDentist(
   overrides: Partial<DentistPublicResponse> = {},
 ): DentistPublicResponse {
   return {
@@ -70,7 +70,7 @@ export function odontologoPublicoDePrueba(
   };
 }
 
-export function citaDePrueba(overrides: Partial<AppointmentResponse> = {}): AppointmentResponse {
+export function testAppointment(overrides: Partial<AppointmentResponse> = {}): AppointmentResponse {
   return {
     id: 'c1',
     horaInicio: '2026-11-10T13:00:00.000Z',

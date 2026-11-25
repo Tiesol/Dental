@@ -9,39 +9,39 @@ import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { SuccessMessage } from '@/shared/components/SuccessMessage';
-import { useCarga } from '@/shared/hooks/useCarga';
+import { useLoader } from '@/shared/hooks/useLoader';
 import { useConfirm } from '@/shared/hooks/useConfirm';
-import { accionesPermitidas } from '@/shared/lib/estados-cita';
+import { allowedActions } from '@/shared/lib/appointment-status';
 import { PanelReprogramar } from '../components/PanelReprogramar';
 
-const VOLVER = { to: '/mis-citas', label: 'Volver a Mis citas' };
+const BACK = { to: '/mis-citas', label: 'Volver a Mis citas' };
 
 // Detalle de una cita del paciente. Una cita ajena responde 403 y aquí solo se ve ese mensaje.
 export function DetalleCitaPage() {
   const { id = '' } = useParams();
   const { user } = useAuth();
-  const cargar = useCallback((signal: AbortSignal) => appointmentsApi.porId(id, signal), [id]);
-  const { estado, recargar, actualizar } = useCarga(cargar);
+  const load = useCallback((signal: AbortSignal) => appointmentsApi.byId(id, signal), [id]);
+  const { state, reload, update } = useLoader(load);
   const { confirm, dialog } = useConfirm();
-  const [reprogramando, setReprogramando] = useState(false);
-  const [cancelando, setCancelando] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState('');
-  const [exito, setExito] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const limpiarMensajes = () => {
+  const clearMessages = () => {
     setError('');
-    setExito('');
+    setSuccess('');
   };
 
   // Un 409 o 403 significa que la cita pudo cambiar por otro lado: se muestra su estado real.
-  const alFallar = (err: Error) => {
+  const onFail = (err: Error) => {
     setError(err.message);
     if (err instanceof ApiError && (err.statusCode === 409 || err.statusCode === 403)) {
-      recargar();
+      reload();
     }
   };
 
-  const cancelar = async () => {
+  const cancel = async () => {
     const ok = await confirm({
       title: '¿Cancelar esta cita?',
       message: 'El horario quedará disponible para otros pacientes.',
@@ -49,59 +49,59 @@ export function DetalleCitaPage() {
       cancelLabel: 'Volver',
     });
     if (!ok) return;
-    limpiarMensajes();
-    setCancelando(true);
+    clearMessages();
+    setCancelling(true);
     try {
-      const cancelada = await appointmentsApi.cancelar(id);
-      actualizar(() => cancelada);
-      setExito('Cita cancelada');
+      const cancelled = await appointmentsApi.cancel(id);
+      update(() => cancelled);
+      setSuccess('Cita cancelada');
     } catch (err) {
-      alFallar(err as Error);
+      onFail(err as Error);
     } finally {
-      setCancelando(false);
+      setCancelling(false);
     }
   };
 
-  if (estado.status === 'cargando') return <LoadingState />;
-  if (estado.status === 'error') {
+  if (state.status === 'cargando') return <LoadingState />;
+  if (state.status === 'error') {
     return (
       <div className="page page-narrow">
-        <PageHeader title="Detalle de la cita" back={VOLVER} />
-        <ErrorMessage>{estado.mensaje}</ErrorMessage>
+        <PageHeader title="Detalle de la cita" back={BACK} />
+        <ErrorMessage>{state.message}</ErrorMessage>
       </div>
     );
   }
 
-  const cita = estado.datos;
-  const acciones = user ? accionesPermitidas(cita.estado, user.role) : [];
-  const puedeReprogramar = acciones.includes('reprogramar');
+  const appointment = state.data;
+  const actions = user ? allowedActions(appointment.estado, user.role) : [];
+  const canReschedule = actions.includes('reprogramar');
 
   return (
     <div className="page page-narrow">
-      <PageHeader title="Detalle de la cita" back={VOLVER} />
+      <PageHeader title="Detalle de la cita" back={BACK} />
       <section className="card">
-        <DatosCita cita={cita} />
+        <DatosCita appointment={appointment} />
         {error && <ErrorMessage>{error}</ErrorMessage>}
-        {exito && <SuccessMessage>{exito}</SuccessMessage>}
-        {!reprogramando && acciones.length > 0 && (
+        {success && <SuccessMessage>{success}</SuccessMessage>}
+        {!rescheduling && actions.length > 0 && (
           <div className="form-actions">
-            {puedeReprogramar && (
+            {canReschedule && (
               <Button
-                disabled={cancelando}
+                disabled={cancelling}
                 onClick={() => {
-                  limpiarMensajes();
-                  setReprogramando(true);
+                  clearMessages();
+                  setRescheduling(true);
                 }}
                 data-testid="btn-reprogramar"
               >
                 Reprogramar
               </Button>
             )}
-            {acciones.includes('cancelar') && (
+            {actions.includes('cancelar') && (
               <Button
                 variant="danger-outline"
-                loading={cancelando}
-                onClick={() => void cancelar()}
+                loading={cancelling}
+                onClick={() => void cancel()}
                 data-testid="btn-cancelar"
               >
                 Cancelar cita
@@ -110,17 +110,17 @@ export function DetalleCitaPage() {
           </div>
         )}
       </section>
-      {reprogramando && puedeReprogramar && (
+      {rescheduling && canReschedule && (
         <PanelReprogramar
-          cita={cita}
-          alElegir={limpiarMensajes}
-          alTerminar={(reprogramada) => {
-            actualizar(() => reprogramada);
-            setReprogramando(false);
-            setExito('Cita reprogramada');
+          appointment={appointment}
+          onChoose={clearMessages}
+          onDone={(rescheduled) => {
+            update(() => rescheduled);
+            setRescheduling(false);
+            setSuccess('Cita reprogramada');
           }}
-          alFallar={alFallar}
-          alDesistir={() => setReprogramando(false)}
+          onFail={onFail}
+          onCancel={() => setRescheduling(false)}
         />
       )}
       {dialog}

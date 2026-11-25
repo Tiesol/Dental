@@ -6,23 +6,23 @@ import { DateField } from './DateField';
 
 function CampoControlado({
   min,
-  inicial = '',
-  onEmitir,
+  inicial: initial = '',
+  onEmit,
 }: {
   min?: string;
   inicial?: string;
-  onEmitir: (v: string) => void;
+  onEmit: (v: string) => void;
 }) {
-  const [valor, setValor] = useState(inicial);
+  const [value, setValue] = useState(initial);
   return (
     <>
       <DateField
         label="Fecha"
-        value={valor}
+        value={value}
         min={min}
         onChange={(v) => {
-          setValor(v);
-          onEmitir(v);
+          setValue(v);
+          onEmit(v);
         }}
       />
       <button type="button">Fuera</button>
@@ -32,26 +32,26 @@ function CampoControlado({
 
 describe('DateField', () => {
   it('emite la fecha ISO al escribir una fecha válida que cumple el mínimo', async () => {
-    const onEmitir = vi.fn();
+    const onEmit = vi.fn();
     const user = userEvent.setup();
-    render(<CampoControlado min="2026-11-10" onEmitir={onEmitir} />);
+    render(<CampoControlado min="2026-11-10" onEmit={onEmit} />);
 
     const input = screen.getByLabelText('Fecha');
     await user.type(input, '12/11/2026');
 
-    expect(onEmitir).toHaveBeenLastCalledWith('2026-11-12');
+    expect(onEmit).toHaveBeenLastCalledWith('2026-11-12');
     expect(input).not.toHaveAttribute('aria-invalid');
   });
 
   it('no emite fechas anteriores al mínimo al escribirlas y avisa al salir del campo', async () => {
-    const onEmitir = vi.fn();
+    const onEmit = vi.fn();
     const user = userEvent.setup();
-    render(<CampoControlado min="2026-11-10" onEmitir={onEmitir} />);
+    render(<CampoControlado min="2026-11-10" onEmit={onEmit} />);
 
     const input = screen.getByLabelText('Fecha');
     await user.type(input, '05/11/2026');
 
-    expect(onEmitir).not.toHaveBeenCalledWith('2026-11-05');
+    expect(onEmit).not.toHaveBeenCalledWith('2026-11-05');
     expect(input).toHaveValue('05/11/2026');
 
     await user.click(screen.getByRole('button', { name: 'Fuera' }));
@@ -61,16 +61,16 @@ describe('DateField', () => {
   });
 
   it('limpia el valor previo si se edita a una fecha anterior al mínimo y permite corregirla', async () => {
-    const onEmitir = vi.fn();
+    const onEmit = vi.fn();
     const user = userEvent.setup();
-    render(<CampoControlado min="2026-11-10" inicial="2026-11-12" onEmitir={onEmitir} />);
+    render(<CampoControlado min="2026-11-10" inicial="2026-11-12" onEmit={onEmit} />);
 
     const input = screen.getByLabelText('Fecha');
     await user.clear(input);
     await user.type(input, '09/11/2026');
 
-    expect(onEmitir).not.toHaveBeenCalledWith('2026-11-09');
-    expect(onEmitir).toHaveBeenLastCalledWith('');
+    expect(onEmit).not.toHaveBeenCalledWith('2026-11-09');
+    expect(onEmit).toHaveBeenLastCalledWith('');
 
     await user.click(screen.getByRole('button', { name: 'Fuera' }));
     expect(input).toHaveAttribute('aria-invalid', 'true');
@@ -79,14 +79,14 @@ describe('DateField', () => {
     await user.clear(input);
     await user.type(input, '11/11/2026');
 
-    expect(onEmitir).toHaveBeenLastCalledWith('2026-11-11');
+    expect(onEmit).toHaveBeenLastCalledWith('2026-11-11');
     expect(input).not.toHaveAttribute('aria-invalid');
   });
 
   it('avisa si el formato queda incompleto al salir del campo', async () => {
-    const onEmitir = vi.fn();
+    const onEmit = vi.fn();
     const user = userEvent.setup();
-    render(<CampoControlado onEmitir={onEmitir} />);
+    render(<CampoControlado onEmit={onEmit} />);
 
     const input = screen.getByLabelText('Fecha');
     await user.type(input, '12/11');

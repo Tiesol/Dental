@@ -2,13 +2,13 @@ import { screen } from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import { usuarioDePrueba } from '@/test/factories';
+import { testUser } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
 import { RequireRole } from './RequireRole';
 
-function renderProtegida(opciones: { conSesion: boolean }) {
+function renderProtected(options: { withSession: boolean }) {
   return renderWithProviders(
     <Routes>
       <Route path="/login" element={<h1>Página de login</h1>} />
@@ -21,13 +21,13 @@ function renderProtegida(opciones: { conSesion: boolean }) {
         }
       />
     </Routes>,
-    { route: '/admin', ...opciones },
+    { route: '/admin', ...options },
   );
 }
 
 describe('RequireRole', () => {
   it('sin sesión redirige a /login', async () => {
-    renderProtegida({ conSesion: false });
+    renderProtected({ withSession: false });
 
     expect(await screen.findByRole('heading', { name: 'Página de login' })).toBeInTheDocument();
     expect(
@@ -36,11 +36,9 @@ describe('RequireRole', () => {
   });
 
   it('con sesión de un rol no permitido muestra acceso denegado sin renderizar el contenido', async () => {
-    server.use(
-      http.get(`${API}/auth/me`, () => HttpResponse.json(usuarioDePrueba({ role: 'PACIENTE' }))),
-    );
+    server.use(http.get(`${API}/auth/me`, () => HttpResponse.json(testUser({ role: 'PACIENTE' }))));
 
-    renderProtegida({ conSesion: true });
+    renderProtected({ withSession: true });
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Acceso denegado');
     expect(
@@ -49,11 +47,9 @@ describe('RequireRole', () => {
   });
 
   it('con sesión de un rol permitido renderiza el contenido', async () => {
-    server.use(
-      http.get(`${API}/auth/me`, () => HttpResponse.json(usuarioDePrueba({ role: 'ADMIN' }))),
-    );
+    server.use(http.get(`${API}/auth/me`, () => HttpResponse.json(testUser({ role: 'ADMIN' }))));
 
-    renderProtegida({ conSesion: true });
+    renderProtected({ withSession: true });
 
     expect(
       await screen.findByRole('heading', { name: 'Panel de administración' }),
@@ -67,7 +63,7 @@ describe('RequireRole', () => {
       ),
     );
 
-    renderProtegida({ conSesion: true });
+    renderProtected({ withSession: true });
 
     expect(await screen.findByRole('heading', { name: 'Página de login' })).toBeInTheDocument();
     expect(localStorage.getItem('citas-dentales.token')).toBeNull();

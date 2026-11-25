@@ -11,4 +11,4 @@ export class ApiError extends Error {
   }
 }
 
-export const MENSAJE_SIN_CONEXION = 'No se pudo conectar con el servidor';
+export const OFFLINE_MESSAGE = 'No se pudo conectar con el servidor';

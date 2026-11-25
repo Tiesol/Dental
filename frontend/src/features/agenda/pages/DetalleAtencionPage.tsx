@@ -1,7 +1,7 @@
 import { useCallback, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { appointmentsApi } from '@/api/endpoints/appointments';
-import type { AppointmentResponse, EstadoCita } from '@/api/types';
+import type { AppointmentResponse, AppointmentStatus } from '@/api/types';
 import { useAuth } from '@/features/auth';
 import { Button } from '@/shared/components/Button';
 import { DatosCita } from '@/shared/components/DatosCita';
@@ -10,116 +10,110 @@ import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { TextArea } from '@/shared/components/TextArea';
-import { useCarga } from '@/shared/hooks/useCarga';
+import { useLoader } from '@/shared/hooks/useLoader';
 import { useForm } from '@/shared/hooks/useForm';
-import { accionesPermitidas } from '@/shared/lib/estados-cita';
+import { allowedActions } from '@/shared/lib/appointment-status';
 import { required } from '@/shared/lib/validators';
 
-const VOLVER = { to: '/agenda', label: 'Volver a la agenda' };
+const BACK = { to: '/agenda', label: 'Volver a la agenda' };
 
-type Accion = 'confirmar' | 'iniciar' | 'observacion' | 'finalizar';
+type Action = 'confirmar' | 'iniciar' | 'observacion' | 'finalizar';
 
 // Flujo de atención del odontólogo: confirmar, iniciar, registrar la observación y finalizar
 // (PDF sección 7).
 export function DetalleAtencionPage() {
   const { id = '' } = useParams();
   const { user } = useAuth();
-  const cargar = useCallback((signal: AbortSignal) => appointmentsApi.porId(id, signal), [id]);
-  const { estado, recargar, actualizar } = useCarga(cargar);
+  const load = useCallback((signal: AbortSignal) => appointmentsApi.byId(id, signal), [id]);
+  const { state, reload, update } = useLoader(load);
   const form = useForm({ texto: '' }, { texto: required('Escribe la observación de la atención') });
-  const [enCurso, setEnCurso] = useState<Accion | null>(null);
+  const [inProgress, setInProgress] = useState<Action | null>(null);
   const [error, setError] = useState('');
-  const [exito, setExito] = useState('');
+  const [success, setSuccess] = useState('');
 
   // Cada acción cambia solo esta cita y se aplica con la respuesta del backend. Tras un error se
   // vuelve a pedir la cita, porque pudo haber cambiado por otro lado.
-  const ejecutar = async (
-    accion: Accion,
-    llamada: () => Promise<(cita: AppointmentResponse) => AppointmentResponse>,
-    mensajeExito: string,
+  const run = async (
+    action: Action,
+    call: () => Promise<(appointment: AppointmentResponse) => AppointmentResponse>,
+    successMessage: string,
   ) => {
     setError('');
-    setExito('');
-    setEnCurso(accion);
+    setSuccess('');
+    setInProgress(action);
     try {
-      actualizar(await llamada());
-      setExito(mensajeExito);
+      update(await call());
+      setSuccess(successMessage);
     } catch (err) {
       setError((err as Error).message);
-      recargar();
+      reload();
     } finally {
-      setEnCurso(null);
+      setInProgress(null);
     }
   };
 
-  const cambiarEstado = async (nuevo: EstadoCita) => {
-    const actualizada = await appointmentsApi.cambiarEstado(id, nuevo);
-    return () => actualizada;
+  const changeStatus = async (newValue: AppointmentStatus) => {
+    const updated = await appointmentsApi.changeStatus(id, newValue);
+    return () => updated;
   };
 
-  const confirmar = () =>
-    void ejecutar('confirmar', () => cambiarEstado('CONFIRMADA'), 'Cita confirmada');
+  const confirm = () => void run('confirmar', () => changeStatus('CONFIRMADA'), 'Cita confirmada');
 
-  const iniciar = () =>
-    void ejecutar('iniciar', () => cambiarEstado('EN_ATENCION'), 'Atención iniciada');
+  const start = () => void run('iniciar', () => changeStatus('EN_ATENCION'), 'Atención iniciada');
 
-  const finalizar = () =>
-    void ejecutar('finalizar', () => cambiarEstado('FINALIZADA'), 'Cita finalizada');
+  const finish = () => void run('finalizar', () => changeStatus('FINALIZADA'), 'Cita finalizada');
 
-  const registrar = async (e: FormEvent) => {
+  const register = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.validate()) return;
-    await ejecutar(
+    await run(
       'observacion',
       async () => {
-        const observacion = await appointmentsApi.registrarObservacion(
-          id,
-          form.values.texto.trim(),
-        );
-        return (cita) => ({ ...cita, observacion });
+        const observation = await appointmentsApi.registerObservation(id, form.values.texto.trim());
+        return (appointment) => ({ ...appointment, observacion: observation });
       },
       'Observación registrada',
     );
   };
 
-  if (estado.status === 'cargando') return <LoadingState />;
-  if (estado.status === 'error') {
+  if (state.status === 'cargando') return <LoadingState />;
+  if (state.status === 'error') {
     return (
       <div className="page page-narrow">
-        <PageHeader title="Atención de la cita" back={VOLVER} />
-        <ErrorMessage>{estado.mensaje}</ErrorMessage>
+        <PageHeader title="Atención de la cita" back={BACK} />
+        <ErrorMessage>{state.message}</ErrorMessage>
       </div>
     );
   }
 
-  const cita = estado.datos;
-  const acciones = user ? accionesPermitidas(cita.estado, user.role) : [];
+  const appointment = state.data;
+  const actions = user ? allowedActions(appointment.estado, user.role) : [];
 
   return (
     <div className="page page-narrow">
-      <PageHeader title="Atención de la cita" back={VOLVER} />
+      <PageHeader title="Atención de la cita" back={BACK} />
       <section className="card">
-        <DatosCita cita={cita} mostrarPaciente />
+        <DatosCita appointment={appointment} showPatient />
         {error && <ErrorMessage>{error}</ErrorMessage>}
-        {exito && <SuccessMessage>{exito}</SuccessMessage>}
-        {acciones.includes('confirmar') && (
+        {success && <SuccessMessage>{success}</SuccessMessage>}
+        {actions.includes('confirmar') && (
           <div className="form-actions">
             <Button
-              loading={enCurso === 'confirmar'}
-              disabled={enCurso !== null}
-              onClick={confirmar}
+              loading={inProgress === 'confirmar'}
+              disabled={inProgress !== null}
+              onClick={confirm}
               data-testid="btn-confirmar-cita"
             >
               Confirmar cita
             </Button>
           </div>
         )}
-        {acciones.includes('iniciar-atencion') && (
+        {actions.includes('iniciar-atencion') && (
           <div className="form-actions">
             <Button
-              loading={enCurso === 'iniciar'}
-              disabled={enCurso !== null}
-              onClick={iniciar}
+              loading={inProgress === 'iniciar'}
+              disabled={inProgress !== null}
+              onClick={start}
               data-testid="btn-iniciar-atencion"
             >
               Iniciar atención
@@ -128,15 +122,15 @@ export function DetalleAtencionPage() {
         )}
       </section>
 
-      {acciones.includes('registrar-observacion') && !cita.observacion && (
-        <form className="card" onSubmit={registrar} aria-labelledby="titulo-observacion" noValidate>
+      {actions.includes('registrar-observacion') && !appointment.observacion && (
+        <form className="card" onSubmit={register} aria-labelledby="titulo-observacion" noValidate>
           <h2 id="titulo-observacion">Observación de la atención</h2>
           <TextArea {...form.field('texto')} label="Observación" maxLength={2000} rows={4} />
           <div className="form-actions">
             <Button
               type="submit"
-              loading={enCurso === 'observacion'}
-              disabled={enCurso !== null}
+              loading={inProgress === 'observacion'}
+              disabled={inProgress !== null}
               data-testid="btn-registrar-observacion"
             >
               Registrar observación
@@ -145,19 +139,19 @@ export function DetalleAtencionPage() {
         </form>
       )}
 
-      {acciones.includes('finalizar') && (
+      {actions.includes('finalizar') && (
         <section className="card" aria-labelledby="titulo-finalizar">
           <div className="card-section">
             <h2 id="titulo-finalizar">Finalizar la cita</h2>
-            {!cita.observacion && (
+            {!appointment.observacion && (
               <p className="muted">Registra la observación para poder finalizar.</p>
             )}
           </div>
           <div className="form-actions">
             <Button
-              loading={enCurso === 'finalizar'}
-              disabled={enCurso !== null || !cita.observacion}
-              onClick={finalizar}
+              loading={inProgress === 'finalizar'}
+              disabled={inProgress !== null || !appointment.observacion}
+              onClick={finish}
               data-testid="btn-finalizar"
             >
               Finalizar

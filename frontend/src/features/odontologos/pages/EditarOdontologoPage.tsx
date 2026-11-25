@@ -12,76 +12,72 @@ import { useConfirm } from '@/shared/hooks/useConfirm';
 import { useForm } from '@/shared/hooks/useForm';
 import { required } from '@/shared/lib/validators';
 import { SelectorServicios } from '../components/SelectorServicios';
-import { useAccion } from '../hooks/useAccion';
-import { useOdontologoAdmin } from '../hooks/useOdontologoAdmin';
-import { useServiciosParaElegir } from '../hooks/useServiciosParaElegir';
+import { useAction } from '../hooks/useAction';
+import { useAdminDentist } from '../hooks/useAdminDentist';
+import { useSelectableServices } from '../hooks/useSelectableServices';
 
-const VOLVER = { to: '/admin/odontologos', label: 'Volver al listado' };
+const BACK = { to: '/admin/odontologos', label: 'Volver al listado' };
 
 export function EditarOdontologoPage() {
   const { id = '' } = useParams();
-  const { estado, guardarDatos, guardarServicios, cambiarEstado } = useOdontologoAdmin(id);
+  const { state, saveData, saveServices, changeStatus } = useAdminDentist(id);
 
-  if (estado.status === 'cargando') return <LoadingState />;
-  if (estado.status === 'error') {
+  if (state.status === 'cargando') return <LoadingState />;
+  if (state.status === 'error') {
     return (
       <div className="page page-narrow">
-        <PageHeader title="Editar odontólogo" back={VOLVER} />
-        <ErrorMessage>{estado.mensaje}</ErrorMessage>
+        <PageHeader title="Editar odontólogo" back={BACK} />
+        <ErrorMessage>{state.message}</ErrorMessage>
       </div>
     );
   }
 
-  const { odontologo } = estado;
+  const { dentist } = state;
   return (
     <div className="page page-narrow">
       <PageHeader
         title="Editar odontólogo"
-        description={odontologo.nombre}
-        back={VOLVER}
+        description={dentist.nombre}
+        back={BACK}
         actions={
-          <ButtonLink to={`/admin/odontologos/${odontologo.id}/horarios`} variant="secondary">
+          <ButtonLink to={`/admin/odontologos/${dentist.id}/horarios`} variant="secondary">
             Horarios y bloques
           </ButtonLink>
         }
       />
-      <DatosProfesionales
-        key={`datos-${odontologo.id}`}
-        odontologo={odontologo}
-        guardar={guardarDatos}
-      />
+      <DatosProfesionales key={`datos-${dentist.id}`} dentist={dentist} save={saveData} />
       <ServiciosQueRealiza
-        key={`servicios-${odontologo.id}`}
-        odontologo={odontologo}
-        guardar={guardarServicios}
+        key={`servicios-${dentist.id}`}
+        odontologo={dentist}
+        guardar={saveServices}
       />
-      <EstadoProfesional odontologo={odontologo} cambiarEstado={cambiarEstado} />
+      <EstadoProfesional odontologo={dentist} changeStatus={changeStatus} />
     </div>
   );
 }
 
 function DatosProfesionales({
-  odontologo,
-  guardar,
+  dentist,
+  save,
 }: {
-  odontologo: DentistAdminResponse;
-  guardar: (cambios: UpdateDentistRequest) => Promise<void>;
+  dentist: DentistAdminResponse;
+  save: (changes: UpdateDentistRequest) => Promise<void>;
 }) {
   const form = useForm(
-    { nombre: odontologo.nombre, especialidad: odontologo.especialidad },
+    { nombre: dentist.nombre, especialidad: dentist.especialidad },
     {
       nombre: required('Escribe el nombre'),
       especialidad: required('Escribe la especialidad'),
     },
   );
-  const { enviando, ejecutar, mensajes } = useAccion();
+  const { sending, run, messages } = useAction();
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.validate()) return;
-    await ejecutar(
+    await run(
       () =>
-        guardar({
+        save({
           nombre: form.values.nombre.trim(),
           especialidad: form.values.especialidad.trim(),
         }),
@@ -99,20 +95,20 @@ function DatosProfesionales({
       <h2 id="titulo-datos-profesionales">Datos profesionales</h2>
       <dl className="details">
         <dt>Email</dt>
-        <dd>{odontologo.email}</dd>
+        <dd>{dentist.email}</dd>
         <dt>Cuenta</dt>
         <dd>
-          {odontologo.cuentaActiva ? 'Habilitada' : 'Deshabilitada'} ·{' '}
-          <Link to={`/admin/usuarios/${odontologo.userId}`}>Gestionar cuenta</Link>
+          {dentist.cuentaActiva ? 'Habilitada' : 'Deshabilitada'} ·{' '}
+          <Link to={`/admin/usuarios/${dentist.userId}`}>Gestionar cuenta</Link>
         </dd>
       </dl>
       <div className="form-row">
         <TextField {...form.field('nombre')} label="Nombre" maxLength={100} />
         <TextField {...form.field('especialidad')} label="Especialidad" maxLength={100} />
       </div>
-      {mensajes}
+      {messages}
       <div className="form-actions">
-        <Button type="submit" loading={enviando} data-testid="btn-guardar-odontologo">
+        <Button type="submit" loading={sending} data-testid="btn-guardar-odontologo">
           Guardar datos
         </Button>
       </div>
@@ -121,33 +117,33 @@ function DatosProfesionales({
 }
 
 function ServiciosQueRealiza({
-  odontologo,
-  guardar,
+  odontologo: dentist,
+  guardar: save,
 }: {
   odontologo: DentistAdminResponse;
   guardar: (serviceIds: string[]) => Promise<void>;
 }) {
-  const { servicios, error: errorServicios } = useServiciosParaElegir();
-  const [seleccionados, setSeleccionados] = useState(odontologo.servicios.map((s) => s.id));
-  const { enviando, ejecutar, mensajes } = useAccion();
+  const { services, error: servicesError } = useSelectableServices();
+  const [selected, setSelected] = useState(dentist.servicios.map((s) => s.id));
+  const { sending, run, messages } = useAction();
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await ejecutar(() => guardar(seleccionados), 'Servicios actualizados');
+    await run(() => save(selected), 'Servicios actualizados');
   };
 
   return (
     <form className="card" onSubmit={onSubmit} noValidate>
       <SelectorServicios
-        servicios={servicios}
-        seleccionados={seleccionados}
-        onChange={setSeleccionados}
-        disabled={enviando}
+        services={services}
+        selected={selected}
+        onChange={setSelected}
+        disabled={sending}
       />
-      {errorServicios && <ErrorMessage>{errorServicios}</ErrorMessage>}
-      {mensajes}
+      {servicesError && <ErrorMessage>{servicesError}</ErrorMessage>}
+      {messages}
       <div className="form-actions">
-        <Button type="submit" loading={enviando} data-testid="btn-guardar-servicios-odontologo">
+        <Button type="submit" loading={sending} data-testid="btn-guardar-servicios-odontologo">
           Guardar servicios
         </Button>
       </div>
@@ -156,29 +152,29 @@ function ServiciosQueRealiza({
 }
 
 function EstadoProfesional({
-  odontologo,
-  cambiarEstado,
+  odontologo: dentist,
+  changeStatus,
 }: {
   odontologo: DentistAdminResponse;
-  cambiarEstado: (activo: boolean) => Promise<void>;
+  changeStatus: (active: boolean) => Promise<void>;
 }) {
-  const { enviando, ejecutar, mensajes } = useAccion();
+  const { sending, run, messages } = useAction();
   const { confirm, dialog } = useConfirm();
 
-  const alternar = async () => {
+  const toggle = async () => {
     if (
-      odontologo.activo &&
+      dentist.activo &&
       !(await confirm({
-        title: `¿Deshabilitar a ${odontologo.nombre}?`,
+        title: `¿Deshabilitar a ${dentist.nombre}?`,
         message: 'No recibirá nuevas citas; sus citas existentes se conservan.',
         confirmLabel: 'Deshabilitar odontólogo',
       }))
     ) {
       return;
     }
-    await ejecutar(
-      () => cambiarEstado(!odontologo.activo),
-      odontologo.activo ? 'Odontólogo deshabilitado' : 'Odontólogo habilitado',
+    await run(
+      () => changeStatus(!dentist.activo),
+      dentist.activo ? 'Odontólogo deshabilitado' : 'Odontólogo habilitado',
     );
   };
 
@@ -187,22 +183,22 @@ function EstadoProfesional({
       <div className="card-section">
         <h2 id="titulo-estado-profesional">Estado profesional</h2>
         <div>
-          <ActiveBadge active={odontologo.activo} activeLabel="Acepta citas" />
+          <ActiveBadge active={dentist.activo} activeLabel="Acepta citas" />
         </div>
         <p className="muted">
           Deshabilitado no recibe nuevas citas ni aparece para los pacientes; su historial se
           conserva.
         </p>
       </div>
-      {mensajes}
+      {messages}
       <div className="form-actions">
         <Button
-          variant={odontologo.activo ? 'danger-outline' : 'secondary'}
-          loading={enviando}
-          onClick={() => void alternar()}
+          variant={dentist.activo ? 'danger-outline' : 'secondary'}
+          loading={sending}
+          onClick={() => void toggle()}
           data-testid="btn-cambiar-estado-odontologo"
         >
-          {odontologo.activo ? 'Deshabilitar odontólogo' : 'Habilitar odontólogo'}
+          {dentist.activo ? 'Deshabilitar odontólogo' : 'Habilitar odontólogo'}
         </Button>
       </div>
       {dialog}

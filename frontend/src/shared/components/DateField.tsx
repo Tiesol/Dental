@@ -7,7 +7,7 @@ import {
   type Ref,
 } from 'react';
 import { useAnchoredPopover } from '@/shared/hooks/useAnchoredPopover';
-import { enmascararFecha, isoATextoFecha, textoFechaAIso } from '@/shared/lib/date-input';
+import { maskDate, isoToDateText, dateTextToIso } from '@/shared/lib/date-input';
 import { mergeRefs } from '@/shared/lib/merge-refs';
 import { Calendar } from './Calendar';
 import { Field } from './Field';
@@ -48,87 +48,86 @@ export function DateField({
 }: Props) {
   const popover = useAnchoredPopover<HTMLDivElement, HTMLDivElement>();
   const inputRef = useRef<HTMLInputElement>(null);
-  const botonRef = useRef<HTMLButtonElement>(null);
-  const [texto, setTexto] = useState(() => isoATextoFecha(value));
-  const [valorAvisado, setValorAvisado] = useState(value);
-  const [errorFormato, setErrorFormato] = useState<string | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [text, setText] = useState(() => isoToDateText(value));
+  const [notifiedValue, setNotifiedValue] = useState(value);
+  const [formatError, setFormatError] = useState<string | null>(null);
 
   // Si el valor cambia desde afuera (p. ej. se vació el formulario), el texto lo sigue.
-  if (value !== valorAvisado) {
-    setValorAvisado(value);
-    if ((textoFechaAIso(texto) ?? '') !== value) setTexto(isoATextoFecha(value));
+  if (value !== notifiedValue) {
+    setNotifiedValue(value);
+    if ((dateTextToIso(text) ?? '') !== value) setText(isoToDateText(value));
   }
 
-  const validar = (actual: string): string | null => {
-    if (actual.trim() === '') return null;
-    const iso = textoFechaAIso(actual);
+  const validate = (current: string): string | null => {
+    if (current.trim() === '') return null;
+    const iso = dateTextToIso(current);
     if (!iso) return 'Escribe la fecha como dd/mm/aaaa';
-    if (min && iso < min) return `Elige una fecha desde el ${isoATextoFecha(min)}`;
+    if (min && iso < min) return `Elige una fecha desde el ${isoToDateText(min)}`;
     return null;
   };
 
-  const avisar = (iso: string) => {
-    setValorAvisado(iso);
+  const notify = (iso: string) => {
+    setNotifiedValue(iso);
     if (iso !== value) onChange(iso);
   };
 
-  const escribir = (nuevo: string) => {
-    const enmascarado = enmascararFecha(nuevo);
-    setTexto(enmascarado);
-    if (errorFormato && !validar(enmascarado)) setErrorFormato(null);
-    const iso = textoFechaAIso(enmascarado);
-    avisar(iso && (!min || iso >= min) ? iso : '');
+  const write = (newValue: string) => {
+    const masked = maskDate(newValue);
+    setText(masked);
+    if (formatError && !validate(masked)) setFormatError(null);
+    const iso = dateTextToIso(masked);
+    notify(iso && (!min || iso >= min) ? iso : '');
   };
 
-  const elegir = (iso: string) => {
-    setTexto(isoATextoFecha(iso));
-    setErrorFormato(null);
-    avisar(iso);
+  const choose = (iso: string) => {
+    setText(isoToDateText(iso));
+    setFormatError(null);
+    notify(iso);
     inputRef.current?.focus();
     popover.hide();
   };
 
-  const borrar = () => {
-    setTexto('');
-    setErrorFormato(null);
-    avisar('');
+  const clear = () => {
+    setText('');
+    setFormatError(null);
+    notify('');
     inputRef.current?.focus();
     popover.hide();
   };
 
   // El campo incluye el calendario: solo se valida cuando el foco sale de los dos.
-  const alSalir = (e: FocusEvent<HTMLDivElement>) => {
-    const siguiente = e.relatedTarget as Node | null;
+  const onLeave = (e: FocusEvent<HTMLDivElement>) => {
+    const next = e.relatedTarget as Node | null;
     if (
-      siguiente &&
-      (popover.anchorRef.current?.contains(siguiente) ||
-        popover.popoverRef.current?.contains(siguiente))
+      next &&
+      (popover.anchorRef.current?.contains(next) || popover.popoverRef.current?.contains(next))
     ) {
       return;
     }
     popover.hide();
-    setErrorFormato(validar(texto));
-    const iso = textoFechaAIso(texto);
-    if (iso) setTexto(isoATextoFecha(iso));
+    setFormatError(validate(text));
+    const iso = dateTextToIso(text);
+    if (iso) setText(isoToDateText(iso));
     onBlur?.();
   };
 
-  const alPulsarEnCampo = (e: KeyboardEvent<HTMLInputElement>) => {
+  const onFieldPress = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown' && e.altKey) {
       e.preventDefault();
       popover.show();
     }
   };
 
-  const cerrarCalendario = () => {
-    botonRef.current?.focus();
+  const closeCalendar = () => {
+    buttonRef.current?.focus();
     popover.hide();
   };
 
   return (
-    <Field label={label} hint={hint} error={errorFormato ?? error} className={fieldClassName}>
+    <Field label={label} hint={hint} error={formatError ?? error} className={fieldClassName}>
       {(control) => (
-        <div className="input-group" ref={popover.anchorRef} onBlur={alSalir}>
+        <div className="input-group" ref={popover.anchorRef} onBlur={onLeave}>
           <input
             {...control}
             ref={mergeRefs(inputRef, ref)}
@@ -136,13 +135,13 @@ export function DateField({
             inputMode="numeric"
             autoComplete="off"
             placeholder="dd/mm/aaaa"
-            value={texto}
-            onChange={(e) => escribir(e.target.value)}
-            onKeyDown={alPulsarEnCampo}
+            value={text}
+            onChange={(e) => write(e.target.value)}
+            onKeyDown={onFieldPress}
             data-testid={testId}
           />
           <button
-            ref={botonRef}
+            ref={buttonRef}
             type="button"
             className="input-group-button"
             aria-label={`Elegir ${label.toLowerCase()} en el calendario`}
@@ -163,9 +162,9 @@ export function DateField({
                 value={value}
                 min={min}
                 clearable={clearable}
-                onSelect={elegir}
-                onClear={borrar}
-                onEscape={cerrarCalendario}
+                onSelect={choose}
+                onClear={clear}
+                onEscape={closeCalendar}
               />
             </div>,
           )}

@@ -5,156 +5,156 @@ import { ApiError } from '@/api/errors';
 import type { DentistPublicResponse, ServiceResponse, SlotResponse } from '@/api/types';
 import { Button } from '@/shared/components/Button';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
-import { formatearFecha, formatearRangoHora, hoyEnClinica } from '@/shared/lib/dates';
+import { formatDate, formatTimeRange, todayInClinic } from '@/shared/lib/dates';
 import { PasoOdontologo } from './PasoOdontologo';
 import { PasoServicio } from './PasoServicio';
 import { PasosReserva } from './PasosReserva';
 import { SelectorHorario } from './SelectorHorario';
 
-export type EleccionInicial = {
-  servicio: ServiceResponse | null;
-  odontologo: DentistPublicResponse | null;
+export type InitialChoice = {
+  service: ServiceResponse | null;
+  dentist: DentistPublicResponse | null;
 };
 
-type Props = { inicial: EleccionInicial };
+type Props = { initial: InitialChoice };
 
 // Pasos de la reserva: servicio, odontólogo, fecha y hora, y confirmación (PDF sección 6). Si se
 // llega desde un odontólogo, el orden se invierte: primero él y después uno de sus servicios.
-export function AsistenteReserva({ inicial }: Props) {
+export function AsistenteReserva({ initial }: Props) {
   const navigate = useNavigate();
-  const [servicio, setServicio] = useState(inicial.servicio);
-  const [odontologo, setOdontologo] = useState(inicial.odontologo);
-  const [desdeOdontologo, setDesdeOdontologo] = useState(!!inicial.odontologo && !inicial.servicio);
-  const [fecha, setFecha] = useState(hoyEnClinica);
+  const [service, setService] = useState(initial.service);
+  const [dentist, setDentist] = useState(initial.dentist);
+  const [fromDentist, setFromDentist] = useState(!!initial.dentist && !initial.service);
+  const [date, setDate] = useState(todayInClinic);
   const [slot, setSlot] = useState<SlotResponse | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
   // Desde un odontólogo, cambiar el servicio lo conserva: sus servicios siguen siendo la lista.
-  const cambiarServicio = () => {
-    setServicio(null);
-    if (!desdeOdontologo) setOdontologo(null);
+  const changeService = () => {
+    setService(null);
+    if (!fromDentist) setDentist(null);
     setSlot(null);
     setError('');
   };
 
-  const cambiarOdontologo = () => {
-    setOdontologo(null);
-    setDesdeOdontologo(false);
+  const changeDentist = () => {
+    setDentist(null);
+    setFromDentist(false);
     setSlot(null);
     setError('');
   };
 
-  const confirmar = async () => {
-    if (!servicio || !odontologo || !slot) return;
+  const confirm = async () => {
+    if (!service || !dentist || !slot) return;
     setError('');
-    setEnviando(true);
+    setSending(true);
     try {
-      await appointmentsApi.reservar({
-        dentistId: odontologo.id,
-        serviceId: servicio.id,
+      await appointmentsApi.book({
+        dentistId: dentist.id,
+        serviceId: service.id,
         horaInicio: slot.inicio,
       });
-      navigate('/mis-citas', { state: { exito: 'Cita reservada' } });
+      navigate('/mis-citas', { state: { success: 'Cita reservada' } });
     } catch (err) {
       setError((err as Error).message);
-      setEnviando(false);
+      setSending(false);
       // Otro paciente se adelantó: al volver al paso de horarios se consulta la lista de nuevo.
       if (err instanceof ApiError && err.statusCode === 409) setSlot(null);
     }
   };
 
-  const eleccionServicio = servicio && (
+  const serviceChoice = service && (
     <div className="eleccion">
       <span>
-        Servicio: <strong>{servicio.nombre}</strong>
+        Servicio: <strong>{service.nombre}</strong>
       </span>
-      <Button variant="secondary" onClick={cambiarServicio}>
+      <Button variant="secondary" onClick={changeService}>
         Cambiar servicio
       </Button>
     </div>
   );
 
-  const eleccionOdontologo = odontologo && (
+  const dentistChoice = dentist && (
     <div className="eleccion">
       <span>
-        Odontólogo: <strong>{odontologo.nombre}</strong>
+        Odontólogo: <strong>{dentist.nombre}</strong>
       </span>
-      <Button variant="secondary" onClick={cambiarOdontologo}>
+      <Button variant="secondary" onClick={changeDentist}>
         Cambiar odontólogo
       </Button>
     </div>
   );
 
   // El orden sigue al de la elección; el paso actual es el primero que falta.
-  const pasos = desdeOdontologo
+  const steps = fromDentist
     ? ['Odontólogo', 'Servicio', 'Horario', 'Confirmar']
     : ['Servicio', 'Odontólogo', 'Horario', 'Confirmar'];
-  const primero = desdeOdontologo ? odontologo : servicio;
-  const pasoActual = !primero ? 0 : !(servicio && odontologo) ? 1 : !slot ? 2 : 3;
+  const first = fromDentist ? dentist : service;
+  const currentStep = !first ? 0 : !(service && dentist) ? 1 : !slot ? 2 : 3;
 
   return (
     <>
-      <PasosReserva pasos={pasos} actual={pasoActual} />
+      <PasosReserva steps={steps} current={currentStep} />
       {error && <ErrorMessage>{error}</ErrorMessage>}
 
-      {desdeOdontologo ? eleccionOdontologo : eleccionServicio}
-      {desdeOdontologo ? eleccionServicio : eleccionOdontologo}
+      {fromDentist ? dentistChoice : serviceChoice}
+      {fromDentist ? serviceChoice : dentistChoice}
 
-      {!servicio && (
+      {!service && (
         <PasoServicio
-          odontologo={desdeOdontologo ? odontologo : null}
-          onElegir={(elegido) => {
+          dentist={fromDentist ? dentist : null}
+          onChoose={(chosen) => {
             setError('');
-            setServicio(elegido);
+            setService(chosen);
           }}
         />
       )}
 
-      {servicio && !odontologo && (
+      {service && !dentist && (
         <PasoOdontologo
-          serviceId={servicio.id}
-          onElegir={(elegido) => {
+          serviceId={service.id}
+          onChoose={(chosen) => {
             setError('');
-            setOdontologo(elegido);
+            setDentist(chosen);
           }}
         />
       )}
 
-      {servicio && odontologo && !slot && (
+      {service && dentist && !slot && (
         <section className="card" aria-labelledby="titulo-paso-horario">
           <h2 id="titulo-paso-horario">3. Elige fecha y horario</h2>
           <SelectorHorario
-            dentistId={odontologo.id}
-            serviceId={servicio.id}
-            fecha={fecha}
-            onCambiarFecha={setFecha}
-            onElegir={(elegido) => {
+            dentistId={dentist.id}
+            serviceId={service.id}
+            date={date}
+            onDateChange={setDate}
+            onChoose={(chosen) => {
               setError('');
-              setSlot(elegido);
+              setSlot(chosen);
             }}
           />
         </section>
       )}
 
-      {servicio && odontologo && slot && (
+      {service && dentist && slot && (
         <section className="card" aria-labelledby="titulo-paso-confirmar">
           <h2 id="titulo-paso-confirmar">4. Confirma tu cita</h2>
           <dl className="details" data-testid="resumen-reserva">
             <dt>Servicio</dt>
-            <dd>{servicio.nombre}</dd>
+            <dd>{service.nombre}</dd>
             <dt>Odontólogo</dt>
-            <dd>{odontologo.nombre}</dd>
+            <dd>{dentist.nombre}</dd>
             <dt>Fecha</dt>
-            <dd>{formatearFecha(slot.inicio)}</dd>
+            <dd>{formatDate(slot.inicio)}</dd>
             <dt>Horario</dt>
-            <dd>{formatearRangoHora(slot.inicio, slot.fin)}</dd>
+            <dd>{formatTimeRange(slot.inicio, slot.fin)}</dd>
           </dl>
           <div className="form-actions">
-            <Button loading={enviando} onClick={() => void confirmar()} data-testid="btn-reservar">
+            <Button loading={sending} onClick={() => void confirm()} data-testid="btn-reservar">
               Confirmar reserva
             </Button>
-            <Button variant="secondary" disabled={enviando} onClick={() => setSlot(null)}>
+            <Button variant="secondary" disabled={sending} onClick={() => setSlot(null)}>
               Elegir otro horario
             </Button>
           </div>

@@ -3,20 +3,18 @@ import userEvent from '@testing-library/user-event';
 import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { tokenStore } from '@/api/token';
-import { usuarioDePrueba } from '@/test/factories';
+import { testUser } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
 import { Header } from './Header';
 
-function renderConRol(role: 'PACIENTE' | 'ODONTOLOGO' | 'ADMIN', nombre = 'Ana Pérez') {
-  server.use(
-    http.get(`${API}/auth/me`, () => HttpResponse.json(usuarioDePrueba({ role, nombre }))),
-  );
-  return renderWithProviders(<Header />, { conSesion: true });
+function renderWithRole(role: 'PACIENTE' | 'ODONTOLOGO' | 'ADMIN', name = 'Ana Pérez') {
+  server.use(http.get(`${API}/auth/me`, () => HttpResponse.json(testUser({ role, nombre: name }))));
+  return renderWithProviders(<Header />, { withSession: true });
 }
 
-function enlacesDelMenu() {
+function menuLinks() {
   const nav = screen.getByRole('navigation', { name: 'Principal' });
   return within(nav)
     .getAllByRole('link')
@@ -25,31 +23,31 @@ function enlacesDelMenu() {
 
 describe('Header', () => {
   it('el ADMIN ve Citas, Usuarios, Servicios y Odontólogos', async () => {
-    renderConRol('ADMIN');
+    renderWithRole('ADMIN');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual(['Citas', 'Usuarios', 'Servicios', 'Odontólogos']);
+    expect(menuLinks()).toEqual(['Citas', 'Usuarios', 'Servicios', 'Odontólogos']);
   });
 
   it('el PACIENTE ve Mis citas, Servicios y Odontólogos: reserva desde los catálogos', async () => {
-    renderConRol('PACIENTE');
+    renderWithRole('PACIENTE');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual(['Mis citas', 'Servicios', 'Odontólogos']);
+    expect(menuLinks()).toEqual(['Mis citas', 'Servicios', 'Odontólogos']);
   });
 
   it('el ODONTOLOGO ve Agenda', async () => {
-    renderConRol('ODONTOLOGO');
+    renderWithRole('ODONTOLOGO');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual(['Agenda']);
+    expect(menuLinks()).toEqual(['Agenda']);
   });
 
   it('muestra el nombre del usuario, sus iniciales y su rol', async () => {
-    renderConRol('ODONTOLOGO', 'Dr. Juan Rojas');
+    renderWithRole('ODONTOLOGO', 'Dr. Juan Rojas');
 
     expect(await screen.findByText('Dr. Juan Rojas')).toBeInTheDocument();
     expect(screen.getByText('JR')).toBeInTheDocument();
@@ -57,18 +55,18 @@ describe('Header', () => {
   });
 
   it('el nombre del usuario, al pie del menú, lleva a Mi cuenta', async () => {
-    renderConRol('PACIENTE');
+    renderWithRole('PACIENTE');
 
-    const enlace = await screen.findByRole('link', { name: /Mi cuenta/ });
+    const link = await screen.findByRole('link', { name: /Mi cuenta/ });
 
-    expect(enlace).toHaveAttribute('href', '/mi-cuenta');
-    expect(enlace).toHaveTextContent('Ana Pérez');
-    expect(enlace).toHaveTextContent('Paciente');
+    expect(link).toHaveAttribute('href', '/mi-cuenta');
+    expect(link).toHaveTextContent('Ana Pérez');
+    expect(link).toHaveTextContent('Paciente');
   });
 
   it('Cerrar sesión borra el token y quita el menú', async () => {
     const user = userEvent.setup();
-    renderConRol('PACIENTE');
+    renderWithRole('PACIENTE');
 
     await user.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
 

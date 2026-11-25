@@ -7,58 +7,58 @@ import { TextField } from '@/shared/components/TextField';
 import { TimeField } from '@/shared/components/TimeField';
 import { useConfirm } from '@/shared/hooks/useConfirm';
 import { useForm } from '@/shared/hooks/useForm';
-import { fechaHoraLocalAIso, formatearFechaHora } from '@/shared/lib/dates';
+import { localDateTimeToIso, formatDateTime } from '@/shared/lib/dates';
 import { required } from '@/shared/lib/validators';
 
 type Props = {
-  bloques: UnavailableBlockResponse[];
-  crear: (cuerpo: CreateBlockRequest) => Promise<void>;
-  borrar: (blockId: string) => Promise<void>;
+  blocks: UnavailableBlockResponse[];
+  onCreate: (body: CreateBlockRequest) => Promise<void>;
+  onDelete: (blockId: string) => Promise<void>;
 };
 
-const VACIO = { inicioFecha: '', inicioHora: '', finFecha: '', finHora: '', motivo: '' };
+const EMPTY = { startDate: '', startTime: '', endDate: '', endTime: '', motivo: '' };
 
 // Pausas puntuales del odontólogo. Las fechas se escriben en hora de la clínica.
-export function SeccionBloques({ bloques, crear, borrar }: Props) {
-  const form = useForm(VACIO, {
-    inicioFecha: required('Elige la fecha de inicio'),
-    inicioHora: required('Elige la hora de inicio'),
-    finFecha: required('Elige la fecha de fin'),
-    finHora: (valor, v) =>
-      required('Elige la hora de fin')(valor) ??
-      (v.inicioFecha &&
-      v.inicioHora &&
-      v.finFecha &&
-      `${v.finFecha}T${valor}` <= `${v.inicioFecha}T${v.inicioHora}`
+export function SeccionBloques({ blocks, onCreate, onDelete }: Props) {
+  const form = useForm(EMPTY, {
+    startDate: required('Elige la fecha de inicio'),
+    startTime: required('Elige la hora de inicio'),
+    endDate: required('Elige la fecha de fin'),
+    endTime: (value, v) =>
+      required('Elige la hora de fin')(value) ??
+      (v.startDate &&
+      v.startTime &&
+      v.endDate &&
+      `${v.endDate}T${value}` <= `${v.startDate}T${v.startTime}`
         ? 'El fin debe ser posterior al inicio'
         : null),
   });
-  const [enviando, setEnviando] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [quitando, setQuitando] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
   const { confirm, dialog } = useConfirm();
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     if (!form.validate()) return;
-    const { inicioFecha, inicioHora, finFecha, finHora, motivo } = form.values;
-    setEnviando(true);
+    const { startDate, startTime, endDate, endTime, motivo: reason } = form.values;
+    setSending(true);
     try {
-      await crear({
-        inicio: fechaHoraLocalAIso(`${inicioFecha}T${inicioHora}`),
-        fin: fechaHoraLocalAIso(`${finFecha}T${finHora}`),
-        ...(motivo.trim() ? { motivo: motivo.trim() } : {}),
+      await onCreate({
+        inicio: localDateTimeToIso(`${startDate}T${startTime}`),
+        fin: localDateTimeToIso(`${endDate}T${endTime}`),
+        ...(reason.trim() ? { motivo: reason.trim() } : {}),
       });
       form.reset();
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setEnviando(false);
+      setSending(false);
     }
   };
 
-  const quitar = async (bloque: UnavailableBlockResponse) => {
+  const remove = async (block: UnavailableBlockResponse) => {
     const ok = await confirm({
       title: '¿Quitar este bloque?',
       message: 'El horario volverá a estar disponible para reservas.',
@@ -66,13 +66,13 @@ export function SeccionBloques({ bloques, crear, borrar }: Props) {
     });
     if (!ok) return;
     setError('');
-    setQuitando(bloque.id);
+    setRemoving(block.id);
     try {
-      await borrar(bloque.id);
+      await onDelete(block.id);
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setQuitando(null);
+      setRemoving(null);
     }
   };
 
@@ -82,22 +82,22 @@ export function SeccionBloques({ bloques, crear, borrar }: Props) {
         <h2 id="titulo-bloques">Bloques no disponibles</h2>
         <p className="muted">Pausas puntuales en las que no se ofrecen horarios.</p>
       </div>
-      {bloques.length === 0 ? (
+      {blocks.length === 0 ? (
         <p className="muted">No hay bloques no disponibles</p>
       ) : (
         <ul className="service-list">
-          {bloques.map((bloque) => (
-            <li className="service" key={bloque.id} data-testid={`bloque-${bloque.id}`}>
+          {blocks.map((block) => (
+            <li className="service" key={block.id} data-testid={`bloque-${block.id}`}>
               <div className="service-text">
                 <strong>
-                  {formatearFechaHora(bloque.inicio)} a {formatearFechaHora(bloque.fin)}
+                  {formatDateTime(block.inicio)} a {formatDateTime(block.fin)}
                 </strong>
-                {bloque.motivo && <span className="muted">{bloque.motivo}</span>}
+                {block.motivo && <span className="muted">{block.motivo}</span>}
               </div>
               <Button
                 variant="danger-outline"
-                loading={quitando === bloque.id}
-                onClick={() => void quitar(bloque)}
+                loading={removing === block.id}
+                onClick={() => void remove(block)}
               >
                 Quitar bloque
               </Button>
@@ -112,17 +112,17 @@ export function SeccionBloques({ bloques, crear, borrar }: Props) {
         noValidate
       >
         <div className="form-row">
-          <DateField {...form.field('inicioFecha')} label="Fecha de inicio" />
-          <TimeField {...form.field('inicioHora')} label="Hora de inicio" />
+          <DateField {...form.field('startDate')} label="Fecha de inicio" />
+          <TimeField {...form.field('startTime')} label="Hora de inicio" />
         </div>
         <div className="form-row">
-          <DateField {...form.field('finFecha')} label="Fecha de fin" />
-          <TimeField {...form.field('finHora')} label="Hora de fin" />
+          <DateField {...form.field('endDate')} label="Fecha de fin" />
+          <TimeField {...form.field('endTime')} label="Hora de fin" />
         </div>
         <TextField {...form.field('motivo')} label="Motivo (opcional)" maxLength={200} />
         {error && <ErrorMessage>{error}</ErrorMessage>}
         <div className="form-actions">
-          <Button type="submit" loading={enviando} data-testid="btn-agregar-bloque">
+          <Button type="submit" loading={sending} data-testid="btn-agregar-bloque">
             Agregar bloque
           </Button>
         </div>

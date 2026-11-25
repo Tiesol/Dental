@@ -5,50 +5,50 @@ import { servicesApi } from '@/api/endpoints/services';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
-import { useCarga } from '@/shared/hooks/useCarga';
-import { AsistenteReserva, type EleccionInicial } from '../components/AsistenteReserva';
+import { useLoader } from '@/shared/hooks/useLoader';
+import { AsistenteReserva, type InitialChoice } from '../components/AsistenteReserva';
 
-const SIN_ELECCION: EleccionInicial = { servicio: null, odontologo: null };
+const NO_CHOICE: InitialChoice = { service: null, dentist: null };
 
 // Reserva de una cita. Se llega desde Mis citas, o desde una fila de Servicios (?servicio=) u
 // Odontólogos (?odontologo=) con eso ya elegido; el enlace de volver lleva a esa pantalla.
 export function ReservaPage() {
   const [params] = useSearchParams();
-  const servicioId = params.get('servicio');
-  const odontologoId = servicioId ? null : params.get('odontologo');
+  const serviceId = params.get('servicio');
+  const dentistId = serviceId ? null : params.get('odontologo');
 
-  const cargar = useCallback(
-    async (signal: AbortSignal): Promise<EleccionInicial> => ({
-      servicio: servicioId ? await servicesApi.obtener(servicioId) : null,
-      odontologo: odontologoId ? await dentistsApi.obtener(odontologoId, signal) : null,
+  const load = useCallback(
+    async (signal: AbortSignal): Promise<InitialChoice> => ({
+      service: serviceId ? await servicesApi.get(serviceId) : null,
+      dentist: dentistId ? await dentistsApi.get(dentistId, signal) : null,
     }),
-    [servicioId, odontologoId],
+    [serviceId, dentistId],
   );
-  const { estado } = useCarga(cargar);
+  const { state } = useLoader(load);
 
-  const volver = servicioId
+  const goBack = serviceId
     ? { to: '/servicios', label: 'Servicios' }
-    : odontologoId
+    : dentistId
       ? { to: '/odontologos', label: 'Odontólogos' }
       : { to: '/mis-citas', label: 'Mis citas' };
-  const conEleccion = !!(servicioId || odontologoId);
+  const withChoice = !!(serviceId || dentistId);
 
   return (
     <div className="page page-narrow">
       <PageHeader
-        back={volver}
+        back={goBack}
         title="Reservar cita"
         description="Elige servicio, odontólogo y horario."
       />
-      {!conEleccion && <AsistenteReserva inicial={SIN_ELECCION} />}
-      {conEleccion && estado.status === 'cargando' && <LoadingState />}
-      {conEleccion && estado.status === 'error' && (
+      {!withChoice && <AsistenteReserva initial={NO_CHOICE} />}
+      {withChoice && state.status === 'cargando' && <LoadingState />}
+      {withChoice && state.status === 'error' && (
         <>
-          <ErrorMessage>{estado.mensaje}</ErrorMessage>
-          <AsistenteReserva inicial={SIN_ELECCION} />
+          <ErrorMessage>{state.message}</ErrorMessage>
+          <AsistenteReserva initial={NO_CHOICE} />
         </>
       )}
-      {conEleccion && estado.status === 'ok' && <AsistenteReserva inicial={estado.datos} />}
+      {withChoice && state.status === 'ok' && <AsistenteReserva initial={state.data} />}
     </div>
   );
 }

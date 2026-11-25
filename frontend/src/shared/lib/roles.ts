@@ -8,7 +8,7 @@ export const ROLE_LABEL: Record<Role, string> = {
 
 // Campos de perfil editables según el rol (espejo de backend/src/modules/users/domain/profile-changes.ts).
 // El rol de un usuario no se puede cambiar.
-export const CAMPOS_PERFIL_POR_ROL: Record<
+export const PROFILE_FIELDS_BY_ROLE: Record<
   Role,
   readonly ('nombre' | 'apellido' | 'telefono' | 'especialidad')[]
 > = {
@@ -18,7 +18,7 @@ export const CAMPOS_PERFIL_POR_ROL: Record<
 };
 
 // Pantalla a la que llega cada rol al iniciar sesión o al abrir la raíz.
-export const INICIO_POR_ROL: Record<Role, string> = {
+export const HOME_BY_ROLE: Record<Role, string> = {
   PACIENTE: '/mis-citas',
   ODONTOLOGO: '/agenda',
   ADMIN: '/admin/citas',

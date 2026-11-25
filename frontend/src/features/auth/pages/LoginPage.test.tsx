@@ -4,8 +4,8 @@ import { HttpResponse, delay, http } from 'msw';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { tokenStore } from '@/api/token';
-import { usuarioDePrueba } from '@/test/factories';
-import { API, CREDENCIALES_VALIDAS, TOKEN_DE_PRUEBA } from '@/test/msw/handlers';
+import { testUser } from '@/test/factories';
+import { API, VALID_CREDENTIALS, TEST_TOKEN } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
 import { LoginPage } from './LoginPage';
@@ -41,12 +41,12 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     renderLogin();
 
-    await user.type(screen.getByLabelText('Email'), CREDENCIALES_VALIDAS.email);
-    await user.type(screen.getByLabelText('Contraseña'), CREDENCIALES_VALIDAS.password);
+    await user.type(screen.getByLabelText('Email'), VALID_CREDENTIALS.email);
+    await user.type(screen.getByLabelText('Contraseña'), VALID_CREDENTIALS.password);
     await user.click(screen.getByRole('button', { name: 'Ingresar' }));
 
     expect(await screen.findByRole('heading', { name: 'Inicio' })).toBeInTheDocument();
-    expect(tokenStore.get()).toBe(TOKEN_DE_PRUEBA);
+    expect(tokenStore.get()).toBe(TEST_TOKEN);
   });
 
   it('deshabilita el botón mientras la petición está en curso', async () => {
@@ -54,21 +54,21 @@ describe('LoginPage', () => {
     server.use(
       http.post(`${API}/auth/login`, async () => {
         await delay(150);
-        return HttpResponse.json({ accessToken: TOKEN_DE_PRUEBA, user: usuarioDePrueba() });
+        return HttpResponse.json({ accessToken: TEST_TOKEN, user: testUser() });
       }),
     );
     const user = userEvent.setup();
     renderLogin();
-    await user.type(screen.getByLabelText('Email'), CREDENCIALES_VALIDAS.email);
-    await user.type(screen.getByLabelText('Contraseña'), CREDENCIALES_VALIDAS.password);
+    await user.type(screen.getByLabelText('Email'), VALID_CREDENTIALS.email);
+    await user.type(screen.getByLabelText('Contraseña'), VALID_CREDENTIALS.password);
 
     // Act
     await user.click(screen.getByRole('button', { name: 'Ingresar' }));
 
     // Assert
-    const boton = screen.getByRole('button', { name: 'Ingresar' });
-    expect(boton).toBeDisabled();
-    expect(boton).toHaveAttribute('aria-busy', 'true');
+    const button = screen.getByRole('button', { name: 'Ingresar' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
     await screen.findByRole('heading', { name: 'Inicio' });
   });
 });

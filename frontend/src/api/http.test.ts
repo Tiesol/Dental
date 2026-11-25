@@ -1,8 +1,8 @@
 import { HttpResponse, http as mswHttp } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { API, TOKEN_DE_PRUEBA } from '@/test/msw/handlers';
+import { API, TEST_TOKEN } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
-import { ApiError, MENSAJE_SIN_CONEXION } from './errors';
+import { ApiError, OFFLINE_MESSAGE } from './errors';
 import { http } from './http';
 import { tokenStore } from './token';
 
@@ -16,13 +16,13 @@ describe('cliente HTTP', () => {
         return HttpResponse.json({ ok: true });
       }),
     );
-    tokenStore.set(TOKEN_DE_PRUEBA);
+    tokenStore.set(TEST_TOKEN);
 
     // Act
     await http.get('/ping');
 
     // Assert
-    expect(authorization).toBe(`Bearer ${TOKEN_DE_PRUEBA}`);
+    expect(authorization).toBe(`Bearer ${TEST_TOKEN}`);
   });
 
   it('no envía Authorization cuando no hay token', async () => {
@@ -53,10 +53,10 @@ describe('cliente HTTP', () => {
       ),
     );
 
-    const peticion = http.post('/appointments', {});
+    const request = http.post('/appointments', {});
 
-    await expect(peticion).rejects.toBeInstanceOf(ApiError);
-    await expect(peticion).rejects.toMatchObject({
+    await expect(request).rejects.toBeInstanceOf(ApiError);
+    await expect(request).rejects.toMatchObject({
       statusCode: 409,
       message: 'El horario ya no está disponible',
     });
@@ -81,9 +81,9 @@ describe('cliente HTTP', () => {
   it('devuelve un ApiError con el mensaje de sin conexión si la red falla', async () => {
     server.use(mswHttp.get(`${API}/ping`, () => HttpResponse.error()));
 
-    const peticion = http.get('/ping');
+    const request = http.get('/ping');
 
-    await expect(peticion).rejects.toBeInstanceOf(ApiError);
-    await expect(peticion).rejects.toMatchObject({ statusCode: 0, message: MENSAJE_SIN_CONEXION });
+    await expect(request).rejects.toBeInstanceOf(ApiError);
+    await expect(request).rejects.toMatchObject({ statusCode: 0, message: OFFLINE_MESSAGE });
   });
 });

@@ -3,11 +3,11 @@ import { useCallback, useRef, useState } from 'react';
 // Resultado de validar un campo: su nombre y el mensaje de error, o null si es válido.
 export type FieldCheck = [name: string, error: string | null];
 
-function aplicar(errores: Record<string, string>, nombre: string, error: string | null) {
-  if (error) return errores[nombre] === error ? errores : { ...errores, [nombre]: error };
-  if (!(nombre in errores)) return errores;
-  const { [nombre]: _quitado, ...resto } = errores;
-  return resto;
+function apply(errors: Record<string, string>, name: string, error: string | null) {
+  if (error) return errors[name] === error ? errors : { ...errors, [name]: error };
+  if (!(name in errors)) return errors;
+  const { [name]: _removed, ...rest } = errors;
+  return rest;
 }
 
 // Núcleo de la validación de formularios (DISENO.md, "Formularios"): cada campo valida al salir de
@@ -20,40 +20,40 @@ export function useFieldErrors() {
 
   // Ref del control de cada campo, para poder enfocarlo al enviar.
   const register = useCallback(
-    (nombre: string) => (elemento: HTMLElement | null) => {
-      if (elemento) elements.current.set(nombre, elemento);
-      else elements.current.delete(nombre);
+    (name: string) => (element: HTMLElement | null) => {
+      if (element) elements.current.set(name, element);
+      else elements.current.delete(name);
     },
     [],
   );
 
-  const blur = useCallback((nombre: string, error: string | null) => {
-    setErrors((actuales) => aplicar(actuales, nombre, error));
+  const blur = useCallback((name: string, error: string | null) => {
+    setErrors((currentErrors) => apply(currentErrors, name, error));
   }, []);
 
   const revalidate = useCallback((checks: FieldCheck[]) => {
-    setErrors((actuales) =>
+    setErrors((currentErrors) =>
       checks.reduce(
-        (siguientes, [nombre, error]) =>
-          actuales[nombre] && !error ? aplicar(siguientes, nombre, null) : siguientes,
-        actuales,
+        (nextErrors, [name, error]) =>
+          currentErrors[name] && !error ? apply(nextErrors, name, null) : nextErrors,
+        currentErrors,
       ),
     );
   }, []);
 
   // Los checks van en el orden del formulario: se enfoca el primero que falle.
   const validateAll = useCallback((checks: FieldCheck[]): boolean => {
-    const siguientes: Record<string, string> = {};
-    for (const [nombre, error] of checks) if (error) siguientes[nombre] = error;
-    setErrors(siguientes);
-    const primero = checks.find(([, error]) => error !== null);
-    if (primero) elements.current.get(primero[0])?.focus();
-    return !primero;
+    const nextErrors: Record<string, string> = {};
+    for (const [name, error] of checks) if (error) nextErrors[name] = error;
+    setErrors(nextErrors);
+    const first = checks.find(([, error]) => error !== null);
+    if (first) elements.current.get(first[0])?.focus();
+    return !first;
   }, []);
 
-  const clear = useCallback((nombres?: string[]) => {
-    setErrors((actuales) =>
-      nombres ? nombres.reduce((resto, nombre) => aplicar(resto, nombre, null), actuales) : {},
+  const clear = useCallback((names?: string[]) => {
+    setErrors((currentErrors) =>
+      names ? names.reduce((rest, name) => apply(rest, name, null), currentErrors) : {},
     );
   }, []);
 

@@ -155,13 +155,14 @@ export type SlotResponse = { inicio: string; fin: string };
 
 // ---- Citas (/appointments) ----
 
-export type EstadoCita = 'PENDIENTE' | 'CONFIRMADA' | 'EN_ATENCION' | 'FINALIZADA' | 'CANCELADA';
+export type AppointmentStatus =
+  'PENDIENTE' | 'CONFIRMADA' | 'EN_ATENCION' | 'FINALIZADA' | 'CANCELADA';
 
 export type AppointmentResponse = {
   id: string;
   horaInicio: string;
   horaFin: string;
-  estado: EstadoCita;
+  estado: AppointmentStatus;
   createdAt: string;
   servicio: { id: string; nombre: string; duracionMin: number };
   odontologo: { id: string; nombre: string; especialidad: string };
@@ -176,11 +177,11 @@ export type CreateAppointmentRequest = {
   horaInicio: string;
 };
 
-export type CuandoCitas = 'proximas' | 'historial';
+export type AppointmentWhen = 'proximas' | 'historial';
 
 export type AppointmentFiltersRequest = {
   fecha?: string;
-  estado?: EstadoCita;
+  estado?: AppointmentStatus;
   dentistId?: string;
   limit?: number;
   offset?: number;

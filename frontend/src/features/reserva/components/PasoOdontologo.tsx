@@ -5,41 +5,41 @@ import { Button } from '@/shared/components/Button';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
-import { useCarga } from '@/shared/hooks/useCarga';
+import { useLoader } from '@/shared/hooks/useLoader';
 
-type Props = { serviceId: string; onElegir: (odontologo: DentistPublicResponse) => void };
+type Props = { serviceId: string; onChoose: (dentist: DentistPublicResponse) => void };
 
 // Solo odontólogos que aceptan citas y realizan el servicio: lo filtra el backend.
-export function PasoOdontologo({ serviceId, onElegir }: Props) {
-  const cargar = useCallback(
-    (signal: AbortSignal) => dentistsApi.listar(serviceId, signal),
+export function PasoOdontologo({ serviceId, onChoose }: Props) {
+  const load = useCallback(
+    (signal: AbortSignal) => dentistsApi.list(serviceId, signal),
     [serviceId],
   );
-  const { estado } = useCarga(cargar);
+  const { state } = useLoader(load);
 
   return (
     <section className="card" aria-labelledby="titulo-paso-odontologo">
       <h2 id="titulo-paso-odontologo">2. Elige un odontólogo</h2>
-      {estado.status === 'cargando' && <LoadingState />}
-      {estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
-      {estado.status === 'ok' && estado.datos.length === 0 && (
+      {state.status === 'cargando' && <LoadingState />}
+      {state.status === 'error' && <ErrorMessage>{state.message}</ErrorMessage>}
+      {state.status === 'ok' && state.data.length === 0 && (
         <EmptyState
           title="No hay odontólogos para este servicio"
           description="Elige otro servicio."
         />
       )}
-      {estado.status === 'ok' && estado.datos.length > 0 && (
+      {state.status === 'ok' && state.data.length > 0 && (
         <ul className="service-list">
-          {estado.datos.map((odontologo) => (
-            <li className="service" key={odontologo.id}>
+          {state.data.map((dentist) => (
+            <li className="service" key={dentist.id}>
               <div className="service-text">
-                <strong>{odontologo.nombre}</strong>
-                <span className="muted">{odontologo.especialidad}</span>
+                <strong>{dentist.nombre}</strong>
+                <span className="muted">{dentist.especialidad}</span>
               </div>
               <Button
                 variant="secondary"
-                aria-label={`Elegir ${odontologo.nombre}`}
-                onClick={() => onElegir(odontologo)}
+                aria-label={`Elegir ${dentist.nombre}`}
+                onClick={() => onChoose(dentist)}
               >
                 Elegir
               </Button>

@@ -8,25 +8,25 @@ export function GlobalErrorNotice() {
   const [report, setReport] = useState<ErrorReport | null>(null);
 
   useEffect(() => {
-    const alFallar = (e: ErrorEvent) => {
+    const onFail = (e: ErrorEvent) => {
       const error: unknown = e.error ?? e.message;
       if (!isIgnorableError(error, e.filename)) setReport(buildErrorReport(error));
     };
-    const alRechazar = (e: PromiseRejectionEvent) => {
+    const onRejection = (e: PromiseRejectionEvent) => {
       if (!isIgnorableError(e.reason)) setReport(buildErrorReport(e.reason));
     };
-    window.addEventListener('error', alFallar);
-    window.addEventListener('unhandledrejection', alRechazar);
+    window.addEventListener('error', onFail);
+    window.addEventListener('unhandledrejection', onRejection);
     return () => {
-      window.removeEventListener('error', alFallar);
-      window.removeEventListener('unhandledrejection', alRechazar);
+      window.removeEventListener('error', onFail);
+      window.removeEventListener('unhandledrejection', onRejection);
     };
   }, []);
 
   if (!report) return null;
   return (
     <div className="error-notice" role="alert">
-      <ErrorDetails key={report.fecha} report={report} onClose={() => setReport(null)} />
+      <ErrorDetails key={report.date} report={report} onClose={() => setReport(null)} />
     </div>
   );
 }

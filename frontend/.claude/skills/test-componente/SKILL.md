@@ -11,7 +11,7 @@ El docente evalúa "existen test unitarios", "asserts utilizados correctamente",
 
 | Tipo             | Ejemplos                                                                                                                                                                                                            | Herramienta        |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| Utilidades puras | `dates.ts` (conversión UTC a zona de clínica, formato de slot), `estados-cita.ts` (acciones permitidas por estado y rol, etiqueta de cada estado)                                                                   | Vitest, sin render |
+| Utilidades puras | `dates.ts` (conversión UTC a zona de clínica, formato de slot), `appointment-status.ts` (acciones permitidas por estado y rol, etiqueta de cada estado)                                                             | Vitest, sin render |
 | Hooks            | `useAuth` (carga de sesión, logout ante 401)                                                                                                                                                                        | `renderHook` + MSW |
 | Componentes      | `EstadoCitaBadge` muestra el texto exacto; `DetalleCita` oculta Cancelar en FINALIZADA; `PasoOdontologo` lista solo odontólogos que realizan el servicio; `PasoFechaHora` muestra mensaje y refresca slots ante 409 | RTL + MSW          |
 | Páginas          | `MisCitasPage` separa próximas e historial; `AgendaPage` ordena por fecha y hora                                                                                                                                    | RTL + MSW          |
@@ -21,7 +21,7 @@ El docente evalúa "existen test unitarios", "asserts utilizados correctamente",
 - `src/test/setup.ts`: `@testing-library/jest-dom`, `cleanup`, arranque de MSW (`server.listen()` en `beforeAll`, `resetHandlers()` en `afterEach`, `close()` en `afterAll`).
 - `src/test/msw/handlers.ts`: handlers por endpoint con datos de ejemplo. Cada test puede sobreescribir un handler con `server.use(...)` para simular 409, 403 o lista vacía.
 - `src/test/utils.tsx`: `renderWithProviders(ui, { user?: { role } , route? })` que envuelve con QueryClient (sin reintentos), AuthContext y Router.
-- Factories: `citaDePrueba({ estado: 'FINALIZADA' })`, `servicioDePrueba()`, `odontologoDePrueba({ servicios })`.
+- Factories: `testAppointment({ estado: 'FINALIZADA' })`, `testService()`, `odontologoDePrueba({ servicios })`.
 - Reloj: `vi.useFakeTimers()` + `vi.setSystemTime(new Date('2026-11-03T12:00:00Z'))` cuando el componente depende del "ahora".
 
 ## Patrón
@@ -30,7 +30,9 @@ El docente evalúa "existen test unitarios", "asserts utilizados correctamente",
 it('oculta el botón Cancelar cuando la cita está FINALIZADA', async () => {
   // Arrange
   server.use(
-    http.get('*/appointments/:id', () => HttpResponse.json(citaDePrueba({ estado: 'FINALIZADA' }))),
+    http.get('*/appointments/:id', () =>
+      HttpResponse.json(testAppointment({ estado: 'FINALIZADA' })),
+    ),
   );
 
   // Act
@@ -45,7 +47,7 @@ it('oculta el botón Cancelar cuando la cita está FINALIZADA', async () => {
 ## Reglas del skill
 
 1. AAA con líneas en blanco. Un `it` por comportamiento, nombre en español.
-2. Para `estados-cita.ts`: `it.each` sobre la tabla completa estado por rol de `ARQUITECTURA.md` sección 7, casos positivos (acción visible) y negativos (acción ausente).
+2. Para `appointment-status.ts`: `it.each` sobre la tabla completa estado por rol de `ARQUITECTURA.md` sección 7, casos positivos (acción visible) y negativos (acción ausente).
 3. Consultar por rol y nombre accesible primero; `data-testid` solo para badge, slots y mensajes de error.
 4. Asserts específicos: `toHaveTextContent('CANCELADA')`, `toBeDisabled()`, `not.toBeInTheDocument()`. Prohibido `toBeTruthy()` como único assert.
 5. Nunca mockear hooks de la feature ni `fetch` a mano: la API se simula con MSW para que el test cubra también `src/api/`.

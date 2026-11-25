@@ -8,7 +8,7 @@ import { combine, email, required } from '@/shared/lib/validators';
 import { useAuth } from '../useAuth';
 
 export function LoginPage() {
-  const { user, login, sesionExpirada } = useAuth();
+  const { user, login, sessionExpired } = useAuth();
   const navigate = useNavigate();
   const form = useForm(
     { email: '', password: '' },
@@ -43,7 +43,7 @@ export function LoginPage() {
         <h1>Iniciar sesión</h1>
         <p className="muted">Ingresa con el email y la contraseña de tu cuenta.</p>
       </div>
-      {sesionExpirada && (
+      {sessionExpired && (
         <p className="message message-info" role="status">
           Tu sesión expiró o tu cuenta fue deshabilitada. Vuelve a iniciar sesión.
         </p>

@@ -7,25 +7,25 @@ export class DetalleCitaPage {
     this.page = page;
   }
 
-  estado() {
+  status() {
     return this.page.getByTestId('estado-cita');
   }
 
-  datos() {
+  data() {
     return this.page.getByTestId('datos-cita');
   }
 
-  slot(hora: string) {
-    return this.page.getByTestId(`slot-${hora}`);
+  slot(time: string) {
+    return this.page.getByTestId(`slot-${time}`);
   }
 
-  async reprogramarA(hora: string) {
+  async rescheduleTo(time: string) {
     await this.page.getByTestId('btn-reprogramar').click();
-    await this.slot(hora).click();
+    await this.slot(time).click();
     await this.page.getByTestId('btn-confirmar-reprogramacion').click();
   }
 
-  async cancelar() {
+  async cancel() {
     await this.page.getByTestId('btn-cancelar').click();
     await this.page.getByRole('dialog').getByRole('button', { name: 'Cancelar cita' }).click();
   }

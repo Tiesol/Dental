@@ -8,7 +8,7 @@ export class ReservaPage {
   }
 
   // La reserva no está en el menú: se abre desde el botón "Reservar cita" de Mis citas.
-  async abrir() {
+  async open() {
     await this.page
       .getByRole('navigation', { name: 'Principal' })
       .getByRole('link', { name: 'Mis citas' })
@@ -17,35 +17,35 @@ export class ReservaPage {
     await expect(this.page.getByRole('heading', { name: 'Reservar cita' })).toBeVisible();
   }
 
-  async elegirServicio(nombre: string) {
-    await this.page.getByRole('button', { name: `Elegir ${nombre}` }).click();
+  async chooseService(name: string) {
+    await this.page.getByRole('button', { name: `Elegir ${name}` }).click();
   }
 
-  async elegirOdontologo(nombre: string) {
-    await this.page.getByRole('button', { name: `Elegir ${nombre}` }).click();
+  async chooseDentist(name: string) {
+    await this.page.getByRole('button', { name: `Elegir ${name}` }).click();
   }
 
-  async elegirFecha(fecha: string) {
-    await this.page.getByTestId('input-fecha').fill(fecha);
+  async chooseDate(date: string) {
+    await this.page.getByTestId('input-fecha').fill(date);
   }
 
-  slot(hora: string) {
-    return this.page.getByTestId(`slot-${hora}`);
+  slot(time: string) {
+    return this.page.getByTestId(`slot-${time}`);
   }
 
-  async elegirSlot(hora: string) {
-    await this.slot(hora).click();
+  async chooseSlot(time: string) {
+    await this.slot(time).click();
   }
 
-  async confirmar() {
+  async confirm() {
     await this.page.getByTestId('btn-reservar').click();
   }
 
   // Deja el asistente con los horarios de una fecha a la vista.
-  async hastaLosHorarios(servicio: string, odontologo: string, fecha: string) {
-    await this.abrir();
-    await this.elegirServicio(servicio);
-    await this.elegirOdontologo(odontologo);
-    await this.elegirFecha(fecha);
+  async upToSlots(service: string, dentist: string, date: string) {
+    await this.open();
+    await this.chooseService(service);
+    await this.chooseDentist(dentist);
+    await this.chooseDate(date);
   }
 }

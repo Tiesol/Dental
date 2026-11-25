@@ -6,49 +6,49 @@ import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { TextField } from '@/shared/components/TextField';
 import { useForm } from '@/shared/hooks/useForm';
 import { required } from '@/shared/lib/validators';
-import { camposPropios, type CampoPropio } from '../lib/campos-propios';
+import { ownFields, type OwnField } from '../lib/own-fields';
 
 type Props = {
-  perfil: UserDetail;
-  guardar: (cambios: UpdateMyProfileRequest) => Promise<void>;
+  profile: UserDetail;
+  save: (changes: UpdateMyProfileRequest) => Promise<void>;
 };
 
-export function FormularioPerfil({ perfil, guardar }: Props) {
-  const campos = camposPropios(perfil.role);
+export function FormularioPerfil({ profile, save }: Props) {
+  const fields = ownFields(profile.role);
   // Solo se validan los campos que aplican al rol.
-  const siAplica = (campo: CampoPropio, mensaje: string) => (valor: string) =>
-    campos.includes(campo) ? required(mensaje)(valor) : null;
+  const ifApplicable = (field: OwnField, message: string) => (value: string) =>
+    fields.includes(field) ? required(message)(value) : null;
   const form = useForm(
     {
-      nombre: perfil.paciente?.nombre ?? perfil.odontologo?.nombre ?? '',
-      apellido: perfil.paciente?.apellido ?? '',
-      telefono: perfil.paciente?.telefono ?? '',
+      nombre: profile.paciente?.nombre ?? profile.odontologo?.nombre ?? '',
+      apellido: profile.paciente?.apellido ?? '',
+      telefono: profile.paciente?.telefono ?? '',
     },
     {
-      nombre: siAplica('nombre', 'Escribe tu nombre'),
-      apellido: siAplica('apellido', 'Escribe tu apellido'),
+      nombre: ifApplicable('nombre', 'Escribe tu nombre'),
+      apellido: ifApplicable('apellido', 'Escribe tu apellido'),
     },
   );
-  const [enviando, setEnviando] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [exito, setExito] = useState('');
+  const [success, setSuccess] = useState('');
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    setExito('');
+    setSuccess('');
     if (!form.validate()) return;
-    setEnviando(true);
+    setSending(true);
     try {
       // Solo se envían los campos que aplican al rol: el backend rechaza el resto.
-      const cambios: UpdateMyProfileRequest = {};
-      for (const campo of campos) cambios[campo] = form.values[campo].trim();
-      await guardar(cambios);
-      setExito('Perfil actualizado');
+      const changes: UpdateMyProfileRequest = {};
+      for (const field of fields) changes[field] = form.values[field].trim();
+      await save(changes);
+      setSuccess('Perfil actualizado');
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setEnviando(false);
+      setSending(false);
     }
   };
 
@@ -56,15 +56,15 @@ export function FormularioPerfil({ perfil, guardar }: Props) {
     <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-perfil" noValidate>
       <h2 id="titulo-perfil">Datos personales</h2>
       <div className="form-row">
-        {campos.includes('nombre') && (
+        {fields.includes('nombre') && (
           <TextField
             {...form.field('nombre')}
             label="Nombre"
             maxLength={100}
-            autoComplete={perfil.role === 'PACIENTE' ? 'given-name' : 'name'}
+            autoComplete={profile.role === 'PACIENTE' ? 'given-name' : 'name'}
           />
         )}
-        {campos.includes('apellido') && (
+        {fields.includes('apellido') && (
           <TextField
             {...form.field('apellido')}
             label="Apellido"
@@ -73,7 +73,7 @@ export function FormularioPerfil({ perfil, guardar }: Props) {
           />
         )}
       </div>
-      {campos.includes('telefono') && (
+      {fields.includes('telefono') && (
         <TextField
           {...form.field('telefono')}
           label="Teléfono (opcional)"
@@ -83,9 +83,9 @@ export function FormularioPerfil({ perfil, guardar }: Props) {
         />
       )}
       {error && <ErrorMessage>{error}</ErrorMessage>}
-      {exito && <SuccessMessage>{exito}</SuccessMessage>}
+      {success && <SuccessMessage>{success}</SuccessMessage>}
       <div className="form-actions">
-        <Button type="submit" loading={enviando} data-testid="btn-guardar-perfil">
+        <Button type="submit" loading={sending} data-testid="btn-guardar-perfil">
           Guardar cambios
         </Button>
       </div>

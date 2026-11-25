@@ -11,81 +11,81 @@ import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { TextField } from '@/shared/components/TextField';
 import { useConfirm } from '@/shared/hooks/useConfirm';
 import { useForm } from '@/shared/hooks/useForm';
-import { CAMPOS_PERFIL_POR_ROL, ROLE_LABEL } from '@/shared/lib/roles';
+import { PROFILE_FIELDS_BY_ROLE, ROLE_LABEL } from '@/shared/lib/roles';
 import { combine, email, required } from '@/shared/lib/validators';
-import { useUsuario } from '../hooks/useUsuario';
+import { useUser } from '../hooks/useUser';
 
-const VOLVER = { to: '/admin/usuarios', label: 'Volver al listado' };
+const BACK = { to: '/admin/usuarios', label: 'Volver al listado' };
 
 export function EditarUsuarioPage() {
   const { id = '' } = useParams();
-  const { estado, guardar, cambiarEstado } = useUsuario(id);
+  const { state, save, changeStatus } = useUser(id);
 
-  if (estado.status === 'cargando') return <LoadingState />;
-  if (estado.status === 'error') {
+  if (state.status === 'cargando') return <LoadingState />;
+  if (state.status === 'error') {
     return (
       <div className="page page-narrow">
-        <PageHeader title="Editar usuario" back={VOLVER} />
-        <ErrorMessage>{estado.mensaje}</ErrorMessage>
+        <PageHeader title="Editar usuario" back={BACK} />
+        <ErrorMessage>{state.message}</ErrorMessage>
       </div>
     );
   }
   return (
     <FormularioUsuario
-      key={estado.usuario.id}
-      usuario={estado.usuario}
-      guardar={guardar}
-      cambiarEstado={cambiarEstado}
+      key={state.user.id}
+      user={state.user}
+      save={save}
+      changeStatus={changeStatus}
     />
   );
 }
 
 type Props = {
-  usuario: UserDetail;
-  guardar: (cambios: UpdateUserRequest) => Promise<void>;
-  cambiarEstado: (activo: boolean) => Promise<void>;
+  user: UserDetail;
+  save: (changes: UpdateUserRequest) => Promise<void>;
+  changeStatus: (active: boolean) => Promise<void>;
 };
 
-type Accion = 'guardar' | 'estado';
+type Action = 'guardar' | 'estado';
 
-function FormularioUsuario({ usuario, guardar, cambiarEstado }: Props) {
-  const { user: yo } = useAuth();
+function FormularioUsuario({ user, save, changeStatus }: Props) {
+  const { user: me } = useAuth();
   const { confirm, dialog } = useConfirm();
-  const campos = CAMPOS_PERFIL_POR_ROL[usuario.role];
+  const fields = PROFILE_FIELDS_BY_ROLE[user.role];
   // Solo se validan los campos que aplican al rol del usuario.
-  const siAplica = (campo: (typeof campos)[number], mensaje: string) => (valor: string) =>
-    campos.includes(campo) ? required(mensaje)(valor) : null;
+  const ifApplicable = (field: (typeof fields)[number], message: string) => (value: string) =>
+    fields.includes(field) ? required(message)(value) : null;
   const form = useForm(
     {
-      email: usuario.email,
-      nombre: usuario.paciente?.nombre ?? usuario.odontologo?.nombre ?? '',
-      apellido: usuario.paciente?.apellido ?? '',
-      telefono: usuario.paciente?.telefono ?? '',
-      especialidad: usuario.odontologo?.especialidad ?? '',
+      email: user.email,
+      nombre: user.paciente?.nombre ?? user.odontologo?.nombre ?? '',
+      apellido: user.paciente?.apellido ?? '',
+      telefono: user.paciente?.telefono ?? '',
+      especialidad: user.odontologo?.especialidad ?? '',
     },
     {
       email: combine(required('Escribe el email'), email()),
-      nombre: siAplica('nombre', 'Escribe el nombre'),
-      apellido: siAplica('apellido', 'Escribe el apellido'),
-      especialidad: siAplica('especialidad', 'Escribe la especialidad'),
+      nombre: ifApplicable('nombre', 'Escribe el nombre'),
+      apellido: ifApplicable('apellido', 'Escribe el apellido'),
+      especialidad: ifApplicable('especialidad', 'Escribe la especialidad'),
     },
   );
-  const [enCurso, setEnCurso] = useState<Accion | null>(null);
+  const [inProgress, setInProgress] = useState<Action | null>(null);
   const [error, setError] = useState('');
-  const [exito, setExito] = useState('');
-  const esYo = usuario.id === yo?.id;
+  const [success, setSuccess] = useState('');
+  const isMe = user.id === me?.id;
 
-  const ejecutar = async (accion: Accion, llamada: () => Promise<void>, mensajeExito: string) => {
+  const run = async (action: Action, call: () => Promise<void>, successMessage: string) => {
     setError('');
-    setExito('');
-    setEnCurso(accion);
+    setSuccess('');
+    setInProgress(action);
     try {
-      await llamada();
-      setExito(mensajeExito);
+      await call();
+      setSuccess(successMessage);
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setEnCurso(null);
+      setInProgress(null);
     }
   };
 
@@ -93,14 +93,14 @@ function FormularioUsuario({ usuario, guardar, cambiarEstado }: Props) {
     e.preventDefault();
     if (!form.validate()) return;
     // Solo se envían los campos que aplican al rol: el backend rechaza el resto.
-    const cambios: UpdateUserRequest = { email: form.values.email.trim() };
-    for (const campo of campos) cambios[campo] = form.values[campo].trim();
-    await ejecutar('guardar', () => guardar(cambios), 'Cambios guardados');
+    const changes: UpdateUserRequest = { email: form.values.email.trim() };
+    for (const field of fields) changes[field] = form.values[field].trim();
+    await run('guardar', () => save(changes), 'Cambios guardados');
   };
 
-  const alternarEstado = async () => {
+  const toggleStatus = async () => {
     if (
-      usuario.activo &&
+      user.activo &&
       !(await confirm({
         title: '¿Deshabilitar esta cuenta?',
         message: 'No podrá iniciar sesión hasta que vuelvas a habilitarla.',
@@ -109,37 +109,37 @@ function FormularioUsuario({ usuario, guardar, cambiarEstado }: Props) {
     ) {
       return;
     }
-    await ejecutar(
+    await run(
       'estado',
-      () => cambiarEstado(!usuario.activo),
-      usuario.activo ? 'Cuenta deshabilitada' : 'Cuenta habilitada',
+      () => changeStatus(!user.activo),
+      user.activo ? 'Cuenta deshabilitada' : 'Cuenta habilitada',
     );
   };
 
   return (
     <div className="page page-narrow">
-      <PageHeader title="Editar usuario" description={usuario.nombre} back={VOLVER} />
+      <PageHeader title="Editar usuario" description={user.nombre} back={BACK} />
 
       {error && <ErrorMessage>{error}</ErrorMessage>}
-      {exito && <SuccessMessage>{exito}</SuccessMessage>}
+      {success && <SuccessMessage>{success}</SuccessMessage>}
 
       <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-datos" noValidate>
         <h2 id="titulo-datos">Datos</h2>
         <dl className="details">
           <dt>Rol</dt>
-          <dd>{ROLE_LABEL[usuario.role]}</dd>
+          <dd>{ROLE_LABEL[user.role]}</dd>
           <dt>Creado</dt>
-          <dd>{new Date(usuario.createdAt).toLocaleDateString('es')}</dd>
+          <dd>{new Date(user.createdAt).toLocaleDateString('es')}</dd>
         </dl>
 
         <TextField {...form.field('email')} label="Email" type="email" />
-        {campos.includes('nombre') && (
+        {fields.includes('nombre') && (
           <TextField {...form.field('nombre')} label="Nombre" maxLength={100} />
         )}
-        {campos.includes('apellido') && (
+        {fields.includes('apellido') && (
           <TextField {...form.field('apellido')} label="Apellido" maxLength={100} />
         )}
-        {campos.includes('telefono') && (
+        {fields.includes('telefono') && (
           <TextField
             {...form.field('telefono')}
             label="Teléfono (opcional)"
@@ -147,15 +147,15 @@ function FormularioUsuario({ usuario, guardar, cambiarEstado }: Props) {
             maxLength={30}
           />
         )}
-        {campos.includes('especialidad') && (
+        {fields.includes('especialidad') && (
           <TextField {...form.field('especialidad')} label="Especialidad" maxLength={100} />
         )}
 
         <div className="form-actions">
           <Button
             type="submit"
-            loading={enCurso === 'guardar'}
-            disabled={enCurso !== null}
+            loading={inProgress === 'guardar'}
+            disabled={inProgress !== null}
             data-testid="btn-guardar-usuario"
           >
             Guardar cambios
@@ -167,23 +167,23 @@ function FormularioUsuario({ usuario, guardar, cambiarEstado }: Props) {
         <div className="card-section">
           <h2 id="titulo-estado">Estado de la cuenta</h2>
           <div>
-            <ActiveBadge active={usuario.activo} />
+            <ActiveBadge active={user.activo} />
           </div>
           <p className="muted">
-            {esYo
+            {isMe
               ? 'No puedes deshabilitar tu propia cuenta.'
               : 'Una cuenta deshabilitada no puede iniciar sesión.'}
           </p>
         </div>
         <div className="form-actions">
           <Button
-            variant={usuario.activo ? 'danger-outline' : 'secondary'}
-            loading={enCurso === 'estado'}
-            disabled={enCurso !== null || esYo}
-            onClick={() => void alternarEstado()}
+            variant={user.activo ? 'danger-outline' : 'secondary'}
+            loading={inProgress === 'estado'}
+            disabled={inProgress !== null || isMe}
+            onClick={() => void toggleStatus()}
             data-testid="btn-cambiar-estado"
           >
-            {usuario.activo ? 'Deshabilitar cuenta' : 'Habilitar cuenta'}
+            {user.activo ? 'Deshabilitar cuenta' : 'Habilitar cuenta'}
           </Button>
         </div>
       </section>

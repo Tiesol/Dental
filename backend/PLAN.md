@@ -314,4 +314,4 @@ Se construyen siguiendo `frontend/DISENO.md` y el skill `crear-feature`. Cada es
 | F4    | `feat/pantalla-agenda`      | `agenda/`                  | Citas de hoy y próximas, cambio de estado, observación                         | 05             |
 | F5    | `feat/pantalla-admin-citas` | `admin-citas/`             | Todas las citas, filtros, confirmar y cancelar                                 | —              |
 
-F2 crea `shared/lib/dates.ts`, `shared/lib/estados-cita.ts` y `EstadoCitaBadge`, que usan F3, F4 y F5.
+F2 crea `shared/lib/dates.ts`, `shared/lib/appointment-status.ts` y `EstadoCitaBadge`, que usan F3, F4 y F5.

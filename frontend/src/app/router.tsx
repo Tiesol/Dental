@@ -20,7 +20,7 @@ import {
   EditarServicioPage,
   NuevoServicioPage,
 } from '@/features/servicios';
-import { INICIO_POR_ROL } from '@/shared/lib/roles';
+import { HOME_BY_ROLE } from '@/shared/lib/roles';
 import { AppLayout } from './layouts/AppLayout';
 import { AuthLayout } from './layouts/AuthLayout';
 
@@ -37,7 +37,7 @@ function Protegidas({ roles }: { roles?: Role[] }) {
 function Inicio() {
   const { user } = useAuth();
   if (!user) return null;
-  return <Navigate to={INICIO_POR_ROL[user.role]} replace />;
+  return <Navigate to={HOME_BY_ROLE[user.role]} replace />;
 }
 
 // Rutas por rol (ver ARQUITECTURA.md sección 4).

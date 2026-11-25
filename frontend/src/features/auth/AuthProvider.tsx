@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { authApi } from '@/api/endpoints/auth';
-import { onSesionExpirada } from '@/api/http';
+import { onSessionExpired } from '@/api/http';
 import { tokenStore } from '@/api/token';
 import type { RegisterRequest, UserResponse } from '@/api/types';
 import { setErrorReportUser } from '@/shared/lib/error-report';
@@ -11,7 +11,7 @@ import { AuthContext, type AuthContextValue } from './auth-context';
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState(() => tokenStore.get() !== null);
-  const [sesionExpirada, setSesionExpirada] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const logout = useCallback(() => {
     tokenStore.clear();
@@ -26,36 +26,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Cualquier 401 con token (vencido o cuenta deshabilitada) cierra la sesión en toda la app.
   useEffect(
     () =>
-      onSesionExpirada(() => {
+      onSessionExpired(() => {
         setUser(null);
-        setSesionExpirada(true);
+        setSessionExpired(true);
       }),
     [],
   );
 
   useEffect(() => {
     if (!tokenStore.get()) return;
-    let activo = true;
+    let active = true;
     authApi
       .me()
       .then((u) => {
-        if (activo) setUser(u);
+        if (active) setUser(u);
       })
       .catch(() => {
-        if (activo) logout();
+        if (active) logout();
       })
       .finally(() => {
-        if (activo) setLoading(false);
+        if (active) setLoading(false);
       });
     return () => {
-      activo = false;
+      active = false;
     };
   }, [logout]);
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login({ email, password });
     tokenStore.set(res.accessToken);
-    setSesionExpirada(false);
+    setSessionExpired(false);
     setUser(res.user);
   }, []);
 
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextValue = {
     user,
     loading,
-    sesionExpirada,
+    sessionExpired,
     login,
     register,
     logout,

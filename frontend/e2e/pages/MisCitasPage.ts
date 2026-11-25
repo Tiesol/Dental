@@ -8,7 +8,7 @@ export class MisCitasPage {
   }
 
   // Desde el menú: la reserva también tiene un enlace "Mis citas" para volver.
-  async abrir() {
+  async open() {
     await this.page
       .getByRole('navigation', { name: 'Principal' })
       .getByRole('link', { name: 'Mis citas' })
@@ -16,19 +16,19 @@ export class MisCitasPage {
     await expect(this.page.getByRole('heading', { name: 'Mis citas' })).toBeVisible();
   }
 
-  async verHistorial() {
+  async viewHistory() {
     await this.page.getByRole('tab', { name: 'Historial' }).click();
   }
 
-  filas() {
+  rows() {
     return this.page.locator('[data-testid^="cita-"]');
   }
 
-  fila(citaId: string) {
-    return this.page.getByTestId(`cita-${citaId}`);
+  row(appointmentId: string) {
+    return this.page.getByTestId(`cita-${appointmentId}`);
   }
 
-  async abrirCita(citaId: string) {
-    await this.fila(citaId).getByRole('link').click();
+  async openAppointment(appointmentId: string) {
+    await this.row(appointmentId).getByRole('link').click();
   }
 }

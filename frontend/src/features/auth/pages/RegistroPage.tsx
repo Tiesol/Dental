@@ -32,15 +32,21 @@ export function RegistroPage() {
     e.preventDefault();
     setError('');
     if (!form.validate()) return;
-    const { nombre, apellido, telefono, email: correo, password } = form.values;
+    const {
+      nombre: name,
+      apellido: lastName,
+      telefono: phone,
+      email: emailAddress,
+      password,
+    } = form.values;
     setSending(true);
     try {
       await register({
-        nombre: nombre.trim(),
-        apellido: apellido.trim(),
-        email: correo.trim(),
+        nombre: name.trim(),
+        apellido: lastName.trim(),
+        email: emailAddress.trim(),
         password,
-        ...(telefono.trim() ? { telefono: telefono.trim() } : {}),
+        ...(phone.trim() ? { telefono: phone.trim() } : {}),
       });
       navigate('/');
     } catch (err) {
