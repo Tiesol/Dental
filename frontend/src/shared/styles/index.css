@@ -1230,10 +1230,13 @@ button {
   font-size: var(--text-sm);
 }
 
-/* relative: sin esto, el .sr-only del encabezado escapa del scroll y ensancha toda la página. */
+/* relative: sin esto, el .sr-only del encabezado escapa del scroll y ensancha toda la página.
+   container-type: las filas se apilan según el ancho que tiene la tabla, no la ventana (con el
+   menú lateral, a 1024 px la tabla ya tiene solo 700 px). */
 .table-scroll {
   position: relative;
   overflow-x: auto;
+  container-type: inline-size;
 }
 
 table {
@@ -1306,8 +1309,8 @@ tbody tr:last-child td {
   width: 100%;
 }
 
-/* En pantallas angostas cada fila se apila: las acciones quedan a la vista, sin scroll lateral. */
-@media (max-width: 43.99rem) {
+/* Si la tabla no entra, cada fila se apila: las acciones quedan a la vista, sin scroll lateral. */
+@container (max-width: 52.99rem) {
   .table-scroll thead {
     position: absolute;
     width: 1px;
@@ -1335,12 +1338,19 @@ tbody tr:last-child td {
   }
 
   .table-scroll td:first-child,
-  .table-scroll td:last-child {
+  .table-scroll td:last-child,
+  .table-scroll td.celda-larga {
     width: 100%;
   }
 
   .actions {
     justify-content: flex-start;
+  }
+
+  /* En la fila apilada sobra ancho: las acciones van una al lado de la otra, del mismo ancho. */
+  .acciones-apiladas {
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
   }
 }
 

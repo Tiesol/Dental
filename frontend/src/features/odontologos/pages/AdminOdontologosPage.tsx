@@ -87,7 +87,7 @@ export function AdminOdontologosPage() {
                       </div>
                     </td>
                     <td>{d.especialidad}</td>
-                    <td>
+                    <td className="celda-larga">
                       {d.servicios.length === 0 ? (
                         <span className="muted">Sin servicios</span>
                       ) : (
@@ -102,13 +102,16 @@ export function AdminOdontologosPage() {
                     </td>
                     <td>
                       <div className="actions">
-                        <ButtonLink variant="secondary" to={`/admin/odontologos/${d.id}/horarios`}>
-                          <span className="btn-label">
-                            <Icon name="clock" />
-                            Horarios
-                          </span>
-                        </ButtonLink>
                         <div className="acciones-apiladas">
+                          <ButtonLink
+                            variant="secondary"
+                            to={`/admin/odontologos/${d.id}/horarios`}
+                          >
+                            <span className="btn-label">
+                              <Icon name="clock" />
+                              Horarios
+                            </span>
+                          </ButtonLink>
                           <ButtonLink variant="secondary" to={`/admin/odontologos/${d.id}`}>
                             Editar
                           </ButtonLink>
