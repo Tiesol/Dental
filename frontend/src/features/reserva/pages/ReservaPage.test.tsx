@@ -14,7 +14,7 @@ const SLOTS = [
   { inicio: '2026-11-10T13:15:00.000Z', fin: '2026-11-10T13:45:00.000Z' },
 ];
 
-function renderPagina(extras: RequestHandler[] = []) {
+function renderPagina(extras: RequestHandler[] = [], route = '/reservar') {
   const reservas: unknown[] = [];
   const consultasDeSlots = vi.fn();
   const consultasDeOdontologos = vi.fn();
@@ -25,6 +25,10 @@ function renderPagina(extras: RequestHandler[] = []) {
         servicioDePrueba({ id: 's2', nombre: 'Ortodoncia', duracionMin: 60 }),
       ]),
     ),
+    http.get(`${API}/services/s1`, () =>
+      HttpResponse.json(servicioDePrueba({ id: 's1', nombre: 'Limpieza dental', duracionMin: 30 })),
+    ),
+    http.get(`${API}/dentists/d1`, () => HttpResponse.json(odontologoPublicoDePrueba())),
     http.get(`${API}/dentists`, ({ request }) => {
       consultasDeOdontologos(new URL(request.url).searchParams.get('serviceId'));
       return HttpResponse.json([odontologoPublicoDePrueba()]);
@@ -45,7 +49,7 @@ function renderPagina(extras: RequestHandler[] = []) {
       <Route path="/reservar" element={<ReservaPage />} />
       <Route path="/mis-citas" element={<h1>Mis citas de prueba</h1>} />
     </Routes>,
-    { route: '/reservar' },
+    { route },
   );
   return { reservas, consultasDeSlots, consultasDeOdontologos };
 }
@@ -73,6 +77,63 @@ describe('ReservaPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Reservar cita' })).toBeVisible();
     expect(await screen.findByRole('button', { name: 'Elegir Ortodoncia' })).toBeInTheDocument();
+  });
+
+  it('desde un servicio del catálogo llega con ese servicio elegido y pide el odontólogo', async () => {
+    const { consultasDeOdontologos } = renderPagina([], '/reservar?servicio=s1');
+
+    expect(await screen.findByRole('button', { name: 'Elegir Dra. Laura Gómez' })).toBeVisible();
+    expect(screen.getByText('Limpieza dental')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Elegir Ortodoncia' })).not.toBeInTheDocument();
+    expect(consultasDeOdontologos).toHaveBeenCalledWith('s1');
+  });
+
+  it('desde un odontólogo llega con él elegido, ofrece solo sus servicios y sigue a la fecha', async () => {
+    const { consultasDeOdontologos, consultasDeSlots } = renderPagina(
+      [],
+      '/reservar?odontologo=d1',
+    );
+    const user = userEvent.setup();
+
+    expect(
+      await screen.findByRole('heading', { name: '2. Elige un servicio de Dra. Laura Gómez' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Elegir Ortodoncia' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Elegir Limpieza dental' }));
+    const fecha = await screen.findByLabelText('Fecha');
+    await user.clear(fecha);
+    await user.type(fecha, '10/11/2026');
+
+    expect(await screen.findByTestId('slot-09:00')).toBeInTheDocument();
+    expect(consultasDeSlots).toHaveBeenLastCalledWith('s1', '2026-11-10');
+    expect(consultasDeOdontologos).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['/reservar', 'Mis citas', '/mis-citas'],
+    ['/reservar?servicio=s1', 'Servicios', '/servicios'],
+    ['/reservar?odontologo=d1', 'Odontólogos', '/odontologos'],
+  ])('desde %s, el enlace de volver lleva a %s', async (route, nombre, destino) => {
+    renderPagina([], route);
+
+    expect(await screen.findByRole('link', { name: nombre })).toHaveAttribute('href', destino);
+  });
+
+  it('si el servicio del enlace ya no está disponible, lo avisa y muestra el catálogo', async () => {
+    renderPagina(
+      [
+        http.get(`${API}/services/s9`, () =>
+          HttpResponse.json(
+            { statusCode: 404, error: 'RECURSO_NO_ENCONTRADO', message: 'Servicio no encontrado' },
+            { status: 404 },
+          ),
+        ),
+      ],
+      '/reservar?servicio=s9',
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Servicio no encontrado');
+    expect(await screen.findByRole('button', { name: 'Elegir Ortodoncia' })).toBeVisible();
   });
 
   it('pide solo los odontólogos que realizan el servicio elegido', async () => {
