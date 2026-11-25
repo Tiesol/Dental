@@ -13,9 +13,12 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
+    // VS Code usa TypeScript 6, que cambia estos valores por defecto. Se fijan los de TypeScript 5
+    // para que el editor marque lo mismo que el build y Jest.
+    "types": ["node", "jest"],
+    "strict": false,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": true,
