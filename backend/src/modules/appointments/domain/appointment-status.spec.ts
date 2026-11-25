@@ -18,7 +18,7 @@ const ROLES: Role[] = ['PACIENTE', 'ODONTOLOGO', 'ADMIN'];
 
 // La tabla de ARQUITECTURA.md sección 6, escrita aparte del código para que el test la proteja.
 const QUIEN_PUEDE: Partial<Record<string, Role[]>> = {
-  'PENDIENTE>CONFIRMADA': ['ADMIN'],
+  'PENDIENTE>CONFIRMADA': ['ODONTOLOGO', 'ADMIN'],
   'CONFIRMADA>EN_ATENCION': ['ODONTOLOGO'],
   'EN_ATENCION>FINALIZADA': ['ODONTOLOGO'],
   'PENDIENTE>CANCELADA': ['PACIENTE', 'ADMIN'],
@@ -60,10 +60,8 @@ describe('assertTransicionPermitida', () => {
     );
   });
 
-  it('el odontólogo no confirma sus citas PENDIENTE (D2)', () => {
-    expect(() => assertTransicionPermitida('PENDIENTE', 'CONFIRMADA', 'ODONTOLOGO')).toThrow(
-      AccesoDenegadoError,
-    );
+  it('el odontólogo confirma sus citas PENDIENTE (D2)', () => {
+    expect(() => assertTransicionPermitida('PENDIENTE', 'CONFIRMADA', 'ODONTOLOGO')).not.toThrow();
   });
 });
 

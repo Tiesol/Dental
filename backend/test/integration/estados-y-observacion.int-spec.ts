@@ -117,12 +117,24 @@ describe('Estados y observación (integración)', () => {
       expect(await estadoEnBd(cita.id)).toBe('CONFIRMADA');
     });
 
-    it('el odontólogo asignado no confirma una cita PENDIENTE (D2)', async () => {
+    it('el odontólogo asignado confirma su cita PENDIENTE (D2)', async () => {
       const { cita, tokenOdontologo } = await escenario();
 
       const res = await cambiarEstado(cita.id, tokenOdontologo, 'CONFIRMADA');
 
+      expect(res.status).toBe(200);
+      expect(res.body.estado).toBe('CONFIRMADA');
+      expect(await estadoEnBd(cita.id)).toBe('CONFIRMADA');
+    });
+
+    it('otro odontólogo no confirma una cita PENDIENTE ajena', async () => {
+      const { cita } = await escenario();
+      const token = await loginComo(app, await crearOdontologo(prisma));
+
+      const res = await cambiarEstado(cita.id, token, 'CONFIRMADA');
+
       expect(res.status).toBe(403);
+      expect(res.body.error).toBe('ACCESO_DENEGADO_A_CITA');
       expect(await estadoEnBd(cita.id)).toBe('PENDIENTE');
     });
 
