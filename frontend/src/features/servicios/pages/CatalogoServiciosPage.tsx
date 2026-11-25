@@ -1,3 +1,4 @@
+import { ButtonLink } from '@/shared/components/ButtonLink';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { Icon } from '@/shared/components/Icon';
@@ -23,7 +24,11 @@ export function CatalogoServiciosPage() {
           {estado.status === 'ok' && estado.servicios.length > 0 && (
             <ul className="service-list">
               {estado.servicios.map((s) => (
-                <li key={s.id} className="service" data-testid={`servicio-${s.id}`}>
+                <li
+                  key={s.id}
+                  className="service service-con-accion"
+                  data-testid={`servicio-${s.id}`}
+                >
                   <div className="service-text">
                     <h2>{s.nombre}</h2>
                     <p className="muted">{s.descripcion}</p>
@@ -44,6 +49,13 @@ export function CatalogoServiciosPage() {
                       </dd>
                     </div>
                   </dl>
+                  <ButtonLink
+                    variant="secondary"
+                    to={`/reservar?servicio=${s.id}`}
+                    aria-label={`Reservar ${s.nombre}`}
+                  >
+                    Reservar
+                  </ButtonLink>
                 </li>
               ))}
             </ul>

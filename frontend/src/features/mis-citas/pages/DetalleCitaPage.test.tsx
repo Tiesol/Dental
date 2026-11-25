@@ -239,7 +239,7 @@ describe('DetalleCitaPage', () => {
 
     await user.click(await screen.findByTestId('btn-reprogramar'));
 
-    expect(await screen.findByTestId('slot-10:00')).toHaveTextContent('10:00 - 10:30');
+    expect(await screen.findByTestId('slot-10:00')).toHaveAccessibleName('10:00 a 10:30');
     expect(consultasDeSlots).toHaveBeenCalledWith('s1', '2026-11-10');
   });
 

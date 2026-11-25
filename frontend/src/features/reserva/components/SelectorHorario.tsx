@@ -1,11 +1,14 @@
+import { useId } from 'react';
 import type { SlotResponse } from '@/api/types';
 import { Button } from '@/shared/components/Button';
 import { DateField } from '@/shared/components/DateField';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
-import { formatearHora, formatearRangoHora, hoyEnClinica } from '@/shared/lib/dates';
+import { formatearHora, hoyEnClinica } from '@/shared/lib/dates';
+import { formatearDuracion } from '@/shared/lib/formato';
 import { useSlotsDisponibles } from '../hooks/useSlotsDisponibles';
+import { agruparPorTurno, minutosDeSlot } from '../lib/turnos';
 
 type Props = {
   dentistId: string;
@@ -16,9 +19,11 @@ type Props = {
 };
 
 // Elige fecha y horario. Lo usan la reserva y la reprogramación. Al montarse consulta de nuevo, así
-// que volver a este paso siempre muestra la disponibilidad actual.
+// que volver a este paso siempre muestra la disponibilidad actual. Cada botón muestra solo la hora
+// de inicio: los horarios se ofrecen cada 15 minutos y, escritos como rangos, parecían solaparse.
 export function SelectorHorario({ dentistId, serviceId, fecha, onCambiarFecha, onElegir }: Props) {
   const { estado } = useSlotsDisponibles(dentistId, serviceId, fecha);
+  const idTurno = useId();
 
   return (
     <div className="selector-horario">
@@ -39,19 +44,31 @@ export function SelectorHorario({ dentistId, serviceId, fecha, onCambiarFecha, o
         />
       )}
       {fecha && estado.status === 'ok' && estado.datos.length > 0 && (
-        <ul className="slots" aria-label="Horarios disponibles">
-          {estado.datos.map((slot) => (
-            <li key={slot.inicio}>
-              <Button
-                variant="secondary"
-                onClick={() => onElegir(slot)}
-                data-testid={`slot-${formatearHora(slot.inicio)}`}
-              >
-                {formatearRangoHora(slot.inicio, slot.fin)}
-              </Button>
-            </li>
+        <>
+          <p className="muted">
+            Cada cita dura {formatearDuracion(minutosDeSlot(estado.datos[0]))}. Elige a qué hora
+            empezar.
+          </p>
+          {agruparPorTurno(estado.datos).map((turno) => (
+            <div className="slots-turno" key={turno.nombre}>
+              <h3 id={`${idTurno}-${turno.nombre}`}>{turno.nombre}</h3>
+              <ul className="slots" aria-labelledby={`${idTurno}-${turno.nombre}`}>
+                {turno.slots.map((slot) => (
+                  <li key={slot.inicio}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => onElegir(slot)}
+                      aria-label={`${formatearHora(slot.inicio)} a ${formatearHora(slot.fin)}`}
+                      data-testid={`slot-${formatearHora(slot.inicio)}`}
+                    >
+                      {formatearHora(slot.inicio)}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </>
       )}
     </div>
   );

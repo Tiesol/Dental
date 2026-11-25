@@ -4,7 +4,7 @@ Reglas visuales de la interfaz, para que toda pantalla nueva se vea igual a las 
 
 ## Principios
 
-1. **Clínica y sobria.** Azul como único color de marca, sobre superficies claras con bordes finos. La jerarquía sale de la tipografía y el espacio, no de la decoración.
+1. **Tarjeta de cita.** La interfaz toma su estilo de la tarjeta que la recepción entrega con la próxima cita: fondo de cartulina verde agua, tarjetas de papel claro con bordes finos y tinta azul noche como único color de marca. La jerarquía sale de la tipografía y el espacio, no de la decoración.
 2. **Una acción principal por vista.** Un solo botón primario visible en cada zona; lo demás, secundario.
 3. **El color nunca informa solo.** Todo estado lleva texto; las acciones destructivas dicen lo que hacen.
 4. **Ninguna pantalla en blanco.** Toda vista con datos resuelve carga, vacío y error.
@@ -13,30 +13,30 @@ Reglas visuales de la interfaz, para que toda pantalla nueva se vea igual a las 
 
 ## Paleta
 
-"Azul clínico", una sola paleta clara: la interfaz no tiene modo oscuro (`color-scheme: light`). Se usan siempre por token (`var(--primary)`), nunca el hexadecimal.
+"Tarjeta de cita", una sola paleta clara: la interfaz no tiene modo oscuro (`color-scheme: light`). Se usan siempre por token (`var(--primary)`), nunca el hexadecimal.
 
 ### Superficies y texto
 
 | Token               | Valor                  | Uso                                            |
 | ------------------- | ---------------------- | ---------------------------------------------- |
-| `--bg`              | `#f5f8fc`              | Fondo de la página                             |
-| `--surface`         | `#ffffff`              | Tarjetas, formularios, diálogos, barra lateral |
-| `--surface-sunken`  | `#eef3f9`              | Encabezado de tabla, chips, hover discreto     |
-| `--surface-pressed` | `#e2e9f3`              | Botón secundario presionado                    |
-| `--text`            | `#172033`              | Texto principal                                |
-| `--muted`           | `#4f5d73`              | Texto secundario y ayudas                      |
-| `--border`          | `#dde5ef`              | Bordes de tarjetas y separadores               |
-| `--border-strong`   | `#7d8aa0`              | Bordes de campos y botones secundarios         |
+| `--bg`              | `#e6efe9`              | Fondo de la página: la cartulina verde agua    |
+| `--surface`         | `#fbfcf9`              | Tarjetas, formularios, diálogos, barra lateral |
+| `--surface-sunken`  | `#eef3ef`              | Chips, hover discreto                          |
+| `--surface-pressed` | `#e1e9e3`              | Botón secundario presionado                    |
+| `--text`            | `#1c2340`              | Texto principal, tinta azul noche              |
+| `--muted`           | `#4f5874`              | Texto secundario y ayudas                      |
+| `--border`          | `#c9d6cd`              | Bordes de tarjetas, renglones y separadores    |
+| `--border-strong`   | `#6f7d93`              | Bordes de campos y botones secundarios         |
 | `--backdrop`        | `rgb(23 32 51 / 0.45)` | Fondo detrás de un diálogo abierto             |
 
 ### Acción y mensajes
 
 | Token              | Valor     | Uso                                          |
 | ------------------ | --------- | -------------------------------------------- |
-| `--primary`        | `#1d5fd1` | Botón principal, enlaces, foco, menú activo  |
-| `--primary-hover`  | `#184fb0` | Hover del botón principal                    |
-| `--primary-active` | `#133f8c` | Botón principal presionado                   |
-| `--primary-soft`   | `#e6effc` | Avatar, menú activo, pestaña elegida, avisos |
+| `--primary`        | `#3a3d96` | Botón principal, enlaces, foco, menú activo  |
+| `--primary-hover`  | `#2f3281` | Hover del botón principal                    |
+| `--primary-active` | `#25276b` | Botón principal presionado                   |
+| `--primary-soft`   | `#e8e8f6` | Avatar, menú activo, pestaña elegida, avisos |
 | `--on-primary`     | `#ffffff` | Texto sobre `--primary`                      |
 | `--error`          | `#b42318` | Errores y acciones destructivas              |
 | `--error-hover`    | `#912018` | Hover de la acción destructiva               |
@@ -46,19 +46,23 @@ Reglas visuales de la interfaz, para que toda pantalla nueva se vea igual a las 
 | `--success`        | `#1b6e33` | Éxito y estado habilitado                    |
 | `--success-soft`   | `#e6f4e9` | Fondo de mensajes y badges de éxito          |
 
-La barra lateral y el panel de acceso usan las mismas superficies que el resto (blanco con borde), sin colores propios.
+La barra lateral usa `--surface` y se separa del contenido con un borde discontinuo de `--border-strong`, como el talón perforado de la tarjeta. El panel de acceso usa las mismas superficies que el resto.
+
+`--primary` (tono 238°) es azul índigo, no morado.
 
 ### Estados de la cita
 
 El texto del badge es el exacto del PDF, porque los E2E lo verifican. El mapa de estado a clase se define una sola vez en `shared/lib/estados-cita.ts`, y `EstadoCitaBadge` lo usa con `data-testid="estado-cita"`.
 
-| Estado        | Texto         | Clase               | Texto     | Fondo     |
-| ------------- | ------------- | ------------------- | --------- | --------- |
-| `PENDIENTE`   | `PENDIENTE`   | `badge-pendiente`   | `#7f5200` | `#fdf1d8` |
-| `CONFIRMADA`  | `CONFIRMADA`  | `badge-confirmada`  | `#0b6470` | `#dff2f3` |
-| `EN_ATENCION` | `EN ATENCIÓN` | `badge-en-atencion` | `#65409c` | `#f0eafa` |
-| `FINALIZADA`  | `FINALIZADA`  | `badge-ok`          | `#1b6e33` | `#e6f4e9` |
-| `CANCELADA`   | `CANCELADA`   | `badge-off`         | `#4f5d73` | `#eef3f9` |
+Todo badge se ve como un sello de tinta: borde de 2px y texto del color del estado, sin fondo, en mayúsculas y con `--text-xs`.
+
+| Estado        | Texto         | Clase               | Color                              |
+| ------------- | ------------- | ------------------- | ---------------------------------- |
+| `PENDIENTE`   | `PENDIENTE`   | `badge-pendiente`   | `--estado-pendiente` (`#7f5200`)   |
+| `CONFIRMADA`  | `CONFIRMADA`  | `badge-confirmada`  | `--estado-confirmada` (`#0b6470`)  |
+| `EN_ATENCION` | `EN ATENCIÓN` | `badge-en-atencion` | `--estado-en-atencion` (`#65409c`) |
+| `FINALIZADA`  | `FINALIZADA`  | `badge-ok`          | `--success` (`#1b6e33`)            |
+| `CANCELADA`   | `CANCELADA`   | `badge-off`         | `--muted` (`#4f5874`)              |
 
 `CONFIRMADA` es verde azulado y no azul, para no confundirse con el color de acción.
 
@@ -68,38 +72,44 @@ Todas las combinaciones cumplen WCAG AA: 4.5:1 para texto y 3:1 para bordes de c
 
 | Combinación                         | Ratio |
 | ----------------------------------- | ----- |
-| `--text` sobre `--bg`               | 15.27 |
-| `--muted` sobre `--surface-sunken`  | 5.98  |
-| `--primary` sobre `--bg`            | 5.46  |
-| `--primary` sobre `--primary-soft`  | 5.02  |
-| `--on-primary` sobre `--primary`    | 5.82  |
+| `--text` sobre `--bg`               | 13.12 |
+| `--text` sobre `--surface`          | 14.95 |
+| `--muted` sobre `--bg`              | 6.00  |
+| `--muted` sobre `--surface-sunken`  | 6.27  |
+| `--primary` sobre `--bg`            | 7.82  |
+| `--primary` sobre `--surface`       | 8.91  |
+| `--primary` sobre `--primary-soft`  | 7.56  |
+| `--on-primary` sobre `--primary`    | 9.18  |
 | `--on-error` sobre `--error`        | 6.57  |
 | `--error` sobre `--error-soft`      | 5.75  |
 | `--success` sobre `--success-soft`  | 5.56  |
-| `--text` sobre `--surface-pressed`  | 13.31 |
-| Badge `PENDIENTE`                   | 6.03  |
-| Badge `CONFIRMADA`                  | 5.90  |
-| Badge `EN ATENCIÓN`                 | 6.45  |
-| `--border-strong` sobre `--surface` | 3.49  |
-| `--border-strong` sobre `--bg`      | 3.28  |
+| `--text` sobre `--surface-pressed`  | 12.44 |
+| Badge `PENDIENTE` sobre `--surface` | 6.56  |
+| Badge `CONFIRMADA`                  | 6.64  |
+| Badge `EN ATENCIÓN`                 | 7.37  |
+| Badge `FINALIZADA`                  | 6.13  |
+| Badge `CANCELADA`                   | 6.84  |
+| `--border-strong` sobre `--surface` | 4.05  |
+| `--border-strong` sobre `--bg`      | 3.56  |
 
 ## Tipografía, espacio y forma
 
-| Tipografía   | Tamaño     | Uso                                 |
-| ------------ | ---------- | ----------------------------------- |
-| `--text-2xl` | `2.25rem`  | Solo el panel de acceso             |
-| `--text-xl`  | `1.625rem` | `h1`, uno por página                |
-| `--text-lg`  | `1.125rem` | `h2`, marca                         |
-| `--text-md`  | `1rem`     | Texto y campos                      |
-| `--text-sm`  | `0.875rem` | Etiquetas, badges, ayudas, mensajes |
+| Tipografía   | Tamaño     | Uso                         |
+| ------------ | ---------- | --------------------------- |
+| `--text-2xl` | `2.25rem`  | Solo el panel de acceso     |
+| `--text-xl`  | `1.875rem` | `h1`, uno por página        |
+| `--text-lg`  | `1.125rem` | `h2`, marca                 |
+| `--text-md`  | `1rem`     | Texto y campos              |
+| `--text-sm`  | `0.875rem` | Etiquetas, ayudas, mensajes |
+| `--text-xs`  | `0.75rem`  | Badges (sellos)             |
 
-Fuente del sistema (`system-ui`), sin fuentes externas. Pesos: 400 texto, 500 navegación, 600 etiquetas y botones, 700 títulos de marca.
+Fuente **Lexend**, servida desde la propia app con `@fontsource/lexend` (pesos 400 a 700, importados en `main.tsx`); `system-ui` queda de respaldo. Pesos: 400 texto, 500 navegación, 600 etiquetas y botones, 700 títulos de marca. El ítem activo del menú conserva el peso 500: se marca con color, fondo y barra, nunca cambiando la letra.
 
 | Espacio | `--space-1` | `--space-2` | `--space-3` | `--space-4` | `--space-5` | `--space-6` | `--space-7` |
 | ------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
 | Valor   | `0.25rem`   | `0.5rem`    | `0.75rem`   | `1rem`      | `1.5rem`    | `2rem`      | `3rem`      |
 
-**Radios:** `--radius-sm` (6px) para controles, badges y mensajes; `--radius-md` (10px) para tarjetas y diálogos. Los únicos círculos son los avatares.
+**Radios:** `--radius-sm` (3px) para controles, badges y mensajes; `--radius-md` (4px) para tarjetas y diálogos, casi rectos como una tarjeta de cartulina. Los únicos círculos son los avatares.
 
 **Puntos de corte:** `30rem` activa `form-row` en dos columnas; `44rem` lleva las tablas de filas apiladas a filas normales; `56rem` cambia la barra superior por la barra lateral.
 
@@ -133,8 +143,9 @@ Toda página con sesión sigue esta forma. El `h1` lo pone `PageHeader`, nunca e
 | `actions`                        | Celda de acciones de una fila                                     |
 | `cell-person`, `cell-primary`    | Avatar con nombre y dato secundario; texto destacado de la fila   |
 | `service-list`, `service`        | Lista de filas con texto y datos a la derecha                     |
+| `service-con-accion`             | Fila con una acción al final, como "Reservar" en los catálogos    |
 | `service-meta`, `chips`          | Datos alineados de una fila; etiquetas pequeñas                   |
-| `details`                        | Lista `dl` de pares etiqueta y valor                              |
+| `details`                        | Lista `dl` de pares etiqueta y valor, cada par sobre un renglón   |
 | `form-row`, `form-actions`       | Dos campos en una fila; zona del botón de envío                   |
 | `selector`                       | `fieldset` con casillas                                           |
 | `muted`, `text-error`, `sr-only` | Texto secundario; aviso de error breve; solo lectores de pantalla |
@@ -226,7 +237,8 @@ Siempre con `Button` (o `ButtonLink` para navegar); los estilos viven en `.btn` 
 
 **Horarios (slots)**
 
-- Cada horario es un `Button`, nunca un `div`, con `data-testid="slot-<HH:mm>"` y la hora local de la clínica, por ejemplo "09:00 - 09:30".
+- Cada horario es un `Button`, nunca un `div`, con `data-testid="slot-<HH:mm>"`. Muestra solo la hora de inicio en hora de la clínica ("09:00") y su nombre accesible es el rango ("09:00 a 09:30"): los horarios se ofrecen cada 15 minutos y, escritos como rangos, parecían solaparse.
+- Se agrupan en "Mañana" y "Tarde" (antes o después de las 12:00), cada grupo con su título, y arriba una línea dice cuánto dura la cita.
 - La lista es la que devuelve el backend, sin filtrar en el cliente. Sin horarios: `EmptyState` con "No hay horarios disponibles para esta fecha".
 - Un `409` al confirmar muestra "El horario ya no está disponible" y vuelve a cargar la lista.
 

@@ -36,3 +36,25 @@ test('E2E 01 - el catálogo no ofrece un servicio deshabilitado', async ({ page 
   await expect(page.getByRole('button', { name: 'Elegir Limpieza dental' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Elegir Blanqueamiento' })).toHaveCount(0);
 });
+
+test('E2E 01 - reservar desde el catálogo: el servicio llega ya elegido', async ({ page }) => {
+  await loginComo(page, 'paciente1');
+  const reserva = new ReservaPage(page);
+
+  await page
+    .getByRole('navigation', { name: 'Principal' })
+    .getByRole('link', { name: 'Servicios' })
+    .click();
+  await page.getByRole('link', { name: 'Reservar Limpieza dental' }).click();
+  await expect(page.getByText('Servicio: Limpieza dental')).toBeVisible();
+  await reserva.elegirOdontologo('Dra. Laura Gómez');
+  await reserva.elegirFecha(MANIANA);
+  await reserva.elegirSlot('09:00');
+  await reserva.confirmar();
+
+  await expect(page).toHaveURL(/\/mis-citas$/);
+  const citas = new MisCitasPage(page).filas();
+  await expect(citas).toHaveCount(1);
+  await expect(citas.first()).toContainText('Limpieza dental');
+  await expect(citas.first()).toContainText('09:00 - 09:30');
+});

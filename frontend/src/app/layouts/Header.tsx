@@ -9,11 +9,11 @@ import { ROLE_LABEL } from '@/shared/lib/roles';
 type NavItem = { to: string; label: string; icon: IconName };
 
 const NAV_POR_ROL: Record<Role, NavItem[]> = {
+  // Se reserva desde los catálogos (cada fila tiene "Reservar") o desde Mis citas.
   PACIENTE: [
+    { to: '/mis-citas', label: 'Mis citas', icon: 'calendar' },
     { to: '/servicios', label: 'Servicios', icon: 'list' },
     { to: '/odontologos', label: 'Odontólogos', icon: 'tooth' },
-    { to: '/reservar', label: 'Reservar cita', icon: 'plus' },
-    { to: '/mis-citas', label: 'Mis citas', icon: 'calendar' },
   ],
   ODONTOLOGO: [{ to: '/agenda', label: 'Agenda', icon: 'calendar' }],
   ADMIN: [

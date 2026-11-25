@@ -19,6 +19,18 @@ describe('CatalogoServiciosPage', () => {
     expect(servicio.getByText('Bs 150,00')).toBeInTheDocument();
   });
 
+  it('cada servicio tiene un enlace que abre la reserva con ese servicio ya elegido', async () => {
+    server.use(http.get(`${API}/services`, () => HttpResponse.json([servicioDePrueba()])));
+
+    renderWithProviders(<CatalogoServiciosPage />);
+
+    const servicio = within(await screen.findByTestId('servicio-s1'));
+    expect(servicio.getByRole('link', { name: 'Reservar Limpieza dental' })).toHaveAttribute(
+      'href',
+      '/reservar?servicio=s1',
+    );
+  });
+
   it('muestra un estado vacío cuando no hay servicios', async () => {
     server.use(http.get(`${API}/services`, () => HttpResponse.json([])));
 

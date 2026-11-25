@@ -1,19 +1,20 @@
 /* ---- Tokens ---- */
 
-/* Paleta clara única (azul clínico): la interfaz no tiene modo oscuro. Ver DISENO.md. */
+/* Paleta "Tarjeta de cita": la cartulina verde agua que entrega la recepción (fondo), papel claro
+   (tarjetas) y tinta azul noche (acción). Una sola paleta clara, sin modo oscuro. Ver DISENO.md. */
 :root {
-  --bg: #f5f8fc;
-  --surface: #ffffff;
-  --surface-sunken: #eef3f9;
-  --surface-pressed: #e2e9f3;
-  --text: #172033;
-  --muted: #4f5d73;
-  --border: #dde5ef;
-  --border-strong: #7d8aa0;
-  --primary: #1d5fd1;
-  --primary-hover: #184fb0;
-  --primary-active: #133f8c;
-  --primary-soft: #e6effc;
+  --bg: #e6efe9;
+  --surface: #fbfcf9;
+  --surface-sunken: #eef3ef;
+  --surface-pressed: #e1e9e3;
+  --text: #1c2340;
+  --muted: #4f5874;
+  --border: #c9d6cd;
+  --border-strong: #6f7d93;
+  --primary: #3a3d96;
+  --primary-hover: #2f3281;
+  --primary-active: #25276b;
+  --primary-soft: #e8e8f6;
   --on-primary: #ffffff;
   --error: #b42318;
   --error-hover: #912018;
@@ -40,19 +41,20 @@
   --space-6: 2rem;
   --space-7: 3rem;
 
+  --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;
   --text-lg: 1.125rem;
-  --text-xl: 1.625rem;
+  --text-xl: 1.875rem;
   --text-2xl: 2.25rem;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
 
   --duration-fast: 120ms;
   --duration-base: 180ms;
 
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Lexend', system-ui, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
@@ -616,7 +618,7 @@ button {
   gap: var(--space-2) var(--space-4);
   padding: var(--space-3) var(--space-4);
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px dashed var(--border-strong);
   color: var(--text);
 }
 
@@ -672,7 +674,6 @@ button {
 
 .sidebar-nav a.active {
   background: var(--primary-soft);
-  font-weight: 700;
   color: var(--primary);
 }
 
@@ -806,7 +807,7 @@ button {
     height: 100dvh;
     padding: var(--space-5) var(--space-4);
     border-bottom: none;
-    border-right: 1px solid var(--border);
+    border-right: 2px dashed var(--border-strong);
   }
 
   .sidebar-nav {
@@ -1063,9 +1064,22 @@ button {
   gap: var(--space-4);
 }
 
+/* Horarios por turno: el título del turno y debajo las horas de inicio. */
+.slots-turno {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.slots-turno h3 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--muted);
+}
+
 .slots {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
   gap: var(--space-2);
   margin: 0;
   padding: 0;
@@ -1074,6 +1088,17 @@ button {
 
 .slots .btn {
   width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.slots .btn-secondary {
+  border-color: var(--border);
+  color: var(--primary);
+}
+
+.slots .btn-secondary:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--primary-soft);
 }
 
 .tabs {
@@ -1154,8 +1179,8 @@ td {
 th {
   font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--muted);
-  background: var(--surface-sunken);
+  color: var(--text);
+  border-bottom: 2px solid var(--text);
 }
 
 tbody tr:last-child td {
@@ -1229,39 +1254,38 @@ tbody tr:last-child td {
   }
 }
 
+/* Los estados se ven como sellos de tinta: borde y texto del color del estado, sin fondo. */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   padding: 0.125rem var(--space-2);
+  border: 2px solid currentColor;
   border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .badge-ok {
-  background: var(--success-soft);
   color: var(--success);
 }
 
 .badge-off {
-  background: var(--surface-sunken);
   color: var(--muted);
 }
 
 .badge-pendiente {
-  background: var(--estado-pendiente-soft);
   color: var(--estado-pendiente);
 }
 
 .badge-confirmada {
-  background: var(--estado-confirmada-soft);
   color: var(--estado-confirmada);
 }
 
 .badge-en-atencion {
-  background: var(--estado-en-atencion-soft);
   color: var(--estado-en-atencion);
 }
 
@@ -1332,6 +1356,11 @@ tbody tr:last-child td {
     align-items: center;
   }
 
+  /* Fila con acción a la derecha, como "Reservar" en los catálogos del paciente. */
+  .service-con-accion {
+    grid-template-columns: minmax(0, 1fr) 17rem auto;
+  }
+
   .service-meta {
     display: grid;
     grid-template-columns: 7rem minmax(0, 1fr);
@@ -1343,7 +1372,14 @@ tbody tr:last-child td {
 .details {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
-  gap: var(--space-2) var(--space-4);
+  column-gap: var(--space-4);
+}
+
+/* Cada dato sobre su renglón, como los campos impresos de la tarjeta de cita. */
+.details dt,
+.details dd {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .details dt {
