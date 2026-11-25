@@ -6,21 +6,17 @@ import { Button } from '@/shared/components/Button';
 import { Icon, type IconName } from '@/shared/components/Icon';
 import { ROLE_LABEL } from '@/shared/lib/roles';
 
-type NavItem = { to: string; label: string; icon: IconName; end?: boolean };
-
-const CUENTA: NavItem = { to: '/', label: 'Mi cuenta', icon: 'user', end: true };
+type NavItem = { to: string; label: string; icon: IconName };
 
 const NAV_POR_ROL: Record<Role, NavItem[]> = {
   PACIENTE: [
-    CUENTA,
     { to: '/servicios', label: 'Servicios', icon: 'list' },
     { to: '/odontologos', label: 'Odontólogos', icon: 'tooth' },
     { to: '/reservar', label: 'Reservar cita', icon: 'plus' },
     { to: '/mis-citas', label: 'Mis citas', icon: 'calendar' },
   ],
-  ODONTOLOGO: [CUENTA, { to: '/agenda', label: 'Agenda', icon: 'calendar' }],
+  ODONTOLOGO: [{ to: '/agenda', label: 'Agenda', icon: 'calendar' }],
   ADMIN: [
-    CUENTA,
     { to: '/admin/citas', label: 'Citas', icon: 'calendar' },
     { to: '/admin/usuarios', label: 'Usuarios', icon: 'users' },
     { to: '/admin/servicios', label: 'Servicios', icon: 'list' },
@@ -42,7 +38,7 @@ export function Header() {
         <ul>
           {NAV_POR_ROL[user.role].map((item) => (
             <li key={item.to}>
-              <NavLink to={item.to} end={item.end}>
+              <NavLink to={item.to}>
                 <Icon name={item.icon} />
                 {item.label}
               </NavLink>
@@ -51,11 +47,16 @@ export function Header() {
         </ul>
       </nav>
       <div className="sidebar-user">
-        <Avatar name={user.nombre} />
-        <div className="sidebar-user-text">
-          <strong>{user.nombre}</strong>
-          <span>{ROLE_LABEL[user.role]}</span>
-        </div>
+        {/* "Mi cuenta" no ocupa un lugar en el menú: se abre desde el nombre. En celular solo se
+            ven las iniciales, así que el nombre accesible lo da el texto oculto. */}
+        <NavLink to="/mi-cuenta" className="sidebar-account" title="Mi cuenta">
+          <span className="sr-only">Mi cuenta:</span>
+          <Avatar name={user.nombre} />
+          <span className="sidebar-user-text">
+            <strong>{user.nombre}</strong>
+            <span>{ROLE_LABEL[user.role]}</span>
+          </span>
+        </NavLink>
         <Button variant="secondary" className="logout" onClick={logout} data-testid="btn-logout">
           <Icon name="logout" />
           Cerrar sesión

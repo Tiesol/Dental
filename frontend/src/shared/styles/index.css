@@ -687,6 +687,28 @@ button {
   min-width: 0;
 }
 
+/* Nombre del usuario: abre Mi cuenta. Mismo trato que un ítem del menú (fondo al pasar y al
+   estar activo). Con el relleno, el avatar solo llega a 44 px de objetivo táctil en celular. */
+.sidebar-account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.sidebar-account:hover {
+  background: var(--surface-sunken);
+}
+
+.sidebar-account.active {
+  background: var(--primary-soft);
+}
+
 .sidebar-user-text {
   display: none;
   min-width: 0;
@@ -698,9 +720,9 @@ button {
   overflow-wrap: anywhere;
 }
 
-/* Móvil: marca y salir en una fila, menú en la siguiente. Avatar e iconos vuelven en escritorio. */
+/* Móvil: marca, cuenta (solo las iniciales) y salir en una fila, menú en la siguiente. Los iconos
+   vuelven en escritorio. */
 @media (max-width: 55.99rem) {
-  .sidebar .avatar,
   .sidebar .logout .icon,
   .sidebar-nav a .icon {
     display: none;
@@ -777,6 +799,11 @@ button {
     flex-wrap: wrap;
     padding-top: var(--space-4);
     border-top: 1px solid var(--border);
+  }
+
+  .sidebar-account {
+    flex: 1 1 100%;
+    padding: var(--space-2);
   }
 
   .sidebar-user-text {
