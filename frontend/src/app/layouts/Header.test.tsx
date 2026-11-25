@@ -24,40 +24,28 @@ function enlacesDelMenu() {
 }
 
 describe('Header', () => {
-  it('el ADMIN ve Mi cuenta, Citas, Usuarios, Servicios y Odontólogos', async () => {
+  it('el ADMIN ve Citas, Usuarios, Servicios y Odontólogos', async () => {
     renderConRol('ADMIN');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual([
-      'Mi cuenta',
-      'Citas',
-      'Usuarios',
-      'Servicios',
-      'Odontólogos',
-    ]);
+    expect(enlacesDelMenu()).toEqual(['Citas', 'Usuarios', 'Servicios', 'Odontólogos']);
   });
 
-  it('el PACIENTE ve Mi cuenta, Servicios, Odontólogos, Reservar cita y Mis citas', async () => {
+  it('el PACIENTE ve Servicios, Odontólogos, Reservar cita y Mis citas', async () => {
     renderConRol('PACIENTE');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual([
-      'Mi cuenta',
-      'Servicios',
-      'Odontólogos',
-      'Reservar cita',
-      'Mis citas',
-    ]);
+    expect(enlacesDelMenu()).toEqual(['Servicios', 'Odontólogos', 'Reservar cita', 'Mis citas']);
   });
 
-  it('el ODONTOLOGO ve Mi cuenta y Agenda', async () => {
+  it('el ODONTOLOGO ve Agenda', async () => {
     renderConRol('ODONTOLOGO');
 
     await screen.findByRole('navigation', { name: 'Principal' });
 
-    expect(enlacesDelMenu()).toEqual(['Mi cuenta', 'Agenda']);
+    expect(enlacesDelMenu()).toEqual(['Agenda']);
   });
 
   it('muestra el nombre del usuario, sus iniciales y su rol', async () => {
@@ -66,6 +54,16 @@ describe('Header', () => {
     expect(await screen.findByText('Dr. Juan Rojas')).toBeInTheDocument();
     expect(screen.getByText('JR')).toBeInTheDocument();
     expect(screen.getByText('Odontólogo')).toBeInTheDocument();
+  });
+
+  it('el nombre del usuario, al pie del menú, lleva a Mi cuenta', async () => {
+    renderConRol('PACIENTE');
+
+    const enlace = await screen.findByRole('link', { name: /Mi cuenta/ });
+
+    expect(enlace).toHaveAttribute('href', '/mi-cuenta');
+    expect(enlace).toHaveTextContent('Ana Pérez');
+    expect(enlace).toHaveTextContent('Paciente');
   });
 
   it('Cerrar sesión borra el token y quita el menú', async () => {

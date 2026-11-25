@@ -17,25 +17,28 @@ function renderConPerfil(perfil: UserDetail) {
 }
 
 describe('MiCuentaPage', () => {
-  it('saluda al usuario y resume sus datos', async () => {
+  it('se titula Mi cuenta e indica con qué email se inició sesión, sin un resumen aparte', async () => {
+    renderConPerfil(usuarioDetalleDePrueba({ email: 'ana@mail.com' }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Mi cuenta' })).toBeVisible();
+    expect(screen.getByText('Sesión iniciada como ana@mail.com')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Tus datos' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Miembro desde')).not.toBeInTheDocument();
+  });
+
+  it('el PACIENTE ve sus datos ya cargados en el formulario, listos para cambiarlos', async () => {
     renderConPerfil(
       usuarioDetalleDePrueba({
-        nombre: 'Ana Pérez',
         paciente: { nombre: 'Ana', apellido: 'Pérez', telefono: '+59170000000' },
       }),
     );
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Hola, Ana Pérez' })).toBeVisible();
-    expect(screen.getByRole('heading', { name: 'Tus datos' })).toBeInTheDocument();
-    expect(await screen.findByText('+59170000000')).toBeInTheDocument();
-    expect(screen.getByText('Paciente')).toBeInTheDocument();
-  });
-
-  it('el PACIENTE puede editar su perfil y cambiar su contraseña', async () => {
-    renderConPerfil(usuarioDetalleDePrueba());
-
-    expect(await screen.findByRole('form', { name: 'Editar perfil' })).toBeInTheDocument();
-    expect(screen.getByRole('form', { name: 'Cambiar contraseña' })).toBeInTheDocument();
+    expect(await screen.findByRole('form', { name: 'Datos personales' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Ana');
+    expect(screen.getByLabelText('Apellido')).toHaveValue('Pérez');
+    expect(screen.getByLabelText('Teléfono (opcional)')).toHaveValue('+59170000000');
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeInTheDocument();
+    expect(screen.getByRole('form', { name: 'Contraseña' })).toBeInTheDocument();
   });
 
   it('el ADMIN no tiene perfil que editar, solo puede cambiar su contraseña', async () => {
@@ -43,8 +46,8 @@ describe('MiCuentaPage', () => {
       usuarioDetalleDePrueba({ role: 'ADMIN', nombre: 'Administrador', paciente: null }),
     );
 
-    expect(await screen.findByRole('form', { name: 'Cambiar contraseña' })).toBeInTheDocument();
-    expect(screen.queryByRole('form', { name: 'Editar perfil' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('form', { name: 'Contraseña' })).toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: 'Datos personales' })).not.toBeInTheDocument();
   });
 
   it('muestra el error si no se puede cargar el perfil', async () => {

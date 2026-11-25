@@ -50,7 +50,7 @@ export function FormularioPassword() {
 
   return (
     <form className="card" onSubmit={onSubmit} aria-labelledby="titulo-password" noValidate>
-      <h2 id="titulo-password">Cambiar contraseña</h2>
+      <h2 id="titulo-password">Contraseña</h2>
       <TextField
         {...form.field('passwordActual')}
         label="Contraseña actual"

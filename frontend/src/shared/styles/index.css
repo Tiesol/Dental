@@ -687,6 +687,33 @@ button {
   min-width: 0;
 }
 
+/* Nombre del usuario: abre Mi cuenta. Mismo trato que un ítem del menú (fondo al pasar y al
+   estar activo). Con el relleno, el avatar solo llega a 44 px de objetivo táctil en celular. */
+.sidebar-account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.sidebar-account:hover {
+  background: var(--surface-sunken);
+}
+
+.sidebar-account.active {
+  background: var(--primary-soft);
+}
+
+/* Sobre el fondo activo, el círculo del avatar se perdería: pasa a blanco. */
+.sidebar-account.active .avatar {
+  background: var(--surface);
+}
+
 .sidebar-user-text {
   display: none;
   min-width: 0;
@@ -698,12 +725,33 @@ button {
   overflow-wrap: anywhere;
 }
 
-/* Móvil: marca y salir en una fila, menú en la siguiente. Avatar e iconos vuelven en escritorio. */
+/* Móvil: marca, cuenta (solo las iniciales) y salir en una fila, menú en la siguiente. Los iconos
+   vuelven en escritorio. */
 @media (max-width: 55.99rem) {
-  .sidebar .avatar,
   .sidebar .logout .icon,
   .sidebar-nav a .icon {
     display: none;
+  }
+
+  .sidebar {
+    column-gap: var(--space-2);
+  }
+
+  .sidebar-user {
+    gap: var(--space-2);
+  }
+}
+
+/* Por debajo de 375 px la marca, la cuenta y salir no caben en una fila: queda solo el logo. El
+   nombre sigue disponible para lectores de pantalla. */
+@media (max-width: 23.375rem) {
+  .brand-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
@@ -716,6 +764,12 @@ button {
   padding: var(--space-2) var(--space-3);
   font-weight: 500;
   white-space: nowrap;
+}
+
+@media (max-width: 55.99rem) {
+  .sidebar .logout {
+    padding-inline: var(--space-2);
+  }
 }
 
 .content {
@@ -777,6 +831,17 @@ button {
     flex-wrap: wrap;
     padding-top: var(--space-4);
     border-top: 1px solid var(--border);
+  }
+
+  /* Misma barra de "estás aquí" que los ítems del menú. */
+  .sidebar-account {
+    flex: 1 1 100%;
+    padding: var(--space-2);
+    border-left: 3px solid transparent;
+  }
+
+  .sidebar-account.active {
+    border-left-color: var(--primary);
   }
 
   .sidebar-user-text {
@@ -1214,12 +1279,6 @@ tbody tr:last-child td {
   color: var(--primary);
 }
 
-.avatar-large {
-  width: 4rem;
-  height: 4rem;
-  font-size: var(--text-xl);
-}
-
 /* ---- Catálogo de servicios ---- */
 
 .service-list {
@@ -1279,25 +1338,7 @@ tbody tr:last-child td {
   }
 }
 
-/* ---- Mi cuenta ---- */
-
-.account-grid {
-  display: grid;
-  gap: var(--space-5);
-  align-items: start;
-}
-
-.account-forms {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-}
-
-.account-summary-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
+/* ---- Lista de datos (etiqueta y valor) ---- */
 
 .details {
   display: grid;
@@ -1311,12 +1352,6 @@ tbody tr:last-child td {
 
 .details dd {
   overflow-wrap: anywhere;
-}
-
-@media (min-width: 68rem) {
-  .account-grid {
-    grid-template-columns: 22rem minmax(0, 1fr);
-  }
 }
 
 /* ---- Mensajes y estados de pantalla ---- */

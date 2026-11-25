@@ -8,8 +8,8 @@ type Estado =
   | { status: 'ok'; perfil: UserDetail }
   | { status: 'error'; mensaje: string };
 
-// Perfil del usuario autenticado. Al guardar refresca la sesión para que el nombre del
-// encabezado y de "Hola, …" se actualicen. guardar lanza ApiError si el backend rechaza.
+// Perfil del usuario autenticado. Al guardar refresca la sesión para que el nombre del menú
+// se actualice. guardar lanza ApiError si el backend rechaza.
 export function useMiPerfil() {
   const { refresh } = useAuth();
   const [estado, setEstado] = useState<Estado>({ status: 'cargando' });

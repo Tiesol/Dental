@@ -9,7 +9,8 @@ test('un paciente del seed inicia sesión por la interfaz contra el backend real
 }) => {
   await loginComo(page, 'paciente1');
 
-  await expect(page.getByRole('heading', { name: 'Hola, Ana Pérez' })).toBeVisible();
+  await expect(page).toHaveURL(/\/mis-citas$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Mis citas' })).toBeVisible();
 });
 
 test('una contraseña incorrecta muestra el error del backend', async ({ page }) => {

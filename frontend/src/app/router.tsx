@@ -3,7 +3,7 @@ import type { Role } from '@/api/types';
 import { AdminCitasPage } from '@/features/admin-citas';
 import { EditarUsuarioPage, NuevoUsuarioPage, UsuariosPage } from '@/features/admin-usuarios';
 import { AgendaPage, DetalleAtencionPage } from '@/features/agenda';
-import { LoginPage, RegistroPage, RequireRole } from '@/features/auth';
+import { LoginPage, RegistroPage, RequireRole, useAuth } from '@/features/auth';
 import { MiCuentaPage } from '@/features/cuenta';
 import { DetalleCitaPage, MisCitasPage } from '@/features/mis-citas';
 import {
@@ -20,6 +20,7 @@ import {
   EditarServicioPage,
   NuevoServicioPage,
 } from '@/features/servicios';
+import { INICIO_POR_ROL } from '@/shared/lib/roles';
 import { AppLayout } from './layouts/AppLayout';
 import { AuthLayout } from './layouts/AuthLayout';
 
@@ -32,6 +33,13 @@ function Protegidas({ roles }: { roles?: Role[] }) {
   );
 }
 
+// La raíz no tiene pantalla propia: lleva a cada rol a su pantalla principal.
+function Inicio() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <Navigate to={INICIO_POR_ROL[user.role]} replace />;
+}
+
 // Rutas por rol (ver ARQUITECTURA.md sección 4).
 export function AppRoutes() {
   return (
@@ -42,8 +50,9 @@ export function AppRoutes() {
       </Route>
 
       <Route element={<Protegidas />}>
+        <Route path="/" element={<Inicio />} />
         <Route element={<AppLayout />}>
-          <Route path="/" element={<MiCuentaPage />} />
+          <Route path="/mi-cuenta" element={<MiCuentaPage />} />
 
           <Route element={<Protegidas roles={['PACIENTE']} />}>
             <Route path="/servicios" element={<CatalogoServiciosPage />} />

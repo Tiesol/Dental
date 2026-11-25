@@ -16,3 +16,10 @@ export const CAMPOS_PERFIL_POR_ROL: Record<
   ODONTOLOGO: ['nombre', 'especialidad'],
   ADMIN: [],
 };
+
+// Pantalla a la que llega cada rol al iniciar sesión o al abrir la raíz.
+export const INICIO_POR_ROL: Record<Role, string> = {
+  PACIENTE: '/mis-citas',
+  ODONTOLOGO: '/agenda',
+  ADMIN: '/admin/citas',
+};
