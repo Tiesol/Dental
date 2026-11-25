@@ -52,16 +52,16 @@ Si encuentras algo que el plan no define, usa el valor por defecto de la secció
 
 No están en el PDF. Las marcadas "(confirmado)" ya las decidió el equipo; las demás usan este valor por defecto, que se cambia aquí si se decide otra cosa.
 
-| #   | Tema                                                  | Por defecto                                                                                                           | Tarea |
-| --- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----- |
-| D1  | ¿El ADMIN puede cancelar una cita `EN_ATENCION`?      | No: si ya está en atención no se cancela (confirmado)                                                                 | T4    |
-| D2  | ¿El ODONTOLOGO puede confirmar sus citas `PENDIENTE`? | Sí, las suyas, igual que el ADMIN (confirmado)                                                                        | T5    |
-| D3  | Cada cuánto se ofrece un horario                      | Cada 15 minutos, en una constante `PASO_SLOTS_MIN`. El PDF no lo fija: solo exige considerar la duración del servicio | T2    |
-| D4  | Estado de la cita al reprogramarla                    | Conserva su estado: `CONFIRMADA` sigue confirmada y `PENDIENTE` sigue pendiente (confirmado)                          | T4    |
-| D5  | Segunda observación sobre la misma cita               | Se rechaza con `409`                                                                                                  | T5    |
-| D6  | Cambiar un horario con citas ya creadas fuera de él   | Se permite; las citas se conservan                                                                                    | T1    |
-| D7  | Conversión entre zona de la clínica y UTC             | `date-fns` + `date-fns-tz`, verificando su API en `node_modules`                                                      | T2    |
-| D8  | Citas `CANCELADA` en la agenda del odontólogo         | No se muestran                                                                                                        | T6    |
+| #   | Tema                                                  | Por defecto                                                                                                          | Tarea |
+| --- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----- |
+| D1  | ¿El ADMIN puede cancelar una cita `EN_ATENCION`?      | No: si ya está en atención no se cancela (confirmado)                                                                | T4    |
+| D2  | ¿El ODONTOLOGO puede confirmar sus citas `PENDIENTE`? | Sí, las suyas, igual que el ADMIN (confirmado)                                                                       | T5    |
+| D3  | Cada cuánto se ofrece un horario                      | Cada 15 minutos, en una constante `SLOT_STEP_MIN`. El PDF no lo fija: solo exige considerar la duración del servicio | T2    |
+| D4  | Estado de la cita al reprogramarla                    | Conserva su estado: `CONFIRMADA` sigue confirmada y `PENDIENTE` sigue pendiente (confirmado)                         | T4    |
+| D5  | Segunda observación sobre la misma cita               | Se rechaza con `409`                                                                                                 | T5    |
+| D6  | Cambiar un horario con citas ya creadas fuera de él   | Se permite; las citas se conservan                                                                                   | T1    |
+| D7  | Conversión entre zona de la clínica y UTC             | `date-fns` + `date-fns-tz`, verificando su API en `node_modules`                                                     | T2    |
+| D8  | Citas `CANCELADA` en la agenda del odontólogo         | No se muestran                                                                                                       | T6    |
 
 ## Reglas para todas las tareas
 
@@ -72,8 +72,8 @@ No están en el PDF. Las marcadas "(confirmado)" ya las decidió el equipo; las 
 - **Intervalos:** semiabiertos `[inicio, fin)`, de modo que dos citas consecutivas no se solapan.
 - **Contrato:** el cliente nunca envía `horaFin`, `estado` ni `patientId`.
 - **Frontend:** si cambia un DTO ya consumido, actualizar `frontend/src/api/types.ts` en el mismo cambio.
-- **Ya existe, no reescribir:** `assertServicioHabilitado` en `services/domain/service-rules.ts`; `assertOdontologoAceptaCitas` y `assertRealizaServicio` en `dentists/domain/dentist-rules.ts`; `HorarioInvalidoError`, `FechaInvalidaError`, `BloqueConCitasError`, `ServicioDeshabilitadoError`, `OdontologoDeshabilitadoError` y `OdontologoNoRealizaServicioError`; las restricciones de la base de datos (`ARQUITECTURA.md` sección 4), que ya no necesitan migración.
-- **Errores por crear**, con los nombres de `CONVENCIONES.md` sección 5: `HorarioNoDisponibleError`, `HorarioEnElPasadoError`, `TransicionDeEstadoInvalidaError`, `CitaNoModificableError` y `AccesoDenegadoACitaError`.
+- **Ya existe, no reescribir:** `assertServiceEnabled` en `services/domain/service-rules.ts`; `assertDentistAcceptsAppointments` y `assertOffersService` en `dentists/domain/dentist-rules.ts`; `InvalidScheduleError`, `InvalidDateError`, `BlockHasAppointmentsError`, `ServiceDisabledError`, `DentistDisabledError` y `DentistDoesNotOfferServiceError`; las restricciones de la base de datos (`ARQUITECTURA.md` sección 4), que ya no necesitan migración.
+- **Errores por crear**, con los nombres de `CONVENCIONES.md` sección 5: `SlotUnavailableError`, `SlotInThePastError`, `InvalidStatusTransitionError`, `AppointmentNotModifiableError` y `AppointmentAccessDeniedError`.
 - **Cada endpoint** lleva tests de integración sin token (`401`) y con rol incorrecto (`403`).
 
 ---
@@ -94,8 +94,8 @@ Rama `feat/horarios-y-bloques`. Ámbito de commits: `availability`. Crea `src/mo
 **Reglas**
 
 - `PUT` reemplaza todos los horarios del odontólogo en una sola transacción. Un horario partido son dos filas.
-- Validar en el dominio antes de guardar: día de 0 a 6, minutos de 0 a 1440, inicio antes del fin y tramos sin solapar (`HorarioInvalidoError`, `400`).
-- Un bloque debe terminar después de empezar y no estar ya terminado (`FechaInvalidaError`, `400`). Si choca con una cita activa, `BloqueConCitasError` (`409`).
+- Validar en el dominio antes de guardar: día de 0 a 6, minutos de 0 a 1440, inicio antes del fin y tramos sin solapar (`InvalidScheduleError`, `400`).
+- Un bloque debe terminar después de empezar y no estar ya terminado (`InvalidDateError`, `400`). Si choca con una cita activa, `BlockHasAppointmentsError` (`409`).
 - Odontólogo inexistente: `404`. Para quien no es ADMIN, un odontólogo que no acepta citas también da `404`, igual que `GET /dentists/:id`.
 - Un `blockId` de otro odontólogo da `404`.
 
@@ -115,17 +115,17 @@ Rama `feat/horarios-disponibles`. Ámbito: `availability`. Es la tarea con la l�
 
 **Dominio, sin Nest ni Prisma ni zona horaria**
 
-- `appointments/domain/end-time.ts`: `calcularHoraFin(inicio, duracionMin)`.
-- `appointments/domain/overlap.ts`: `seSolapan(a, b)`.
-- `availability/domain/slots.ts`: `calcularSlots({ tramos, bloques, citas, duracionMin, ahora, pasoMin })`, que recibe instantes ya convertidos y devuelve los intervalos libres.
+- `appointments/domain/end-time.ts`: `calculateEndTime(inicio, duracionMin)`.
+- `appointments/domain/overlap.ts`: `overlaps(a, b)`.
+- `availability/domain/slots.ts`: `calculateSlots({ tramos, bloques, citas, duracionMin, ahora, stepMin })`, que recibe instantes ya convertidos y devuelve los intervalos libres.
 
-La conversión de `fecha` + minutos a instantes UTC va en una función aparte, con sus propios tests (D7). `T3` y `T4` reutilizan `calcularSlots`: debe haber una sola definición de "horario disponible".
+La conversión de `fecha` + minutos a instantes UTC va en una función aparte, con sus propios tests (D7). `T3` y `T4` reutilizan `calculateSlots`: debe haber una sola definición de "horario disponible".
 
 **Reglas**
 
 - Un horario es válido si `[inicio, inicio + duración)` cabe entero en un tramo, no toca un bloque, no se solapa con una cita activa (estado distinto de `CANCELADA`) y `inicio >= ahora`.
-- Se generan desde el inicio de cada tramo, cada `PASO_SLOTS_MIN` minutos (D3).
-- `fecha` mal formada o inexistente, como `2026-02-30`: `FechaInvalidaError` (`400`). `fecha` pasada: `200` con `[]`.
+- Se generan desde el inicio de cada tramo, cada `SLOT_STEP_MIN` minutos (D3).
+- `fecha` mal formada o inexistente, como `2026-02-30`: `InvalidDateError` (`400`). `fecha` pasada: `200` con `[]`.
 - Servicio deshabilitado: `409`. Odontólogo que no acepta citas o no realiza el servicio: `409`. Inexistentes: `404`.
 - El frontend muestra la lista tal cual y envía el `inicio` recibido al reservar, sin recalcular nada.
 
@@ -163,10 +163,10 @@ Declarar `mine` antes que `:id` en el controller. `limit` vale 50 por defecto y 
 **Reglas**
 
 - Reservar sigue `ARQUITECTURA.md` sección 5: dentro de una transacción, bloquear al odontólogo con `SELECT ... FOR UPDATE`, volver a validar y recién insertar.
-- Validar con `calcularSlots`: `horaInicio` debe estar entre los horarios disponibles de ese día. Si no, `HorarioNoDisponibleError` (`409`); si ya pasó, `HorarioEnElPasadoError` (`409`).
+- Validar con `calculateSlots`: `horaInicio` debe estar entre los horarios disponibles de ese día. Si no, `SlotUnavailableError` (`409`); si ya pasó, `SlotInThePastError` (`409`).
 - `horaFin` se calcula con la duración del servicio. La cita nace `PENDIENTE`.
-- Si PostgreSQL rechaza por `appointment_no_overlap`, el repository lo traduce a `HorarioNoDisponibleError`.
-- Cita ajena: `AccesoDenegadoACitaError` (`403`, no `404`; lo exige el E2E 07). Inexistente: `404`.
+- Si PostgreSQL rechaza por `appointment_no_overlap`, el repository lo traduce a `SlotUnavailableError`.
+- Cita ajena: `AppointmentAccessDeniedError` (`403`, no `404`; lo exige el E2E 07). Inexistente: `404`.
 - `proximas`: no han empezado y no están `FINALIZADA` ni `CANCELADA`, de la más cercana a la más lejana. `historial`: todas las demás, de la más reciente a la más antigua.
 
 **Tests unitarios (PDF 12):** validar servicio habilitado y odontólogo que realiza el servicio al reservar; clasificar próximas e historial; service con repositories simulados.
@@ -186,7 +186,7 @@ Rama `feat/reprogramar-y-cancelar`. Ámbito: `appointments`. Agregar a `appointm
 
 **Reglas**
 
-- Solo desde `PENDIENTE` o `CONFIRMADA` (D1). Si no, `CitaNoModificableError` (`409`).
+- Solo desde `PENDIENTE` o `CONFIRMADA` (D1). Si no, `AppointmentNotModifiableError` (`409`).
 - Reprogramar usa la misma transacción y las mismas validaciones que reservar, incluidos servicio habilitado y odontólogo que acepta citas.
 - **Al calcular los horarios libres se excluye la propia cita**, para poder moverla a un horario que se cruza con el suyo, como de 09:00 a 09:15.
 - Se actualiza la misma fila: si el horario nuevo falla, la cita queda intacta (PDF 8). Conserva odontólogo y servicio, y `horaFin` se recalcula (D4).
@@ -212,7 +212,7 @@ Rama `feat/estados-y-observacion`. Ámbitos: `appointments` y `observations`. Cr
 
 - La máquina de estados va en `appointments/domain/appointment-status.ts`, con la tabla de `ARQUITECTURA.md` sección 6 (D2).
 - `estado` acepta `CONFIRMADA`, `EN_ATENCION` o `FINALIZADA`. `CANCELADA` da `400`: se cancela con `/cancel`. `PENDIENTE` llega a la máquina de estados y da `409`.
-- Transición inválida: `TransicionDeEstadoInvalidaError` (`409`). Rol correcto pero no es su cita: `403`.
+- Transición inválida: `InvalidStatusTransitionError` (`409`). Rol correcto pero no es su cita: `403`.
 - Finalizar exige una observación registrada (`409` si no existe).
 - La observación solo se registra en `EN_ATENCION` (`409` en otro estado), con `texto` de 1 a 2000 caracteres (D5).
 

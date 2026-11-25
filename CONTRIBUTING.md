@@ -68,7 +68,7 @@ Ejemplos válidos:
 ```bash
 git commit -m "test(appointments): RED - rechaza citas que se solapan con una activa"
 git commit -m "feat(appointments): GREEN - detectar solapamiento con intervalos semiabiertos"
-git commit -m "refactor(appointments): extraer calcularHoraFin al dominio"
+git commit -m "refactor(appointments): extraer calculateEndTime al dominio"
 git commit -m "fix(availability): no ofrecer slots anteriores a la hora actual"
 git commit -m "docs(backend): documentar transiciones de estado permitidas"
 git commit -m "chore(deps): actualizar prisma a 6.20"

@@ -35,7 +35,7 @@ Infraestructura (repository sobre Prisma)
 
 - **Controller**: recibe la petición, valida el DTO (class-validator), aplica guards y delega al service. No contiene `if` de negocio.
 - **Service (caso de uso)**: coordina. Carga datos vía repository, invoca el dominio, persiste. Abre transacciones cuando una operación toca varias filas (reservar, reprogramar).
-- **Dominio**: funciones puras y clases sin dependencias de framework. Ejemplo: `calcularHoraFin(inicio, duracionMin)`, `seSolapan(a, b)`, `MaquinaEstadosCita.puedeTransicionar(desde, hacia)`, `calcularSlotsDisponibles(...)`.
+- **Dominio**: funciones puras y clases sin dependencias de framework. Ejemplo: `calculateEndTime(inicio, duracionMin)`, `overlaps(a, b)`, `MaquinaEstadosCita.puedeTransicionar(desde, hacia)`, `calcularSlotsDisponibles(...)`.
 - **Repository**: único lugar que importa `PrismaService`. Devuelve objetos de dominio o tipos planos, nunca expone el cliente Prisma hacia arriba.
 
 ---
@@ -71,7 +71,7 @@ backend/
 └── test/
     ├── integration/                 # *.int-spec.ts: Supertest contra la app real + Postgres de test
     │   └── global-setup.ts          # aplica migraciones a la BD de test
-    └── helpers/                     # app.ts, db.ts (resetDb), factories.ts, auth.ts (loginComo, ruta)
+    └── helpers/                     # app.ts, db.ts (resetDb), factories.ts, auth.ts (loginAs, ruta)
 ```
 
 Los tests unitarios van **junto al código** que prueban (`*.spec.ts` en `src/`), como hace NestJS por defecto; solo el dominio y los services se prueban unitariamente.
@@ -89,9 +89,9 @@ appointments/
 │   ├── appointment.ts               # tipos de dominio de la cita
 │   ├── appointment-status.ts        # máquina de estados
 │   ├── appointment-status.spec.ts
-│   ├── overlap.ts                   # seSolapan(), hayConflicto()
+│   ├── overlap.ts                   # overlaps(), hayConflicto()
 │   ├── overlap.spec.ts
-│   ├── end-time.ts                  # calcularHoraFin()
+│   ├── end-time.ts                  # calculateEndTime()
 │   └── end-time.spec.ts
 └── dto/
     ├── create-appointment.dto.ts
@@ -143,7 +143,7 @@ Decisiones de modelado:
 - Sin borrado en cascada: todas las claves foráneas son `RESTRICT`, para conservar el historial. Odontólogos y servicios se deshabilitan con `activo`, no se borran.
 - Reprogramar actualiza la misma fila de `Appointment`. Como el constraint se evalúa en ese `UPDATE`, si el horario nuevo está ocupado la cita conserva el anterior (PDF sección 8).
 
-Restricciones en PostgreSQL (SQL manual en las migraciones, protegidas por `test/integration/esquema.int-spec.ts`):
+Restricciones en PostgreSQL (SQL manual en las migraciones, protegidas por `test/integration/schema.int-spec.ts`):
 
 | Constraint                                                | Regla                                                                         |
 | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -182,7 +182,7 @@ ALTER TABLE "Appointment"
   WHERE ("estado" <> 'CANCELADA');
 ```
 
-Prisma no modela constraints de exclusión en `schema.prisma`, así que esta sentencia se agrega a mano en el archivo de la migración correspondiente (ver skill `prisma-migraciones`). Si la BD rechaza la inserción, el repository traduce el error a la misma excepción de dominio `HorarioNoDisponibleError`.
+Prisma no modela constraints de exclusión en `schema.prisma`, así que esta sentencia se agrega a mano en el archivo de la migración correspondiente (ver skill `prisma-migraciones`). Si la BD rechaza la inserción, el repository traduce el error a la misma excepción de dominio `SlotUnavailableError`.
 
 **Reprogramación:** se hace en la misma transacción: primero se valida y asegura el nuevo horario; solo si eso tiene éxito se libera el anterior. Nunca al revés (regla del PDF sección 8).
 
