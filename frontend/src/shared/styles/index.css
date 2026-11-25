@@ -1214,12 +1214,6 @@ tbody tr:last-child td {
   color: var(--primary);
 }
 
-.avatar-large {
-  width: 4rem;
-  height: 4rem;
-  font-size: var(--text-xl);
-}
-
 /* ---- Catálogo de servicios ---- */
 
 .service-list {
@@ -1279,25 +1273,7 @@ tbody tr:last-child td {
   }
 }
 
-/* ---- Mi cuenta ---- */
-
-.account-grid {
-  display: grid;
-  gap: var(--space-5);
-  align-items: start;
-}
-
-.account-forms {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-}
-
-.account-summary-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
+/* ---- Lista de datos (etiqueta y valor) ---- */
 
 .details {
   display: grid;
@@ -1311,12 +1287,6 @@ tbody tr:last-child td {
 
 .details dd {
   overflow-wrap: anywhere;
-}
-
-@media (min-width: 68rem) {
-  .account-grid {
-    grid-template-columns: 22rem minmax(0, 1fr);
-  }
 }
 
 /* ---- Mensajes y estados de pantalla ---- */
