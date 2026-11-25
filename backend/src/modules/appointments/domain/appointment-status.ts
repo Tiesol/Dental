@@ -9,7 +9,7 @@ import { AppointmentStatus } from './appointment';
 // Máquina de estados de la cita (ARQUITECTURA.md sección 6). Una transición que no está aquí no
 // existe, para nadie: FINALIZADA y CANCELADA son terminales.
 const TRANSICIONES: { desde: AppointmentStatus; hacia: AppointmentStatus; roles: Role[] }[] = [
-  { desde: 'PENDIENTE', hacia: 'CONFIRMADA', roles: ['ADMIN'] },
+  { desde: 'PENDIENTE', hacia: 'CONFIRMADA', roles: ['ODONTOLOGO', 'ADMIN'] },
   { desde: 'CONFIRMADA', hacia: 'EN_ATENCION', roles: ['ODONTOLOGO'] },
   { desde: 'EN_ATENCION', hacia: 'FINALIZADA', roles: ['ODONTOLOGO'] },
   { desde: 'PENDIENTE', hacia: 'CANCELADA', roles: ['PACIENTE', 'ADMIN'] },

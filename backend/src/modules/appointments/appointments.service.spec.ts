@@ -266,9 +266,9 @@ describe('AppointmentsService', () => {
     });
 
     it('rechaza una transición válida cuando el rol no está autorizado', async () => {
-      repository.findById.mockResolvedValue(citaCon('PENDIENTE'));
+      repository.findById.mockResolvedValue(citaCon('CONFIRMADA'));
 
-      await expect(service.cambiarEstado('c1', 'CONFIRMADA', odontologo)).rejects.toThrow(
+      await expect(service.cambiarEstado('c1', 'EN_ATENCION', admin)).rejects.toThrow(
         AccesoDenegadoError,
       );
 
