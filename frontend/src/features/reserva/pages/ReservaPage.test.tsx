@@ -98,8 +98,9 @@ describe('ReservaPage', () => {
     expect(
       await screen.findByRole('heading', { name: '2. Elige un servicio de Dra. Laura Gómez' }),
     ).toBeVisible();
+    const limpieza = await screen.findByRole('button', { name: 'Elegir Limpieza dental' });
     expect(screen.queryByRole('button', { name: 'Elegir Ortodoncia' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Elegir Limpieza dental' }));
+    await user.click(limpieza);
     const fecha = await screen.findByLabelText('Fecha');
     await user.clear(fecha);
     await user.type(fecha, '10/11/2026');

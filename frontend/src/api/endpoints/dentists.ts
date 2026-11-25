@@ -13,6 +13,9 @@ const conFiltro = (serviceId?: string) =>
 export const dentistsApi = {
   listar: (serviceId?: string, signal?: AbortSignal) =>
     http.get<DentistPublicResponse[]>(conFiltro(serviceId), signal),
+  // Vista pública de uno; 404 si no existe o no acepta citas.
+  obtener: (id: string, signal?: AbortSignal) =>
+    http.get<DentistPublicResponse>(`/dentists/${id}`, signal),
 
   // Solo ADMIN
   listarAdmin: () => http.get<DentistAdminResponse[]>('/dentists'),
