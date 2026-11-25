@@ -17,9 +17,10 @@ import { required } from '@/shared/lib/validators';
 
 const VOLVER = { to: '/agenda', label: 'Volver a la agenda' };
 
-type Accion = 'iniciar' | 'observacion' | 'finalizar';
+type Accion = 'confirmar' | 'iniciar' | 'observacion' | 'finalizar';
 
-// Flujo de atención del odontólogo: iniciar, registrar la observación y finalizar (PDF sección 7).
+// Flujo de atención del odontólogo: confirmar, iniciar, registrar la observación y finalizar
+// (PDF sección 7).
 export function DetalleAtencionPage() {
   const { id = '' } = useParams();
   const { user } = useAuth();
@@ -55,6 +56,9 @@ export function DetalleAtencionPage() {
     const actualizada = await appointmentsApi.cambiarEstado(id, nuevo);
     return () => actualizada;
   };
+
+  const confirmar = () =>
+    void ejecutar('confirmar', () => cambiarEstado('CONFIRMADA'), 'Cita confirmada');
 
   const iniciar = () =>
     void ejecutar('iniciar', () => cambiarEstado('EN_ATENCION'), 'Atención iniciada');
@@ -98,6 +102,18 @@ export function DetalleAtencionPage() {
         <DatosCita cita={cita} mostrarPaciente />
         {error && <ErrorMessage>{error}</ErrorMessage>}
         {exito && <SuccessMessage>{exito}</SuccessMessage>}
+        {acciones.includes('confirmar') && (
+          <div className="form-actions">
+            <Button
+              loading={enCurso === 'confirmar'}
+              disabled={enCurso !== null}
+              onClick={confirmar}
+              data-testid="btn-confirmar-cita"
+            >
+              Confirmar cita
+            </Button>
+          </div>
+        )}
         {acciones.includes('iniciar-atencion') && (
           <div className="form-actions">
             <Button
