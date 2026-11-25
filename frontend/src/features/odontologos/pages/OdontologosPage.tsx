@@ -6,15 +6,15 @@ import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { Select } from '@/shared/components/Select';
-import { formatearDuracion } from '@/shared/lib/formato';
-import { useOdontologos } from '../hooks/useOdontologos';
-import { useServiciosParaElegir } from '../hooks/useServiciosParaElegir';
+import { formatDuration } from '@/shared/lib/format';
+import { useDentists } from '../hooks/useDentists';
+import { useSelectableServices } from '../hooks/useSelectableServices';
 
 // Vista del paciente: odontólogos que aceptan citas, con filtro por servicio.
 export function OdontologosPage() {
   const [serviceId, setServiceId] = useState('');
-  const estado = useOdontologos(serviceId || undefined);
-  const { servicios } = useServiciosParaElegir();
+  const status = useDentists(serviceId || undefined);
+  const { services } = useSelectableServices();
 
   return (
     <div className="page">
@@ -30,15 +30,15 @@ export function OdontologosPage() {
             value={serviceId}
             options={[
               { value: '', label: 'Todos los servicios' },
-              ...servicios.map((s) => ({ value: s.id, label: s.nombre })),
+              ...services.map((s) => ({ value: s.id, label: s.nombre })),
             ]}
             onChange={setServiceId}
           />
         </div>
 
-        {estado.status === 'cargando' && <LoadingState />}
-        {estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
-        {estado.status === 'ok' && estado.odontologos.length === 0 && (
+        {status.status === 'cargando' && <LoadingState />}
+        {status.status === 'error' && <ErrorMessage>{status.message}</ErrorMessage>}
+        {status.status === 'ok' && status.dentists.length === 0 && (
           <EmptyState
             title={
               serviceId
@@ -47,9 +47,9 @@ export function OdontologosPage() {
             }
           />
         )}
-        {estado.status === 'ok' && estado.odontologos.length > 0 && (
+        {status.status === 'ok' && status.dentists.length > 0 && (
           <ul className="service-list">
-            {estado.odontologos.map((d) => (
+            {status.dentists.map((d) => (
               <li
                 key={d.id}
                 className="service service-con-accion"
@@ -66,7 +66,7 @@ export function OdontologosPage() {
                   <ul className="chips" aria-label={`Servicios de ${d.nombre}`}>
                     {d.servicios.map((s) => (
                       <li key={s.id}>
-                        {s.nombre} · {formatearDuracion(s.duracionMin)}
+                        {s.nombre} · {formatDuration(s.duracionMin)}
                       </li>
                     ))}
                   </ul>

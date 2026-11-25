@@ -3,24 +3,26 @@ import { appointmentsApi } from '@/api/endpoints/appointments';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
-import { useCarga } from '@/shared/hooks/useCarga';
+import { useLoader } from '@/shared/hooks/useLoader';
 import { TablaAgenda } from '../components/TablaAgenda';
 
 // Agenda del odontólogo autenticado: el backend la toma del token, nunca de un parámetro.
 export function AgendaPage() {
-  const cargarHoy = useCallback(
+  const loadToday = useCallback(
     (signal: AbortSignal) => appointmentsApi.agenda(undefined, signal),
     [],
   );
-  const cargarProximas = useCallback(
-    (signal: AbortSignal) => appointmentsApi.agendaProximas(signal),
+  const loadUpcoming = useCallback(
+    (signal: AbortSignal) => appointmentsApi.upcomingAgenda(signal),
     [],
   );
-  const { estado: hoy } = useCarga(cargarHoy);
-  const { estado: proximas } = useCarga(cargarProximas);
+  const { state: today } = useLoader(loadToday);
+  const { state: upcoming } = useLoader(loadUpcoming);
 
   // "Próximas" también trae las de más tarde hoy; aquí solo se listan una vez, en "Hoy".
-  const idsDeHoy = new Set(hoy.status === 'ok' ? hoy.datos.map((cita) => cita.id) : []);
+  const todayIds = new Set(
+    today.status === 'ok' ? today.data.map((appointment) => appointment.id) : [],
+  );
 
   return (
     <div className="page">
@@ -30,21 +32,23 @@ export function AgendaPage() {
         <h2 id="titulo-agenda-hoy" className="card-title">
           Hoy
         </h2>
-        {hoy.status === 'cargando' && <LoadingState />}
-        {hoy.status === 'error' && <ErrorMessage>{hoy.mensaje}</ErrorMessage>}
-        {hoy.status === 'ok' && <TablaAgenda citas={hoy.datos} vacio="No tienes citas para hoy" />}
+        {today.status === 'cargando' && <LoadingState />}
+        {today.status === 'error' && <ErrorMessage>{today.message}</ErrorMessage>}
+        {today.status === 'ok' && (
+          <TablaAgenda appointments={today.data} emptyText="No tienes citas para hoy" />
+        )}
       </section>
 
       <section className="card card-flush" aria-labelledby="titulo-agenda-proximas">
         <h2 id="titulo-agenda-proximas" className="card-title">
           Próximas
         </h2>
-        {proximas.status === 'cargando' && <LoadingState />}
-        {proximas.status === 'error' && <ErrorMessage>{proximas.mensaje}</ErrorMessage>}
-        {proximas.status === 'ok' && (
+        {upcoming.status === 'cargando' && <LoadingState />}
+        {upcoming.status === 'error' && <ErrorMessage>{upcoming.message}</ErrorMessage>}
+        {upcoming.status === 'ok' && (
           <TablaAgenda
-            citas={proximas.datos.filter((cita) => !idsDeHoy.has(cita.id))}
-            vacio="No tienes citas próximas"
+            appointments={upcoming.data.filter((appointment) => !todayIds.has(appointment.id))}
+            emptyText="No tienes citas próximas"
           />
         )}
       </section>

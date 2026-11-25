@@ -1,7 +1,7 @@
 import { test as base, type APIRequestContext } from '@playwright/test';
-import { AHORA, API_URL } from './entorno';
+import { NOW, API_URL } from './environment';
 
-export type DatosCita = {
+export type AppointmentData = {
   paciente: 'paciente1' | 'paciente2';
   horaInicio: string;
   estado?: 'PENDIENTE' | 'CONFIRMADA' | 'EN_ATENCION' | 'FINALIZADA' | 'CANCELADA';
@@ -10,10 +10,10 @@ export type DatosCita = {
 
 export type Seed = {
   // Crea por la API de seed una cita que el escenario necesita ya existente.
-  cita: (datos: DatosCita) => Promise<{ id: string }>;
+  appointment: (data: AppointmentData) => Promise<{ id: string }>;
 };
 
-async function sembrar(request: APIRequestContext): Promise<void> {
+async function seedDatabase(request: APIRequestContext): Promise<void> {
   const res = await request.post(`${API_URL}/e2e/seed`);
   if (!res.ok()) {
     throw new Error(`El seed de E2E respondió ${res.status()}`);
@@ -24,11 +24,11 @@ async function sembrar(request: APIRequestContext): Promise<void> {
 // backend. `auto` hace que el seed corra aunque el escenario no use el fixture.
 export const test = base.extend<{ seed: Seed }>({
   seed: [
-    async ({ request }, usar) => {
-      await sembrar(request);
-      await usar({
-        cita: async (datos) => {
-          const res = await request.post(`${API_URL}/e2e/citas`, { data: datos });
+    async ({ request }, provide) => {
+      await seedDatabase(request);
+      await provide({
+        appointment: async (data) => {
+          const res = await request.post(`${API_URL}/e2e/citas`, { data: data });
           if (!res.ok()) {
             throw new Error(`Crear la cita de E2E respondió ${res.status()}`);
           }
@@ -38,9 +38,9 @@ export const test = base.extend<{ seed: Seed }>({
     },
     { auto: true },
   ],
-  page: async ({ page }, usar) => {
-    await page.clock.setFixedTime(new Date(AHORA));
-    await usar(page);
+  page: async ({ page }, provide) => {
+    await page.clock.setFixedTime(new Date(NOW));
+    await provide(page);
   },
 });
 

@@ -2,58 +2,58 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { servicioDePrueba } from '@/test/factories';
+import { testService } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
-import { elegirOpcion, renderWithProviders } from '@/test/utils';
+import { chooseOption, renderWithProviders } from '@/test/utils';
 import { AdminServiciosPage } from './AdminServiciosPage';
 
-function apiDeServicios(servicios = [servicioDePrueba()]) {
-  const cambios: unknown[] = [];
+function mockServicesApi(services = [testService()]) {
+  const changes: unknown[] = [];
   server.use(
-    http.get(`${API}/services`, () => HttpResponse.json(servicios)),
+    http.get(`${API}/services`, () => HttpResponse.json(services)),
     http.patch(`${API}/services/:id/estado`, async ({ request, params }) => {
       const body = (await request.json()) as { activo: boolean };
-      cambios.push(body);
-      const servicio = servicios.find((s) => s.id === params.id);
-      return HttpResponse.json({ ...servicio, activo: body.activo });
+      changes.push(body);
+      const service = services.find((s) => s.id === params.id);
+      return HttpResponse.json({ ...service, activo: body.activo });
     }),
   );
-  return cambios;
+  return changes;
 }
 
 describe('AdminServiciosPage', () => {
   it('no deshabilita el servicio si se cancela la confirmación', async () => {
-    const cambios = apiDeServicios();
+    const changes = mockServicesApi();
     const user = userEvent.setup();
     renderWithProviders(<AdminServiciosPage />);
-    const fila = await screen.findByTestId('servicio-s1');
+    const row = await screen.findByTestId('servicio-s1');
 
-    await user.click(within(fila).getByRole('button', { name: 'Deshabilitar' }));
-    const dialogo = screen.getByRole('dialog', { name: '¿Deshabilitar "Limpieza dental"?' });
-    await user.click(within(dialogo).getByRole('button', { name: 'Cancelar' }));
+    await user.click(within(row).getByRole('button', { name: 'Deshabilitar' }));
+    const dialog = screen.getByRole('dialog', { name: '¿Deshabilitar "Limpieza dental"?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
 
-    expect(cambios).toEqual([]);
-    expect(within(fila).getByText('Habilitado')).toBeInTheDocument();
+    expect(changes).toEqual([]);
+    expect(within(row).getByText('Habilitado')).toBeInTheDocument();
   });
 
   it('deshabilita el servicio al confirmar', async () => {
-    const cambios = apiDeServicios();
+    const changes = mockServicesApi();
     const user = userEvent.setup();
     renderWithProviders(<AdminServiciosPage />);
-    const fila = await screen.findByTestId('servicio-s1');
+    const row = await screen.findByTestId('servicio-s1');
 
-    await user.click(within(fila).getByRole('button', { name: 'Deshabilitar' }));
+    await user.click(within(row).getByRole('button', { name: 'Deshabilitar' }));
     await user.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Deshabilitar' }),
     );
 
-    expect(await within(fila).findByText('Deshabilitado')).toBeInTheDocument();
-    expect(cambios).toEqual([{ activo: false }]);
+    expect(await within(row).findByText('Deshabilitado')).toBeInTheDocument();
+    expect(changes).toEqual([{ activo: false }]);
   });
 
   it('con el catálogo vacío invita a crear el primer servicio', async () => {
-    apiDeServicios([]);
+    mockServicesApi([]);
 
     renderWithProviders(<AdminServiciosPage />);
 
@@ -63,12 +63,12 @@ describe('AdminServiciosPage', () => {
   });
 
   it('muestra un estado vacío cuando nada coincide con el filtro', async () => {
-    apiDeServicios();
+    mockServicesApi();
     const user = userEvent.setup();
     renderWithProviders(<AdminServiciosPage />);
     await screen.findByTestId('servicio-s1');
 
-    await elegirOpcion(user, screen.getByLabelText('Estado'), 'Deshabilitados');
+    await chooseOption(user, screen.getByLabelText('Estado'), 'Deshabilitados');
 
     expect(
       screen.getByRole('heading', { name: 'No hay servicios que coincidan' }),

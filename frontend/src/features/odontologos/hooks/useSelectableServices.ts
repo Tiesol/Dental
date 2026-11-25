@@ -4,24 +4,24 @@ import type { ServiceResponse } from '@/api/types';
 
 // Servicios para filtros y casillas de selección. El backend decide cuáles ve cada rol
 // (el ADMIN también recibe los deshabilitados, para poder asignarlos).
-export function useServiciosParaElegir() {
-  const [servicios, setServicios] = useState<ServiceResponse[]>([]);
+export function useSelectableServices() {
+  const [services, setServices] = useState<ServiceResponse[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let activo = true;
+    let active = true;
     servicesApi
-      .listar()
-      .then((lista) => {
-        if (activo) setServicios(lista);
+      .list()
+      .then((list) => {
+        if (active) setServices(list);
       })
       .catch((err: Error) => {
-        if (activo) setError(err.message);
+        if (active) setError(err.message);
       });
     return () => {
-      activo = false;
+      active = false;
     };
   }, []);
 
-  return { servicios, error };
+  return { services, error };
 }

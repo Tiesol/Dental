@@ -6,25 +6,25 @@ import type {
   UpdateDentistRequest,
 } from '../types';
 
-const conFiltro = (serviceId?: string) =>
+const withFilter = (serviceId?: string) =>
   serviceId ? `/dentists?serviceId=${encodeURIComponent(serviceId)}` : '/dentists';
 
 // El mismo endpoint devuelve una vista distinta según el rol del token.
 export const dentistsApi = {
-  listar: (serviceId?: string, signal?: AbortSignal) =>
-    http.get<DentistPublicResponse[]>(conFiltro(serviceId), signal),
+  list: (serviceId?: string, signal?: AbortSignal) =>
+    http.get<DentistPublicResponse[]>(withFilter(serviceId), signal),
   // Vista pública de uno; 404 si no existe o no acepta citas.
-  obtener: (id: string, signal?: AbortSignal) =>
+  get: (id: string, signal?: AbortSignal) =>
     http.get<DentistPublicResponse>(`/dentists/${id}`, signal),
 
   // Solo ADMIN
-  listarAdmin: () => http.get<DentistAdminResponse[]>('/dentists'),
-  obtenerAdmin: (id: string) => http.get<DentistAdminResponse>(`/dentists/${id}`),
-  crear: (body: CreateDentistRequest) => http.post<DentistAdminResponse>('/dentists', body),
-  actualizar: (id: string, body: UpdateDentistRequest) =>
+  listAdmin: () => http.get<DentistAdminResponse[]>('/dentists'),
+  getAdmin: (id: string) => http.get<DentistAdminResponse>(`/dentists/${id}`),
+  create: (body: CreateDentistRequest) => http.post<DentistAdminResponse>('/dentists', body),
+  update: (id: string, body: UpdateDentistRequest) =>
     http.patch<DentistAdminResponse>(`/dentists/${id}`, body),
-  cambiarEstado: (id: string, activo: boolean) =>
-    http.patch<DentistAdminResponse>(`/dentists/${id}/estado`, { activo }),
-  asignarServicios: (id: string, serviceIds: string[]) =>
+  changeStatus: (id: string, active: boolean) =>
+    http.patch<DentistAdminResponse>(`/dentists/${id}/estado`, { activo: active }),
+  assignServices: (id: string, serviceIds: string[]) =>
     http.put<DentistAdminResponse>(`/dentists/${id}/services`, { serviceIds }),
 };

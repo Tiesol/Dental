@@ -4,7 +4,7 @@ import { HttpResponse, http, type RequestHandler } from 'msw';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import type { AppointmentResponse } from '@/api/types';
-import { citaDePrueba } from '@/test/factories';
+import { testAppointment } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
@@ -12,28 +12,32 @@ import { DetalleCitaPage } from './DetalleCitaPage';
 
 const SLOTS = [{ inicio: '2026-11-10T14:00:00.000Z', fin: '2026-11-10T14:30:00.000Z' }];
 
-function renderPagina(inicial: Partial<AppointmentResponse> = {}, extras: RequestHandler[] = []) {
-  let cita = citaDePrueba(inicial);
-  const reprogramaciones: unknown[] = [];
-  const cancelaciones = vi.fn();
-  const consultasDeSlots = vi.fn();
+function renderPage(initial: Partial<AppointmentResponse> = {}, extras: RequestHandler[] = []) {
+  let appointment = testAppointment(initial);
+  const reschedules: unknown[] = [];
+  const cancellations = vi.fn();
+  const slotRequests = vi.fn();
   server.use(
-    http.get(`${API}/appointments/c1`, () => HttpResponse.json(cita)),
+    http.get(`${API}/appointments/c1`, () => HttpResponse.json(appointment)),
     http.get(`${API}/dentists/d1/slots`, ({ request }) => {
       const url = new URL(request.url);
-      consultasDeSlots(url.searchParams.get('serviceId'), url.searchParams.get('fecha'));
+      slotRequests(url.searchParams.get('serviceId'), url.searchParams.get('fecha'));
       return HttpResponse.json(SLOTS);
     }),
     http.patch(`${API}/appointments/c1/cancel`, () => {
-      cancelaciones();
-      cita = { ...cita, estado: 'CANCELADA' };
-      return HttpResponse.json(cita);
+      cancellations();
+      appointment = { ...appointment, estado: 'CANCELADA' };
+      return HttpResponse.json(appointment);
     }),
     http.patch(`${API}/appointments/c1/reschedule`, async ({ request }) => {
-      const cuerpo = (await request.json()) as { horaInicio: string };
-      reprogramaciones.push(cuerpo);
-      cita = { ...cita, horaInicio: cuerpo.horaInicio, horaFin: '2026-11-10T14:30:00.000Z' };
-      return HttpResponse.json(cita);
+      const body = (await request.json()) as { horaInicio: string };
+      reschedules.push(body);
+      appointment = {
+        ...appointment,
+        horaInicio: body.horaInicio,
+        horaFin: '2026-11-10T14:30:00.000Z',
+      };
+      return HttpResponse.json(appointment);
     }),
   );
   server.use(...extras);
@@ -41,9 +45,13 @@ function renderPagina(inicial: Partial<AppointmentResponse> = {}, extras: Reques
     <Routes>
       <Route path="/mis-citas/:id" element={<DetalleCitaPage />} />
     </Routes>,
-    { route: '/mis-citas/c1', conSesion: true },
+    { route: '/mis-citas/c1', withSession: true },
   );
-  return { reprogramaciones, cancelaciones, consultasDeSlots };
+  return {
+    reschedules,
+    cancellations,
+    slotRequests,
+  };
 }
 
 const error409 = {
@@ -54,24 +62,24 @@ const error409 = {
 
 describe('DetalleCitaPage', () => {
   // La cita cambió por otro lado: la acción responde 409 y la siguiente consulta trae el estado real.
-  function conCitaCambiada(metodo: 'cancel' | 'reschedule') {
-    let cambiada = false;
+  function withChangedAppointment(method: 'cancel' | 'reschedule') {
+    let changed = false;
     return [
-      http.patch(`${API}/appointments/c1/${metodo}`, () => {
-        cambiada = true;
+      http.patch(`${API}/appointments/c1/${method}`, () => {
+        changed = true;
         return HttpResponse.json(
           { statusCode: 409, error: 'CITA_NO_MODIFICABLE', message: 'Ya no se puede modificar' },
           { status: 409 },
         );
       }),
       http.get(`${API}/appointments/c1`, () =>
-        HttpResponse.json(citaDePrueba({ estado: cambiada ? 'CANCELADA' : 'PENDIENTE' })),
+        HttpResponse.json(testAppointment({ estado: changed ? 'CANCELADA' : 'PENDIENTE' })),
       ),
     ];
   }
 
   it('si no se pudo cancelar, avisa y muestra el estado real de la cita', async () => {
-    renderPagina({}, conCitaCambiada('cancel'));
+    renderPage({}, withChangedAppointment('cancel'));
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('btn-cancelar'));
@@ -85,7 +93,7 @@ describe('DetalleCitaPage', () => {
   });
 
   it('si no se pudo reprogramar porque la cita cambió, cierra el panel y muestra su estado real', async () => {
-    renderPagina({}, conCitaCambiada('reschedule'));
+    renderPage({}, withChangedAppointment('reschedule'));
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('btn-reprogramar'));
@@ -99,7 +107,7 @@ describe('DetalleCitaPage', () => {
   });
 
   it('confirma con un mensaje que la cita se canceló', async () => {
-    renderPagina();
+    renderPage();
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('btn-cancelar'));
@@ -111,7 +119,7 @@ describe('DetalleCitaPage', () => {
   });
 
   it('confirma con un mensaje que la cita se reprogramó', async () => {
-    renderPagina();
+    renderPage();
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('btn-reprogramar'));
@@ -125,18 +133,18 @@ describe('DetalleCitaPage', () => {
   });
 
   it('muestra servicio, odontólogo, fecha, horario y estado', async () => {
-    renderPagina();
+    renderPage();
 
     expect(await screen.findByTestId('estado-cita')).toHaveTextContent('PENDIENTE');
-    const datos = screen.getByTestId('datos-cita');
-    expect(datos).toHaveTextContent('Limpieza dental');
-    expect(datos).toHaveTextContent('Dra. Laura Gómez');
-    expect(datos).toHaveTextContent('martes, 10 de noviembre de 2026');
-    expect(datos).toHaveTextContent('09:00 - 09:30');
+    const data = screen.getByTestId('datos-cita');
+    expect(data).toHaveTextContent('Limpieza dental');
+    expect(data).toHaveTextContent('Dra. Laura Gómez');
+    expect(data).toHaveTextContent('martes, 10 de noviembre de 2026');
+    expect(data).toHaveTextContent('09:00 - 09:30');
   });
 
   it('una cita finalizada muestra su observación', async () => {
-    renderPagina({
+    renderPage({
       estado: 'FINALIZADA',
       observacion: { texto: 'Sin novedades', createdAt: '2026-11-10T14:00:00.000Z' },
     });
@@ -146,8 +154,8 @@ describe('DetalleCitaPage', () => {
 
   it.each(['PENDIENTE', 'CONFIRMADA'] as const)(
     'una cita %s ofrece reprogramar y cancelar',
-    async (estado) => {
-      renderPagina({ estado });
+    async (status) => {
+      renderPage({ estado: status });
 
       expect(await screen.findByTestId('btn-reprogramar')).toBeInTheDocument();
       expect(await screen.findByTestId('btn-cancelar')).toBeInTheDocument();
@@ -156,8 +164,8 @@ describe('DetalleCitaPage', () => {
 
   it.each(['EN_ATENCION', 'FINALIZADA', 'CANCELADA'] as const)(
     'una cita %s no ofrece reprogramar ni cancelar',
-    async (estado) => {
-      renderPagina({ estado });
+    async (status) => {
+      renderPage({ estado: status });
 
       await screen.findByTestId('estado-cita');
       await screen.findByRole('heading', { level: 1 });
@@ -168,7 +176,7 @@ describe('DetalleCitaPage', () => {
   );
 
   it('una cita ajena muestra que no hay acceso y ningún dato', async () => {
-    renderPagina(undefined, [
+    renderPage(undefined, [
       http.get(`${API}/appointments/c1`, () =>
         HttpResponse.json(
           {
@@ -189,7 +197,7 @@ describe('DetalleCitaPage', () => {
   });
 
   it('cancela al confirmar y muestra el estado CANCELADA', async () => {
-    const { cancelaciones } = renderPagina();
+    const { cancellations } = renderPage();
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('btn-cancelar'));
@@ -198,23 +206,23 @@ describe('DetalleCitaPage', () => {
     );
 
     await waitFor(() => expect(screen.getByTestId('estado-cita')).toHaveTextContent('CANCELADA'));
-    expect(cancelaciones).toHaveBeenCalledTimes(1);
+    expect(cancellations).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId('btn-cancelar')).not.toBeInTheDocument();
   });
 
   it('no cancela si se desiste en la confirmación', async () => {
-    const { cancelaciones } = renderPagina();
+    const { cancellations } = renderPage();
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('btn-cancelar'));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Volver' }));
 
-    expect(cancelaciones).not.toHaveBeenCalled();
+    expect(cancellations).not.toHaveBeenCalled();
     expect(screen.getByTestId('estado-cita')).toHaveTextContent('PENDIENTE');
   });
 
   it('muestra el mensaje del backend si no se puede cancelar', async () => {
-    renderPagina();
+    renderPage();
     server.use(
       http.patch(`${API}/appointments/c1/cancel`, () =>
         HttpResponse.json(
@@ -234,17 +242,17 @@ describe('DetalleCitaPage', () => {
   });
 
   it('reprogramar consulta los horarios del mismo odontólogo y servicio, desde el día de la cita', async () => {
-    const { consultasDeSlots } = renderPagina();
+    const { slotRequests } = renderPage();
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('btn-reprogramar'));
 
     expect(await screen.findByTestId('slot-10:00')).toHaveAccessibleName('10:00 a 10:30');
-    expect(consultasDeSlots).toHaveBeenCalledWith('s1', '2026-11-10');
+    expect(slotRequests).toHaveBeenCalledWith('s1', '2026-11-10');
   });
 
   it('reprograma al horario elegido y muestra el nuevo', async () => {
-    const { reprogramaciones } = renderPagina();
+    const { reschedules } = renderPage();
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('btn-reprogramar'));
@@ -254,12 +262,12 @@ describe('DetalleCitaPage', () => {
     await waitFor(() =>
       expect(screen.getByTestId('datos-cita')).toHaveTextContent('10:00 - 10:30'),
     );
-    expect(reprogramaciones).toEqual([{ horaInicio: '2026-11-10T14:00:00.000Z' }]);
+    expect(reschedules).toEqual([{ horaInicio: '2026-11-10T14:00:00.000Z' }]);
     expect(screen.queryByTestId('btn-confirmar-reprogramacion')).not.toBeInTheDocument();
   });
 
   it('ante un 409 al reprogramar conserva el horario, avisa y recarga los horarios', async () => {
-    const { consultasDeSlots } = renderPagina();
+    const { slotRequests } = renderPage();
     server.use(
       http.patch(`${API}/appointments/c1/reschedule`, () =>
         HttpResponse.json(error409, { status: 409 }),
@@ -269,18 +277,18 @@ describe('DetalleCitaPage', () => {
 
     await user.click(await screen.findByTestId('btn-reprogramar'));
     await user.click(await screen.findByTestId('slot-10:00'));
-    const consultasAntes = consultasDeSlots.mock.calls.length;
+    const requestsBefore = slotRequests.mock.calls.length;
     await user.click(await screen.findByTestId('btn-confirmar-reprogramacion'));
 
     expect(await screen.findByTestId('error-mensaje')).toHaveTextContent(
       'El horario ya no está disponible',
     );
     expect(screen.getByTestId('datos-cita')).toHaveTextContent('09:00 - 09:30');
-    await waitFor(() => expect(consultasDeSlots.mock.calls.length).toBeGreaterThan(consultasAntes));
+    await waitFor(() => expect(slotRequests.mock.calls.length).toBeGreaterThan(requestsBefore));
   });
 
   it('permite desistir de reprogramar', async () => {
-    const { reprogramaciones } = renderPagina();
+    const { reschedules } = renderPage();
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('btn-reprogramar'));
@@ -288,6 +296,6 @@ describe('DetalleCitaPage', () => {
     await user.click(screen.getByRole('button', { name: 'Volver a la cita' }));
 
     expect(screen.queryByTestId('slot-10:00')).not.toBeInTheDocument();
-    expect(reprogramaciones).toEqual([]);
+    expect(reschedules).toEqual([]);
   });
 });

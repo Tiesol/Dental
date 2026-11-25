@@ -2,21 +2,21 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, http, type RequestHandler } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { citaDePrueba } from '@/test/factories';
+import { testAppointment } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
 import { MisCitasPage } from './MisCitasPage';
 
-function renderPagina(extras: RequestHandler[] = []) {
+function renderPage(extras: RequestHandler[] = []) {
   server.use(
     http.get(`${API}/appointments/mine`, ({ request }) => {
-      const cuando = new URL(request.url).searchParams.get('cuando');
+      const when = new URL(request.url).searchParams.get('cuando');
       return HttpResponse.json(
-        cuando === 'proximas'
-          ? [citaDePrueba({ id: 'proxima' })]
+        when === 'proximas'
+          ? [testAppointment({ id: 'proxima' })]
           : [
-              citaDePrueba({
+              testAppointment({
                 id: 'pasada',
                 estado: 'FINALIZADA',
                 horaInicio: '2026-11-03T13:00:00.000Z',
@@ -32,19 +32,19 @@ function renderPagina(extras: RequestHandler[] = []) {
 
 describe('MisCitasPage', () => {
   it('muestra por defecto las próximas, con servicio, odontólogo, horario y estado', async () => {
-    renderPagina();
+    renderPage();
 
-    const cita = await screen.findByTestId('cita-proxima');
+    const appointment = await screen.findByTestId('cita-proxima');
 
-    expect(cita).toHaveTextContent('Limpieza dental');
-    expect(cita).toHaveTextContent('Dra. Laura Gómez');
-    expect(cita).toHaveTextContent('martes, 10 de noviembre de 2026');
-    expect(cita).toHaveTextContent('09:00 - 09:30');
-    expect(cita).toHaveTextContent('PENDIENTE');
+    expect(appointment).toHaveTextContent('Limpieza dental');
+    expect(appointment).toHaveTextContent('Dra. Laura Gómez');
+    expect(appointment).toHaveTextContent('martes, 10 de noviembre de 2026');
+    expect(appointment).toHaveTextContent('09:00 - 09:30');
+    expect(appointment).toHaveTextContent('PENDIENTE');
   });
 
   it('cambia al historial y muestra las citas anteriores', async () => {
-    renderPagina();
+    renderPage();
     const user = userEvent.setup();
     await screen.findByTestId('cita-proxima');
 
@@ -56,32 +56,32 @@ describe('MisCitasPage', () => {
   });
 
   it('la lista queda en un panel asociado a la pestaña activa', async () => {
-    renderPagina();
+    renderPage();
     await screen.findByTestId('cita-proxima');
 
-    const pestania = screen.getByRole('tab', { name: 'Próximas' });
+    const tab = screen.getByRole('tab', { name: 'Próximas' });
     const panel = screen.getByRole('tabpanel', { name: 'Próximas' });
 
-    expect(pestania).toHaveAttribute('aria-controls', panel.id);
+    expect(tab).toHaveAttribute('aria-controls', panel.id);
   });
 
   it('las flechas cambian de pestaña y solo la activa recibe el foco con Tab', async () => {
-    renderPagina();
+    renderPage();
     const user = userEvent.setup();
     await screen.findByTestId('cita-proxima');
     screen.getByRole('tab', { name: 'Próximas' }).focus();
 
     await user.keyboard('{ArrowRight}');
 
-    const historial = screen.getByRole('tab', { name: 'Historial' });
-    expect(historial).toHaveFocus();
-    expect(historial).toHaveAttribute('tabindex', '0');
+    const history = screen.getByRole('tab', { name: 'Historial' });
+    expect(history).toHaveFocus();
+    expect(history).toHaveAttribute('tabindex', '0');
     expect(screen.getByRole('tab', { name: 'Próximas' })).toHaveAttribute('tabindex', '-1');
     expect(await screen.findByTestId('cita-pasada')).toBeInTheDocument();
   });
 
   it('cada cita enlaza a su detalle', async () => {
-    renderPagina();
+    renderPage();
 
     await screen.findByTestId('cita-proxima');
 
@@ -92,14 +92,14 @@ describe('MisCitasPage', () => {
   });
 
   it('avisa si no hay citas próximas y ofrece reservar', async () => {
-    renderPagina([http.get(`${API}/appointments/mine`, () => HttpResponse.json([]))]);
+    renderPage([http.get(`${API}/appointments/mine`, () => HttpResponse.json([]))]);
 
     expect(await screen.findByText('No tienes citas próximas')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Reservar cita' }).length).toBeGreaterThan(0);
   });
 
   it('avisa si el historial está vacío', async () => {
-    renderPagina([http.get(`${API}/appointments/mine`, () => HttpResponse.json([]))]);
+    renderPage([http.get(`${API}/appointments/mine`, () => HttpResponse.json([]))]);
     const user = userEvent.setup();
     await screen.findByText('No tienes citas próximas');
 
@@ -109,7 +109,7 @@ describe('MisCitasPage', () => {
   });
 
   it('muestra el error si no se pueden cargar', async () => {
-    renderPagina([
+    renderPage([
       http.get(`${API}/appointments/mine`, () =>
         HttpResponse.json({ statusCode: 500, message: 'Falló el servidor' }, { status: 500 }),
       ),

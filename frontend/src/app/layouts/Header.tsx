@@ -8,7 +8,7 @@ import { ROLE_LABEL } from '@/shared/lib/roles';
 
 type NavItem = { to: string; label: string; icon: IconName };
 
-const NAV_POR_ROL: Record<Role, NavItem[]> = {
+const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   // Se reserva desde los catálogos (cada fila tiene "Reservar") o desde Mis citas.
   PACIENTE: [
     { to: '/mis-citas', label: 'Mis citas', icon: 'calendar' },
@@ -36,7 +36,7 @@ export function Header() {
       </Link>
       <nav aria-label="Principal" className="sidebar-nav">
         <ul>
-          {NAV_POR_ROL[user.role].map((item) => (
+          {NAV_BY_ROLE[user.role].map((item) => (
             <li key={item.to}>
               <NavLink to={item.to}>
                 <Icon name={item.icon} />

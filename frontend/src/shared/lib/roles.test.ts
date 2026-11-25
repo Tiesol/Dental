@@ -7,7 +7,7 @@ describe('ROLE_LABEL', () => {
     ['PACIENTE', 'Paciente'],
     ['ODONTOLOGO', 'Odontólogo'],
     ['ADMIN', 'Administrador'],
-  ])('traduce el rol %s como "%s" para mostrarlo en la interfaz', (rol, etiqueta) => {
-    expect(ROLE_LABEL[rol]).toBe(etiqueta);
+  ])('traduce el rol %s como "%s" para mostrarlo en la interfaz', (role, label) => {
+    expect(ROLE_LABEL[role]).toBe(label);
   });
 });

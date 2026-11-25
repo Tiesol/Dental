@@ -9,9 +9,9 @@ import { TextField } from '@/shared/components/TextField';
 import { useForm } from '@/shared/hooks/useForm';
 import { combine, email, maxLength, minLength, required } from '@/shared/lib/validators';
 import { ROLE_LABEL } from '@/shared/lib/roles';
-import { useCrearUsuario } from '../hooks/useCrearUsuario';
+import { useCreateUser } from '../hooks/useCreateUser';
 
-const OPCIONES_ROL: SelectOption<StaffRole>[] = [
+const ROLE_OPTIONS: SelectOption<StaffRole>[] = [
   { value: 'ODONTOLOGO', label: ROLE_LABEL.ODONTOLOGO },
   { value: 'ADMIN', label: ROLE_LABEL.ADMIN },
 ];
@@ -19,15 +19,15 @@ const OPCIONES_ROL: SelectOption<StaffRole>[] = [
 // Alta de ODONTOLOGO o ADMIN. Los pacientes se registran solos desde /registro.
 export function NuevoUsuarioPage() {
   const navigate = useNavigate();
-  const { crear, enviando, error } = useCrearUsuario();
+  const { create, sending, error } = useCreateUser();
   const [role, setRole] = useState<StaffRole>('ODONTOLOGO');
-  const esOdontologo = role === 'ODONTOLOGO';
+  const isDentist = role === 'ODONTOLOGO';
   // Nombre y especialidad solo aplican a un odontólogo.
   const form = useForm(
     { nombre: '', especialidad: '', email: '', password: '' },
     {
-      nombre: (valor) => (esOdontologo ? required('Escribe el nombre')(valor) : null),
-      especialidad: (valor) => (esOdontologo ? required('Escribe la especialidad')(valor) : null),
+      nombre: (value) => (isDentist ? required('Escribe el nombre')(value) : null),
+      especialidad: (value) => (isDentist ? required('Escribe la especialidad')(value) : null),
       email: combine(required('Escribe el email'), email()),
       password: combine(
         required('Escribe una contraseña inicial'),
@@ -40,19 +40,19 @@ export function NuevoUsuarioPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.validate()) return;
-    const { nombre, especialidad, email: correo, password } = form.values;
-    const creado = await crear(
-      esOdontologo
+    const { nombre: name, especialidad: specialty, email: emailAddress, password } = form.values;
+    const created = await create(
+      isDentist
         ? {
             role: 'ODONTOLOGO',
-            email: correo.trim(),
+            email: emailAddress.trim(),
             password,
-            nombre: nombre.trim(),
-            especialidad: especialidad.trim(),
+            nombre: name.trim(),
+            especialidad: specialty.trim(),
           }
-        : { role: 'ADMIN', email: correo.trim(), password },
+        : { role: 'ADMIN', email: emailAddress.trim(), password },
     );
-    if (creado) navigate('/admin/usuarios');
+    if (created) navigate('/admin/usuarios');
   };
 
   return (
@@ -69,8 +69,8 @@ export function NuevoUsuarioPage() {
         back={{ to: '/admin/usuarios', label: 'Volver al listado' }}
       />
       <form className="card" onSubmit={onSubmit} noValidate>
-        <Select label="Rol" value={role} options={OPCIONES_ROL} onChange={setRole} />
-        {esOdontologo && (
+        <Select label="Rol" value={role} options={ROLE_OPTIONS} onChange={setRole} />
+        {isDentist && (
           <>
             <TextField
               {...form.field('nombre')}
@@ -96,7 +96,7 @@ export function NuevoUsuarioPage() {
         />
         {error && <ErrorMessage>{error}</ErrorMessage>}
         <div className="form-actions">
-          <Button type="submit" loading={enviando} data-testid="btn-crear-usuario">
+          <Button type="submit" loading={sending} data-testid="btn-crear-usuario">
             Crear usuario
           </Button>
         </div>

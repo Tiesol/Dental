@@ -7,32 +7,32 @@ import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { useConfirm } from '@/shared/hooks/useConfirm';
 import { FormularioServicio } from '../components/FormularioServicio';
-import { useServicio } from '../hooks/useServicio';
+import { useService } from '../hooks/useService';
 
-const VOLVER = { to: '/admin/servicios', label: 'Volver al listado' };
+const BACK = { to: '/admin/servicios', label: 'Volver al listado' };
 
 export function EditarServicioPage() {
   const { id = '' } = useParams();
-  const { estado, guardar, cambiarEstado } = useServicio(id);
+  const { state, save, changeStatus } = useService(id);
   const { confirm, dialog } = useConfirm();
-  const [cambiando, setCambiando] = useState(false);
-  const [errorEstado, setErrorEstado] = useState('');
+  const [changing, setChanging] = useState(false);
+  const [statusError, setStatusError] = useState('');
 
-  if (estado.status === 'cargando') return <LoadingState />;
-  if (estado.status === 'error') {
+  if (state.status === 'cargando') return <LoadingState />;
+  if (state.status === 'error') {
     return (
       <div className="page page-narrow">
-        <PageHeader title="Editar servicio" back={VOLVER} />
-        <ErrorMessage>{estado.mensaje}</ErrorMessage>
+        <PageHeader title="Editar servicio" back={BACK} />
+        <ErrorMessage>{state.message}</ErrorMessage>
       </div>
     );
   }
 
-  const { servicio } = estado;
+  const { service } = state;
 
-  const alternarEstado = async () => {
+  const toggleStatus = async () => {
     if (
-      servicio.activo &&
+      service.activo &&
       !(await confirm({
         title: '¿Deshabilitar este servicio?',
         message: 'No se podrá reservar con él, pero las citas existentes se conservan.',
@@ -41,44 +41,44 @@ export function EditarServicioPage() {
     ) {
       return;
     }
-    setErrorEstado('');
-    setCambiando(true);
+    setStatusError('');
+    setChanging(true);
     try {
-      await cambiarEstado(!servicio.activo);
+      await changeStatus(!service.activo);
     } catch (err) {
-      setErrorEstado((err as Error).message);
+      setStatusError((err as Error).message);
     } finally {
-      setCambiando(false);
+      setChanging(false);
     }
   };
 
   return (
     <div className="page page-narrow">
-      <PageHeader title="Editar servicio" description={servicio.nombre} back={VOLVER} />
+      <PageHeader title="Editar servicio" description={service.nombre} back={BACK} />
       <FormularioServicio
-        key={servicio.id}
-        inicial={servicio}
-        textoBoton="Guardar cambios"
-        conEstado={false}
-        onSubmit={({ activo: _activo, ...cambios }) => guardar(cambios)}
+        key={service.id}
+        initial={service}
+        buttonText="Guardar cambios"
+        withStatus={false}
+        onSubmit={({ activo: _active, ...changes }) => save(changes)}
       />
       <section className="card" aria-labelledby="titulo-estado-servicio">
         <div className="card-section">
           <h2 id="titulo-estado-servicio">Estado del servicio</h2>
           <div>
-            <ActiveBadge active={servicio.activo} />
+            <ActiveBadge active={service.activo} />
           </div>
           <p className="muted">Un servicio deshabilitado no se puede reservar.</p>
         </div>
-        {errorEstado && <ErrorMessage>{errorEstado}</ErrorMessage>}
+        {statusError && <ErrorMessage>{statusError}</ErrorMessage>}
         <div className="form-actions">
           <Button
-            variant={servicio.activo ? 'danger-outline' : 'secondary'}
-            loading={cambiando}
-            onClick={() => void alternarEstado()}
+            variant={service.activo ? 'danger-outline' : 'secondary'}
+            loading={changing}
+            onClick={() => void toggleStatus()}
             data-testid="btn-cambiar-estado-servicio"
           >
-            {servicio.activo ? 'Deshabilitar servicio' : 'Habilitar servicio'}
+            {service.activo ? 'Deshabilitar servicio' : 'Habilitar servicio'}
           </Button>
         </div>
       </section>

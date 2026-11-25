@@ -4,13 +4,13 @@ import { EstadoCitaBadge } from './EstadoCitaBadge';
 
 describe('EstadoCitaBadge', () => {
   it('muestra el texto exacto del PDF', () => {
-    render(<EstadoCitaBadge estado="EN_ATENCION" />);
+    render(<EstadoCitaBadge status="EN_ATENCION" />);
 
     expect(screen.getByTestId('estado-cita')).toHaveTextContent('EN ATENCIÓN');
   });
 
   it('usa la clase del estado', () => {
-    render(<EstadoCitaBadge estado="PENDIENTE" />);
+    render(<EstadoCitaBadge status="PENDIENTE" />);
 
     expect(screen.getByTestId('estado-cita')).toHaveClass('badge', 'badge-pendiente');
   });

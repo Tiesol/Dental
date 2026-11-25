@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, type KeyboardEvent } from 'react';
 import { useLocation } from 'react-router-dom';
 import { appointmentsApi } from '@/api/endpoints/appointments';
-import type { CuandoCitas } from '@/api/types';
+import type { AppointmentWhen } from '@/api/types';
 import { Button } from '@/shared/components/Button';
 import { ButtonLink } from '@/shared/components/ButtonLink';
 import { EmptyState } from '@/shared/components/EmptyState';
@@ -11,31 +11,28 @@ import { Icon } from '@/shared/components/Icon';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { SuccessMessage } from '@/shared/components/SuccessMessage';
-import { useCarga } from '@/shared/hooks/useCarga';
-import { formatearFecha, formatearRangoHora } from '@/shared/lib/dates';
+import { useLoader } from '@/shared/hooks/useLoader';
+import { formatDate, formatTimeRange } from '@/shared/lib/dates';
 
-const PESTANIAS: { valor: CuandoCitas; etiqueta: string }[] = [
-  { valor: 'proximas', etiqueta: 'Próximas' },
-  { valor: 'historial', etiqueta: 'Historial' },
+const TABS: { valor: AppointmentWhen; label: string }[] = [
+  { valor: 'proximas', label: 'Próximas' },
+  { valor: 'historial', label: 'Historial' },
 ];
 
 // Próximas citas e historial del paciente autenticado. La separación la hace el backend.
 export function MisCitasPage() {
-  const [cuando, setCuando] = useState<CuandoCitas>('proximas');
-  const cargar = useCallback(
-    (signal: AbortSignal) => appointmentsApi.mias(cuando, signal),
-    [cuando],
-  );
-  const { estado } = useCarga(cargar);
-  const { state } = useLocation() as { state: { exito?: string } | null };
-  const pestanias = useRef<Partial<Record<CuandoCitas, HTMLButtonElement | null>>>({});
+  const [when, setWhen] = useState<AppointmentWhen>('proximas');
+  const load = useCallback((signal: AbortSignal) => appointmentsApi.mine(when, signal), [when]);
+  const { state } = useLoader(load);
+  const { state: locationState } = useLocation() as { state: { success?: string } | null };
+  const tabs = useRef<Partial<Record<AppointmentWhen, HTMLButtonElement | null>>>({});
 
   // Patrón de pestañas: las flechas cambian de pestaña y solo la activa está en el orden de Tab.
-  const alPulsarTecla = (e: KeyboardEvent) => {
+  const onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    const otra = cuando === 'proximas' ? 'historial' : 'proximas';
-    setCuando(otra);
-    pestanias.current[otra]?.focus();
+    const other = when === 'proximas' ? 'historial' : 'proximas';
+    setWhen(other);
+    tabs.current[other]?.focus();
   };
 
   return (
@@ -50,25 +47,25 @@ export function MisCitasPage() {
         }
       />
 
-      {state?.exito && <SuccessMessage>{state.exito}</SuccessMessage>}
+      {locationState?.success && <SuccessMessage>{locationState.success}</SuccessMessage>}
 
       <div className="tabs" role="tablist" aria-label="Mis citas">
-        {PESTANIAS.map(({ valor, etiqueta }) => (
+        {TABS.map(({ valor: value, label }) => (
           <Button
-            key={valor}
+            key={value}
             variant="tab"
             role="tab"
-            id={`pestania-${valor}`}
-            ref={(boton) => {
-              pestanias.current[valor] = boton;
+            id={`pestania-${value}`}
+            ref={(button) => {
+              tabs.current[value] = button;
             }}
-            aria-selected={cuando === valor}
+            aria-selected={when === value}
             aria-controls="panel-mis-citas"
-            tabIndex={cuando === valor ? 0 : -1}
-            onKeyDown={alPulsarTecla}
-            onClick={() => setCuando(valor)}
+            tabIndex={when === value ? 0 : -1}
+            onKeyDown={onKeyDown}
+            onClick={() => setWhen(value)}
           >
-            {etiqueta}
+            {label}
           </Button>
         ))}
       </div>
@@ -77,20 +74,20 @@ export function MisCitasPage() {
         className="card card-flush"
         id="panel-mis-citas"
         role="tabpanel"
-        aria-labelledby={`pestania-${cuando}`}
+        aria-labelledby={`pestania-${when}`}
       >
-        {estado.status === 'cargando' && <LoadingState />}
-        {estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
-        {estado.status === 'ok' && estado.datos.length === 0 && cuando === 'proximas' && (
+        {state.status === 'cargando' && <LoadingState />}
+        {state.status === 'error' && <ErrorMessage>{state.message}</ErrorMessage>}
+        {state.status === 'ok' && state.data.length === 0 && when === 'proximas' && (
           <EmptyState
             title="No tienes citas próximas"
             description="Reserva una cita para verla aquí."
           />
         )}
-        {estado.status === 'ok' && estado.datos.length === 0 && cuando === 'historial' && (
+        {state.status === 'ok' && state.data.length === 0 && when === 'historial' && (
           <EmptyState title="Tu historial está vacío" />
         )}
-        {estado.status === 'ok' && estado.datos.length > 0 && (
+        {state.status === 'ok' && state.data.length > 0 && (
           <div className="table-scroll">
             <table>
               <thead>
@@ -106,21 +103,21 @@ export function MisCitasPage() {
                 </tr>
               </thead>
               <tbody>
-                {estado.datos.map((cita) => (
-                  <tr key={cita.id} data-testid={`cita-${cita.id}`}>
-                    <td className="cell-primary">{cita.servicio.nombre}</td>
-                    <td>{cita.odontologo.nombre}</td>
-                    <td>{formatearFecha(cita.horaInicio)}</td>
-                    <td>{formatearRangoHora(cita.horaInicio, cita.horaFin)}</td>
+                {state.data.map((appointment) => (
+                  <tr key={appointment.id} data-testid={`cita-${appointment.id}`}>
+                    <td className="cell-primary">{appointment.servicio.nombre}</td>
+                    <td>{appointment.odontologo.nombre}</td>
+                    <td>{formatDate(appointment.horaInicio)}</td>
+                    <td>{formatTimeRange(appointment.horaInicio, appointment.horaFin)}</td>
                     <td>
-                      <EstadoCitaBadge estado={cita.estado} />
+                      <EstadoCitaBadge status={appointment.estado} />
                     </td>
                     <td>
                       <div className="actions">
                         <ButtonLink
                           variant="secondary"
-                          to={`/mis-citas/${cita.id}`}
-                          aria-label={`Ver detalle de ${cita.servicio.nombre}`}
+                          to={`/mis-citas/${appointment.id}`}
+                          aria-label={`Ver detalle de ${appointment.servicio.nombre}`}
                         >
                           <span className="btn-label">
                             Ver detalle

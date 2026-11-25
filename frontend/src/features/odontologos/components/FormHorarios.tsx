@@ -4,99 +4,101 @@ import { Button } from '@/shared/components/Button';
 import { Select, type SelectOption } from '@/shared/components/Select';
 import { TimeField } from '@/shared/components/TimeField';
 import { useFieldErrors, type FieldCheck } from '@/shared/hooks/useFieldErrors';
-import { horaAMinutos, minutosAHora } from '@/shared/lib/dates';
-import { useAccion } from '../hooks/useAccion';
+import { timeToMinutes, minutesToTime } from '@/shared/lib/dates';
+import { useAction } from '../hooks/useAction';
 
-const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const OPCIONES_DIA: SelectOption<number>[] = DIAS.map((dia, valor) => ({
-  value: valor,
-  label: dia,
+const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DAY_OPTIONS: SelectOption<number>[] = DAYS.map((day, value) => ({
+  value,
+  label: day,
 }));
 
-type Tramo = { clave: number; diaSemana: number; desde: string; hasta: string };
-type CampoHora = 'desde' | 'hasta';
+type TimeRange = { key: number; diaSemana: number; from: string; until: string };
+type TimeKey = 'from' | 'until';
 
-const nombreCampo = (tramo: Tramo, campo: CampoHora) => `${tramo.clave}-${campo}`;
+const fieldName = (timeRange: TimeRange, field: TimeKey) => `${timeRange.key}-${field}`;
 
-const errorDe = (tramo: Tramo, campo: CampoHora): string | null => {
-  if (campo === 'desde') return tramo.desde ? null : 'Elige la hora de inicio';
-  if (!tramo.hasta) return 'Elige la hora de fin';
-  return tramo.desde && tramo.hasta <= tramo.desde ? 'Debe ser posterior a la de inicio' : null;
+const errorOf = (timeRange: TimeRange, field: TimeKey): string | null => {
+  if (field === 'from') return timeRange.from ? null : 'Elige la hora de inicio';
+  if (!timeRange.until) return 'Elige la hora de fin';
+  return timeRange.from && timeRange.until <= timeRange.from
+    ? 'Debe ser posterior a la de inicio'
+    : null;
 };
 
-const checksDe = (tramo: Tramo): FieldCheck[] => [
-  [nombreCampo(tramo, 'desde'), errorDe(tramo, 'desde')],
-  [nombreCampo(tramo, 'hasta'), errorDe(tramo, 'hasta')],
+const checkboxesOf = (timeRange: TimeRange): FieldCheck[] => [
+  [fieldName(timeRange, 'from'), errorOf(timeRange, 'from')],
+  [fieldName(timeRange, 'until'), errorOf(timeRange, 'until')],
 ];
 
 type Props = {
-  horarios: AvailabilityRuleResponse[];
-  guardar: (horarios: AvailabilityRuleRequest[]) => Promise<void>;
+  schedule: AvailabilityRuleResponse[];
+  save: (schedule: AvailabilityRuleRequest[]) => Promise<void>;
 };
 
 // Edita la lista completa de tramos: guardar reemplaza todos los horarios del odontólogo.
 // Un horario partido son dos tramos del mismo día. El backend vuelve a validar las reglas.
-export function FormHorarios({ horarios, guardar }: Props) {
-  const [tramos, setTramos] = useState<Tramo[]>(() =>
-    horarios.map((h, clave) => ({
-      clave,
+export function FormHorarios({ schedule, save }: Props) {
+  const [timeRanges, setTimeRanges] = useState<TimeRange[]>(() =>
+    schedule.map((h, key) => ({
+      key,
       diaSemana: h.diaSemana,
-      desde: minutosAHora(h.minutoInicio),
-      hasta: minutosAHora(h.minutoFin),
+      from: minutesToTime(h.minutoInicio),
+      until: minutesToTime(h.minutoFin),
     })),
   );
-  const [siguienteClave, setSiguienteClave] = useState(horarios.length);
-  const { enviando, ejecutar, mensajes } = useAccion();
-  const errores = useFieldErrors();
+  const [nextKey, setNextKey] = useState(schedule.length);
+  const { sending, run, messages } = useAction();
+  const errors = useFieldErrors();
 
-  const cambiar = (clave: number, cambios: Partial<Tramo>) => {
-    const actualizados = tramos.map((t) => (t.clave === clave ? { ...t, ...cambios } : t));
-    setTramos(actualizados);
-    const tramo = actualizados.find((t) => t.clave === clave);
-    if (tramo) errores.revalidate(checksDe(tramo));
+  const change = (key: number, changes: Partial<TimeRange>) => {
+    const updated = timeRanges.map((t) => (t.key === key ? { ...t, ...changes } : t));
+    setTimeRanges(updated);
+    const timeRange = updated.find((t) => t.key === key);
+    if (timeRange) errors.revalidate(checkboxesOf(timeRange));
   };
 
-  const agregar = () => {
-    setTramos((actuales) => [
-      ...actuales,
-      { clave: siguienteClave, diaSemana: 1, desde: '09:00', hasta: '12:00' },
+  const add = () => {
+    setTimeRanges((currentErrors) => [
+      ...currentErrors,
+      { key: nextKey, diaSemana: 1, from: '09:00', until: '12:00' },
     ]);
-    setSiguienteClave((clave) => clave + 1);
+    setNextKey((key) => key + 1);
   };
 
-  const quitar = (tramo: Tramo) => {
-    setTramos((actuales) => actuales.filter((t) => t.clave !== tramo.clave));
-    errores.clear([nombreCampo(tramo, 'desde'), nombreCampo(tramo, 'hasta')]);
+  const remove = (timeRange: TimeRange) => {
+    setTimeRanges((currentErrors) => currentErrors.filter((t) => t.key !== timeRange.key));
+    errors.clear([fieldName(timeRange, 'from'), fieldName(timeRange, 'until')]);
   };
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!errores.validateAll(tramos.flatMap(checksDe))) return;
-    await ejecutar(
+    if (!errors.validateAll(timeRanges.flatMap(checkboxesOf))) return;
+    await run(
       () =>
-        guardar(
-          tramos.map((t) => ({
+        save(
+          timeRanges.map((t) => ({
             diaSemana: t.diaSemana,
-            minutoInicio: horaAMinutos(t.desde),
-            minutoFin: horaAMinutos(t.hasta),
+            minutoInicio: timeToMinutes(t.from),
+            minutoFin: timeToMinutes(t.until),
           })),
         ),
       'Horarios guardados',
     );
   };
 
-  const campoHora = (tramo: Tramo, campo: CampoHora, etiqueta: string) => {
-    const nombre = nombreCampo(tramo, campo);
+  const timeField = (timeRange: TimeRange, field: TimeKey, label: string) => {
+    const name = fieldName(timeRange, field);
     return (
       <TimeField
-        label={etiqueta}
-        value={tramo[campo]}
-        onChange={(valor) =>
-          cambiar(tramo.clave, campo === 'desde' ? { desde: valor } : { hasta: valor })
+        label={label}
+        value={timeRange[field]}
+        onChange={(value) =>
+          change(timeRange.key, field === 'from' ? { from: value } : { until: value })
         }
-        onBlur={() => errores.blur(nombre, errorDe(tramo, campo))}
-        error={errores.errors[nombre]}
-        ref={errores.register(nombre)}
+        onBlur={() => errors.blur(name, errorOf(timeRange, field))}
+        error={errors.errors[name]}
+        ref={errors.register(name)}
       />
     );
   };
@@ -110,38 +112,38 @@ export function FormHorarios({ horarios, guardar }: Props) {
           horario nuevo se conservan.
         </p>
       </div>
-      {tramos.length === 0 && <p className="muted">Todavía no tiene horarios de atención</p>}
-      {tramos.map((tramo, indice) => (
+      {timeRanges.length === 0 && <p className="muted">Todavía no tiene horarios de atención</p>}
+      {timeRanges.map((timeRange, index) => (
         <div
           className="tramo"
-          key={tramo.clave}
+          key={timeRange.key}
           role="group"
-          aria-label={`Tramo ${indice + 1}`}
-          data-testid={`tramo-${indice}`}
+          aria-label={`Tramo ${index + 1}`}
+          data-testid={`tramo-${index}`}
         >
           <Select
             label="Día"
-            value={tramo.diaSemana}
-            options={OPCIONES_DIA}
-            onChange={(diaSemana) => cambiar(tramo.clave, { diaSemana })}
+            value={timeRange.diaSemana}
+            options={DAY_OPTIONS}
+            onChange={(weekday) => change(timeRange.key, { diaSemana: weekday })}
           />
-          {campoHora(tramo, 'desde', 'Desde')}
-          {campoHora(tramo, 'hasta', 'Hasta')}
+          {timeField(timeRange, 'from', 'Desde')}
+          {timeField(timeRange, 'until', 'Hasta')}
           <Button
             variant="danger-outline"
-            aria-label={`Quitar tramo ${indice + 1}`}
-            onClick={() => quitar(tramo)}
+            aria-label={`Quitar tramo ${index + 1}`}
+            onClick={() => remove(timeRange)}
           >
             Quitar
           </Button>
         </div>
       ))}
-      {mensajes}
+      {messages}
       <div className="form-actions">
-        <Button variant="secondary" onClick={agregar}>
+        <Button variant="secondary" onClick={add}>
           Agregar tramo
         </Button>
-        <Button type="submit" loading={enviando} data-testid="btn-guardar-horarios">
+        <Button type="submit" loading={sending} data-testid="btn-guardar-horarios">
           Guardar horarios
         </Button>
       </div>

@@ -7,33 +7,33 @@ export class AgendaPage {
     this.page = page;
   }
 
-  async abrir() {
+  async open() {
     await this.page.getByRole('link', { name: 'Agenda' }).click();
     await expect(this.page.getByRole('heading', { name: 'Agenda' })).toBeVisible();
   }
 
-  fila(citaId: string) {
-    return this.page.getByTestId(`cita-${citaId}`);
+  row(appointmentId: string) {
+    return this.page.getByTestId(`cita-${appointmentId}`);
   }
 
-  async abrirCita(citaId: string) {
-    await this.fila(citaId).getByRole('link').click();
+  async openAppointment(appointmentId: string) {
+    await this.row(appointmentId).getByRole('link').click();
   }
 
-  estado() {
+  status() {
     return this.page.getByTestId('estado-cita');
   }
 
-  async iniciarAtencion() {
+  async startCare() {
     await this.page.getByTestId('btn-iniciar-atencion').click();
   }
 
-  async registrarObservacion(texto: string) {
-    await this.page.getByLabel('Observación', { exact: true }).fill(texto);
+  async registerObservation(text: string) {
+    await this.page.getByLabel('Observación', { exact: true }).fill(text);
     await this.page.getByTestId('btn-registrar-observacion').click();
   }
 
-  async finalizar() {
+  async finish() {
     await this.page.getByTestId('btn-finalizar').click();
   }
 }

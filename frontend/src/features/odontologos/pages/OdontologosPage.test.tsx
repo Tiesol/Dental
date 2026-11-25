@@ -2,41 +2,41 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { odontologoPublicoDePrueba, servicioDePrueba } from '@/test/factories';
+import { testPublicDentist, testService } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
-import { elegirOpcion, renderWithProviders } from '@/test/utils';
+import { chooseOption, renderWithProviders } from '@/test/utils';
 import { OdontologosPage } from './OdontologosPage';
 
-function apiPublica() {
+function mockPublicApi() {
   server.use(
-    http.get(`${API}/services`, () => HttpResponse.json([servicioDePrueba()])),
+    http.get(`${API}/services`, () => HttpResponse.json([testService()])),
     http.get(`${API}/dentists`, ({ request }) => {
-      const filtro = new URL(request.url).searchParams.get('serviceId');
-      return HttpResponse.json(filtro === 'vacio' ? [] : [odontologoPublicoDePrueba()]);
+      const filter = new URL(request.url).searchParams.get('serviceId');
+      return HttpResponse.json(filter === 'vacio' ? [] : [testPublicDentist()]);
     }),
   );
 }
 
 describe('OdontologosPage', () => {
   it('muestra cada odontólogo con su especialidad y sus servicios', async () => {
-    apiPublica();
+    mockPublicApi();
 
     renderWithProviders(<OdontologosPage />);
 
-    const tarjeta = within(await screen.findByTestId('odontologo-d1'));
-    expect(tarjeta.getByRole('heading', { name: 'Dra. Laura Gómez' })).toBeInTheDocument();
-    expect(tarjeta.getByText('Odontología general')).toBeInTheDocument();
-    expect(tarjeta.getByText('Limpieza dental · 30 min')).toBeInTheDocument();
+    const card = within(await screen.findByTestId('odontologo-d1'));
+    expect(card.getByRole('heading', { name: 'Dra. Laura Gómez' })).toBeInTheDocument();
+    expect(card.getByText('Odontología general')).toBeInTheDocument();
+    expect(card.getByText('Limpieza dental · 30 min')).toBeInTheDocument();
   });
 
   it('cada odontólogo tiene un enlace que abre la reserva con él ya elegido', async () => {
-    apiPublica();
+    mockPublicApi();
 
     renderWithProviders(<OdontologosPage />);
 
-    const tarjeta = within(await screen.findByTestId('odontologo-d1'));
-    expect(tarjeta.getByRole('link', { name: 'Reservar con Dra. Laura Gómez' })).toHaveAttribute(
+    const card = within(await screen.findByTestId('odontologo-d1'));
+    expect(card.getByRole('link', { name: 'Reservar con Dra. Laura Gómez' })).toHaveAttribute(
       'href',
       '/reservar?odontologo=d1',
     );
@@ -56,15 +56,15 @@ describe('OdontologosPage', () => {
   });
 
   it('al filtrar por un servicio sin odontólogos muestra un estado vacío propio', async () => {
-    apiPublica();
+    mockPublicApi();
     server.use(
-      http.get(`${API}/services`, () => HttpResponse.json([servicioDePrueba({ id: 'vacio' })])),
+      http.get(`${API}/services`, () => HttpResponse.json([testService({ id: 'vacio' })])),
     );
     const user = userEvent.setup();
     renderWithProviders(<OdontologosPage />);
     await screen.findByTestId('odontologo-d1');
 
-    await elegirOpcion(user, await screen.findByLabelText('Servicio'), 'Limpieza dental');
+    await chooseOption(user, await screen.findByLabelText('Servicio'), 'Limpieza dental');
 
     expect(
       await screen.findByRole('heading', {

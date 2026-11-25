@@ -31,10 +31,10 @@ type Props<V extends string | number> = {
 };
 
 // Las letras escritas con menos de este intervalo se juntan en una sola búsqueda.
-const PAUSA_BUSQUEDA_MS = 500;
+const SEARCH_PAUSE_MS = 500;
 
-const normalizar = (texto: string) =>
-  texto
+const normalize = (text: string) =>
+  text
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase();
@@ -58,70 +58,70 @@ export function Select<V extends string | number>({
 }: Props<V>) {
   const listId = useId();
   const popover = useAnchoredPopover<HTMLButtonElement, HTMLUListElement>({ matchWidth: true });
-  const [activo, setActivo] = useState(-1);
-  const busqueda = useRef({ texto: '', hasta: 0 });
-  const elegido = options.findIndex((opcion) => opcion.value === value);
-  const idOpcion = (indice: number) => `${listId}-opcion-${indice}`;
+  const [active, setActive] = useState(-1);
+  const query = useRef({ text: '', until: 0 });
+  const chosen = options.findIndex((option) => option.value === value);
+  const optionId = (index: number) => `${listId}-opcion-${index}`;
 
   useEffect(() => {
-    if (!popover.open || activo < 0) return;
-    document.getElementById(`${listId}-opcion-${activo}`)?.scrollIntoView({ block: 'nearest' });
-  }, [popover.open, activo, listId]);
+    if (!popover.open || active < 0) return;
+    document.getElementById(`${listId}-opcion-${active}`)?.scrollIntoView({ block: 'nearest' });
+  }, [popover.open, active, listId]);
 
-  const abrir = (indice: number) => {
-    setActivo(indice);
+  const open = (index: number) => {
+    setActive(index);
     popover.show();
   };
 
-  const mover = (indice: number) => {
-    const destino = Math.min(Math.max(indice, 0), options.length - 1);
-    if (popover.open) setActivo(destino);
-    else abrir(destino);
+  const move = (index: number) => {
+    const target = Math.min(Math.max(index, 0), options.length - 1);
+    if (popover.open) setActive(target);
+    else open(target);
   };
 
-  const elegir = (indice: number) => {
-    const opcion = options[indice];
-    if (opcion && opcion.value !== value) onChange(opcion.value);
+  const choose = (index: number) => {
+    const option = options[index];
+    if (option && option.value !== value) onChange(option.value);
     popover.hide();
   };
 
-  const buscar = (letra: string) => {
-    const ahora = Date.now();
-    const texto = ahora < busqueda.current.hasta ? busqueda.current.texto + letra : letra;
-    busqueda.current = { texto, hasta: ahora + PAUSA_BUSQUEDA_MS };
-    const objetivo = normalizar(texto);
+  const search = (letter: string) => {
+    const now = Date.now();
+    const text = now < query.current.until ? query.current.text + letter : letter;
+    query.current = { text, until: now + SEARCH_PAUSE_MS };
+    const targetIndex = normalize(text);
     // La misma letra repetida pasa a la siguiente opción que empieza con ella.
-    const desde = texto.length === 1 ? (popover.open ? activo : elegido) + 1 : 0;
-    const orden = [...options.slice(desde), ...options.slice(0, desde)];
-    const encontrada = orden.find((opcion) => normalizar(opcion.label).startsWith(objetivo));
-    if (encontrada) mover(options.indexOf(encontrada));
+    const from = text.length === 1 ? (popover.open ? active : chosen) + 1 : 0;
+    const order = [...options.slice(from), ...options.slice(0, from)];
+    const found = order.find((option) => normalize(option.label).startsWith(targetIndex));
+    if (found) move(options.indexOf(found));
   };
 
-  const alPulsarTecla = (e: KeyboardEvent<HTMLElement>) => {
-    const actual = popover.open ? activo : Math.max(elegido, 0);
+  const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
+    const current = popover.open ? active : Math.max(chosen, 0);
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        mover(popover.open ? actual + 1 : actual);
+        move(popover.open ? current + 1 : current);
         return;
       case 'ArrowUp':
         e.preventDefault();
-        mover(popover.open ? actual - 1 : actual);
+        move(popover.open ? current - 1 : current);
         return;
       case 'Home':
         e.preventDefault();
-        mover(0);
+        move(0);
         return;
       case 'End':
         e.preventDefault();
-        mover(options.length - 1);
+        move(options.length - 1);
         return;
       case 'Enter':
       case ' ':
         e.preventDefault();
-        if (e.key === ' ' && Date.now() < busqueda.current.hasta) buscar(' ');
-        else if (popover.open) elegir(activo);
-        else abrir(actual);
+        if (e.key === ' ' && Date.now() < query.current.until) search(' ');
+        else if (popover.open) choose(active);
+        else open(current);
         return;
       case 'Escape':
         // Sin propagar: un Escape que cierra la lista no debe cerrar también un diálogo padre.
@@ -137,7 +137,7 @@ export function Select<V extends string | number>({
       default:
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault();
-          buscar(e.key);
+          search(e.key);
         }
     }
   };
@@ -159,12 +159,12 @@ export function Select<V extends string | number>({
             aria-haspopup="listbox"
             aria-expanded={popover.open}
             aria-controls={listId}
-            aria-activedescendant={popover.open && activo >= 0 ? idOpcion(activo) : undefined}
+            aria-activedescendant={popover.open && active >= 0 ? optionId(active) : undefined}
             className="select-trigger"
             disabled={disabled}
             data-testid={testId}
-            onClick={() => (popover.open ? popover.hide() : abrir(Math.max(elegido, 0)))}
-            onKeyDown={alPulsarTecla}
+            onClick={() => (popover.open ? popover.hide() : open(Math.max(chosen, 0)))}
+            onKeyDown={onKeyDown}
             // La activación nativa del Espacio ocurre al soltar la tecla: ya se resolvió al pulsarla.
             onKeyUp={(e) => {
               if (e.key === ' ') e.preventDefault();
@@ -174,8 +174,8 @@ export function Select<V extends string | number>({
               onBlur?.();
             }}
           >
-            <span className={elegido >= 0 ? 'select-value' : 'select-value select-placeholder'}>
-              {elegido >= 0 ? options[elegido].label : placeholder}
+            <span className={chosen >= 0 ? 'select-value' : 'select-value select-placeholder'}>
+              {chosen >= 0 ? options[chosen].label : placeholder}
             </span>
             <Icon name="chevron-down" />
           </button>
@@ -189,20 +189,20 @@ export function Select<V extends string | number>({
               // El foco no sale del disparador al elegir con el mouse.
               onMouseDown={(e) => e.preventDefault()}
             >
-              {options.map((opcion, indice) => (
+              {options.map((option, index) => (
                 <li
-                  key={String(opcion.value)}
-                  id={idOpcion(indice)}
+                  key={String(option.value)}
+                  id={optionId(index)}
                   role="option"
                   tabIndex={-1}
-                  aria-selected={indice === elegido}
-                  className={indice === activo ? 'option option-active' : 'option'}
-                  onMouseEnter={() => setActivo(indice)}
-                  onClick={() => elegir(indice)}
-                  onKeyDown={alPulsarTecla}
+                  aria-selected={index === chosen}
+                  className={index === active ? 'option option-active' : 'option'}
+                  onMouseEnter={() => setActive(index)}
+                  onClick={() => choose(index)}
+                  onKeyDown={onKeyDown}
                 >
-                  <span>{opcion.label}</span>
-                  {indice === elegido && <Icon name="tick" />}
+                  <span>{option.label}</span>
+                  {index === chosen && <Icon name="tick" />}
                 </li>
               ))}
             </ul>,

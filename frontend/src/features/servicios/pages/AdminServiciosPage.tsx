@@ -9,12 +9,12 @@ import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { Select, type SelectOption } from '@/shared/components/Select';
 import { useConfirm } from '@/shared/hooks/useConfirm';
-import { formatearDuracion, formatearPrecio } from '@/shared/lib/formato';
-import { useServicios } from '../hooks/useServicios';
+import { formatDuration, formatPrice } from '@/shared/lib/format';
+import { useServices } from '../hooks/useServices';
 
-type Filtro = 'TODOS' | 'HABILITADOS' | 'DESHABILITADOS';
+type Filter = 'TODOS' | 'HABILITADOS' | 'DESHABILITADOS';
 
-const OPCIONES_FILTRO: SelectOption<Filtro>[] = [
+const FILTER_OPTIONS: SelectOption<Filter>[] = [
   { value: 'TODOS', label: 'Todos' },
   { value: 'HABILITADOS', label: 'Habilitados' },
   { value: 'DESHABILITADOS', label: 'Deshabilitados' },
@@ -22,41 +22,41 @@ const OPCIONES_FILTRO: SelectOption<Filtro>[] = [
 
 // Gestión del catálogo (ADMIN): ve todos los servicios, con su estado.
 export function AdminServiciosPage() {
-  const { estado, cambiarEstado } = useServicios();
+  const { state, changeStatus } = useServices();
   const { confirm, dialog } = useConfirm();
-  const [filtro, setFiltro] = useState<Filtro>('TODOS');
-  const [procesando, setProcesando] = useState<string | null>(null);
-  const [errorAccion, setErrorAccion] = useState('');
+  const [filter, setFilter] = useState<Filter>('TODOS');
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
-  const visibles = useMemo(() => {
-    if (estado.status !== 'ok') return [];
-    return estado.servicios.filter(
+  const visible = useMemo(() => {
+    if (state.status !== 'ok') return [];
+    return state.services.filter(
       (s) =>
-        filtro === 'TODOS' ||
-        (filtro === 'HABILITADOS' && s.activo) ||
-        (filtro === 'DESHABILITADOS' && !s.activo),
+        filter === 'TODOS' ||
+        (filter === 'HABILITADOS' && s.activo) ||
+        (filter === 'DESHABILITADOS' && !s.activo),
     );
-  }, [estado, filtro]);
+  }, [state, filter]);
 
-  const alternarEstado = async (id: string, nombre: string, activo: boolean) => {
+  const toggleStatus = async (id: string, name: string, active: boolean) => {
     if (
-      activo &&
+      active &&
       !(await confirm({
-        title: `¿Deshabilitar "${nombre}"?`,
+        title: `¿Deshabilitar "${name}"?`,
         message: 'No se podrá reservar, pero las citas existentes se conservan.',
         confirmLabel: 'Deshabilitar',
       }))
     ) {
       return;
     }
-    setErrorAccion('');
-    setProcesando(id);
-    const error = await cambiarEstado(id, !activo);
-    setProcesando(null);
-    if (error) setErrorAccion(error);
+    setActionError('');
+    setProcessing(id);
+    const error = await changeStatus(id, !active);
+    setProcessing(null);
+    if (error) setActionError(error);
   };
 
-  const catalogoVacio = estado.status === 'ok' && estado.servicios.length === 0;
+  const emptyCatalog = state.status === 'ok' && state.services.length === 0;
 
   return (
     <div className="page">
@@ -76,29 +76,29 @@ export function AdminServiciosPage() {
           <Select
             variant="filter"
             label="Estado"
-            value={filtro}
-            options={OPCIONES_FILTRO}
-            onChange={setFiltro}
+            value={filter}
+            options={FILTER_OPTIONS}
+            onChange={setFilter}
           />
         </div>
 
-        {estado.status === 'cargando' && <LoadingState />}
-        {(estado.status === 'error' || errorAccion) && (
-          <ErrorMessage>{estado.status === 'error' ? estado.mensaje : errorAccion}</ErrorMessage>
+        {state.status === 'cargando' && <LoadingState />}
+        {(state.status === 'error' || actionError) && (
+          <ErrorMessage>{state.status === 'error' ? state.message : actionError}</ErrorMessage>
         )}
-        {catalogoVacio && (
+        {emptyCatalog && (
           <EmptyState
             title="Todavía no hay servicios"
             description="Crea el primero con el botón Nuevo servicio."
           />
         )}
-        {estado.status === 'ok' && !catalogoVacio && visibles.length === 0 && (
+        {state.status === 'ok' && !emptyCatalog && visible.length === 0 && (
           <EmptyState
             title="No hay servicios que coincidan"
             description="Prueba con otro estado."
           />
         )}
-        {visibles.length > 0 && (
+        {visible.length > 0 && (
           <div className="table-scroll">
             <table>
               <thead>
@@ -113,11 +113,11 @@ export function AdminServiciosPage() {
                 </tr>
               </thead>
               <tbody>
-                {visibles.map((s) => (
+                {visible.map((s) => (
                   <tr key={s.id} data-testid={`servicio-${s.id}`}>
                     <td className="cell-primary">{s.nombre}</td>
-                    <td>{formatearDuracion(s.duracionMin)}</td>
-                    <td>{formatearPrecio(s.precioReferencial)}</td>
+                    <td>{formatDuration(s.duracionMin)}</td>
+                    <td>{formatPrice(s.precioReferencial)}</td>
                     <td>
                       <ActiveBadge active={s.activo} />
                     </td>
@@ -129,8 +129,8 @@ export function AdminServiciosPage() {
                           </ButtonLink>
                           <Button
                             variant={s.activo ? 'danger-outline' : 'secondary'}
-                            loading={procesando === s.id}
-                            onClick={() => void alternarEstado(s.id, s.nombre, s.activo)}
+                            loading={processing === s.id}
+                            onClick={() => void toggleStatus(s.id, s.nombre, s.activo)}
                             data-testid="btn-cambiar-estado-servicio"
                           >
                             {s.activo ? 'Deshabilitar' : 'Habilitar'}

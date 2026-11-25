@@ -7,14 +7,14 @@ import { TextField } from '@/shared/components/TextField';
 import { useForm } from '@/shared/hooks/useForm';
 import { combine, email, maxLength, minLength, required } from '@/shared/lib/validators';
 import { SelectorServicios } from '../components/SelectorServicios';
-import { useCrearOdontologo } from '../hooks/useCrearOdontologo';
-import { useServiciosParaElegir } from '../hooks/useServiciosParaElegir';
+import { useCreateDentist } from '../hooks/useCreateDentist';
+import { useSelectableServices } from '../hooks/useSelectableServices';
 
 // Registro de un odontólogo: cuenta de acceso + datos profesionales + servicios, en un solo paso.
 export function NuevoOdontologoPage() {
   const navigate = useNavigate();
-  const crear = useCrearOdontologo();
-  const { servicios, error: errorServicios } = useServiciosParaElegir();
+  const create = useCreateDentist();
+  const { services, error: servicesError } = useSelectableServices();
   const form = useForm(
     { nombre: '', especialidad: '', email: '', password: '' },
     {
@@ -29,27 +29,27 @@ export function NuevoOdontologoPage() {
     },
   );
   const [serviceIds, setServiceIds] = useState<string[]>([]);
-  const [enviando, setEnviando] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     if (!form.validate()) return;
-    const { nombre, especialidad, email: correo, password } = form.values;
-    setEnviando(true);
+    const { nombre: name, especialidad: specialty, email: emailAddress, password } = form.values;
+    setSending(true);
     try {
-      await crear({
-        nombre: nombre.trim(),
-        especialidad: especialidad.trim(),
-        email: correo.trim(),
+      await create({
+        nombre: name.trim(),
+        especialidad: specialty.trim(),
+        email: emailAddress.trim(),
         password,
         serviceIds,
       });
       navigate('/admin/odontologos');
     } catch (err) {
       setError((err as Error).message);
-      setEnviando(false);
+      setSending(false);
     }
   };
 
@@ -75,12 +75,8 @@ export function NuevoOdontologoPage() {
             placeholder="Ortodoncia"
           />
         </div>
-        <SelectorServicios
-          servicios={servicios}
-          seleccionados={serviceIds}
-          onChange={setServiceIds}
-        />
-        {errorServicios && <ErrorMessage>{errorServicios}</ErrorMessage>}
+        <SelectorServicios services={services} selected={serviceIds} onChange={setServiceIds} />
+        {servicesError && <ErrorMessage>{servicesError}</ErrorMessage>}
         <TextField
           {...form.field('email')}
           label="Email (para iniciar sesión)"
@@ -96,7 +92,7 @@ export function NuevoOdontologoPage() {
         />
         {error && <ErrorMessage>{error}</ErrorMessage>}
         <div className="form-actions">
-          <Button type="submit" loading={enviando} data-testid="btn-crear-odontologo">
+          <Button type="submit" loading={sending} data-testid="btn-crear-odontologo">
             Registrar odontólogo
           </Button>
         </div>

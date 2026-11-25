@@ -2,23 +2,23 @@ import { screen } from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { UserDetail } from '@/api/types';
-import { usuarioDetalleDePrueba } from '@/test/factories';
+import { testUserDetail } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
 import { MiCuentaPage } from './MiCuentaPage';
 
-function renderConPerfil(perfil: UserDetail) {
+function renderWithProfile(profile: UserDetail) {
   server.use(
-    http.get(`${API}/auth/me`, () => HttpResponse.json(perfil)),
-    http.get(`${API}/users/me`, () => HttpResponse.json(perfil)),
+    http.get(`${API}/auth/me`, () => HttpResponse.json(profile)),
+    http.get(`${API}/users/me`, () => HttpResponse.json(profile)),
   );
-  return renderWithProviders(<MiCuentaPage />, { conSesion: true });
+  return renderWithProviders(<MiCuentaPage />, { withSession: true });
 }
 
 describe('MiCuentaPage', () => {
   it('se titula Mi cuenta e indica con qué email se inició sesión, sin un resumen aparte', async () => {
-    renderConPerfil(usuarioDetalleDePrueba({ email: 'ana@mail.com' }));
+    renderWithProfile(testUserDetail({ email: 'ana@mail.com' }));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Mi cuenta' })).toBeVisible();
     expect(screen.getByText('Sesión iniciada como ana@mail.com')).toBeInTheDocument();
@@ -27,8 +27,8 @@ describe('MiCuentaPage', () => {
   });
 
   it('el PACIENTE ve sus datos ya cargados en el formulario, listos para cambiarlos', async () => {
-    renderConPerfil(
-      usuarioDetalleDePrueba({
+    renderWithProfile(
+      testUserDetail({
         paciente: { nombre: 'Ana', apellido: 'Pérez', telefono: '+59170000000' },
       }),
     );
@@ -42,9 +42,7 @@ describe('MiCuentaPage', () => {
   });
 
   it('el ADMIN no tiene perfil que editar, solo puede cambiar su contraseña', async () => {
-    renderConPerfil(
-      usuarioDetalleDePrueba({ role: 'ADMIN', nombre: 'Administrador', paciente: null }),
-    );
+    renderWithProfile(testUserDetail({ role: 'ADMIN', nombre: 'Administrador', paciente: null }));
 
     expect(await screen.findByRole('form', { name: 'Contraseña' })).toBeInTheDocument();
     expect(screen.queryByRole('form', { name: 'Datos personales' })).not.toBeInTheDocument();
@@ -52,11 +50,11 @@ describe('MiCuentaPage', () => {
 
   it('muestra el error si no se puede cargar el perfil', async () => {
     server.use(
-      http.get(`${API}/auth/me`, () => HttpResponse.json(usuarioDetalleDePrueba())),
+      http.get(`${API}/auth/me`, () => HttpResponse.json(testUserDetail())),
       http.get(`${API}/users/me`, () => HttpResponse.error()),
     );
 
-    renderWithProviders(<MiCuentaPage />, { conSesion: true });
+    renderWithProviders(<MiCuentaPage />, { withSession: true });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No se pudo conectar con el servidor',

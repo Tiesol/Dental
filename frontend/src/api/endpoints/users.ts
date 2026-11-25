@@ -9,15 +9,15 @@ import type {
 
 export const usersApi = {
   // Solo ADMIN
-  listar: () => http.get<UserDetail[]>('/users'),
-  obtener: (id: string) => http.get<UserDetail>(`/users/${id}`),
-  crear: (body: CreateUserRequest) => http.post<UserDetail>('/users', body),
-  actualizar: (id: string, body: UpdateUserRequest) => http.patch<UserDetail>(`/users/${id}`, body),
-  cambiarEstado: (id: string, activo: boolean) =>
-    http.patch<UserDetail>(`/users/${id}/estado`, { activo }),
+  list: () => http.get<UserDetail[]>('/users'),
+  get: (id: string) => http.get<UserDetail>(`/users/${id}`),
+  create: (body: CreateUserRequest) => http.post<UserDetail>('/users', body),
+  update: (id: string, body: UpdateUserRequest) => http.patch<UserDetail>(`/users/${id}`, body),
+  changeStatus: (id: string, active: boolean) =>
+    http.patch<UserDetail>(`/users/${id}/estado`, { activo: active }),
 
   // Cuenta propia (cualquier rol)
-  miPerfil: () => http.get<UserDetail>('/users/me'),
-  actualizarMiPerfil: (body: UpdateMyProfileRequest) => http.patch<UserDetail>('/users/me', body),
-  cambiarPassword: (body: ChangePasswordRequest) => http.patch<void>('/users/me/password', body),
+  myProfile: () => http.get<UserDetail>('/users/me'),
+  updateMyProfile: (body: UpdateMyProfileRequest) => http.patch<UserDetail>('/users/me', body),
+  changePassword: (body: ChangePasswordRequest) => http.patch<void>('/users/me/password', body),
 };

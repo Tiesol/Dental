@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { appointmentsApi } from '@/api/endpoints/appointments';
 import { dentistsApi } from '@/api/endpoints/dentists';
-import type { AppointmentResponse, EstadoCita } from '@/api/types';
+import type { AppointmentResponse, AppointmentStatus } from '@/api/types';
 import { useAuth } from '@/features/auth';
 import { Button } from '@/shared/components/Button';
 import { DateField } from '@/shared/components/DateField';
@@ -11,94 +11,100 @@ import { EstadoCitaBadge } from '@/shared/components/EstadoCitaBadge';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { Select, type SelectOption } from '@/shared/components/Select';
-import { useCarga } from '@/shared/hooks/useCarga';
+import { useLoader } from '@/shared/hooks/useLoader';
 import { useConfirm } from '@/shared/hooks/useConfirm';
-import { formatearFecha, formatearRangoHora } from '@/shared/lib/dates';
-import { accionesPermitidas, etiquetaEstado } from '@/shared/lib/estados-cita';
+import { formatDate, formatTimeRange } from '@/shared/lib/dates';
+import { allowedActions, statusLabel } from '@/shared/lib/appointment-status';
 
-const LIMITE = 50;
-const ESTADOS: EstadoCita[] = ['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'FINALIZADA', 'CANCELADA'];
-const OPCIONES_ESTADO: SelectOption<EstadoCita | ''>[] = [
+const LIMIT = 50;
+const STATUSES: AppointmentStatus[] = [
+  'PENDIENTE',
+  'CONFIRMADA',
+  'EN_ATENCION',
+  'FINALIZADA',
+  'CANCELADA',
+];
+const STATUS_OPTIONS: SelectOption<AppointmentStatus | ''>[] = [
   { value: '', label: 'Todos' },
-  ...ESTADOS.map((valor) => ({ value: valor, label: etiquetaEstado(valor) })),
+  ...STATUSES.map((value) => ({ value, label: statusLabel(value) })),
 ];
 
-type Procesando = { citaId: string; accion: 'confirmar' | 'cancelar' };
+type Processing = { appointmentId: string; action: 'confirmar' | 'cancelar' };
 
 // Todas las citas (ADMIN): filtros, confirmar y cancelar. Los filtros los aplica el backend.
 export function AdminCitasPage() {
   const { user } = useAuth();
-  const [fecha, setFecha] = useState('');
-  const [estado, setEstado] = useState<EstadoCita | ''>('');
+  const [date, setDate] = useState('');
+  const [status, setStatus] = useState<AppointmentStatus | ''>('');
   const [dentistId, setDentistId] = useState('');
   const [offset, setOffset] = useState(0);
-  const [procesando, setProcesando] = useState<Procesando | null>(null);
-  const [errorAccion, setErrorAccion] = useState('');
+  const [processing, setProcessing] = useState<Processing | null>(null);
+  const [actionError, setActionError] = useState('');
   const { confirm, dialog } = useConfirm();
 
-  const cargarCitas = useCallback(
+  const loadAppointments = useCallback(
     (signal: AbortSignal) =>
-      appointmentsApi.todas(
+      appointmentsApi.all(
         {
-          fecha: fecha || undefined,
-          estado: estado || undefined,
+          fecha: date || undefined,
+          estado: status || undefined,
           dentistId: dentistId || undefined,
-          limit: LIMITE,
+          limit: LIMIT,
           offset,
         },
         signal,
       ),
-    [fecha, estado, dentistId, offset],
+    [date, status, dentistId, offset],
   );
-  const cargarOdontologos = useCallback(() => dentistsApi.listarAdmin(), []);
-  const { estado: citas, recargar, actualizar } = useCarga(cargarCitas);
-  const { estado: odontologos } = useCarga(cargarOdontologos);
+  const loadDentists = useCallback(() => dentistsApi.listAdmin(), []);
+  const { state: appointments, reload, update } = useLoader(loadAppointments);
+  const { state: dentists } = useLoader(loadDentists);
 
-  const opcionesOdontologo: SelectOption<string>[] = [
+  const dentistOptions: SelectOption<string>[] = [
     { value: '', label: 'Todos' },
-    ...(odontologos.status === 'ok'
-      ? odontologos.datos.map((d) => ({ value: d.id, label: d.nombre }))
+    ...(dentists.status === 'ok'
+      ? dentists.data.map((d) => ({ value: d.id, label: d.nombre }))
       : []),
   ];
 
   // Solo cambia la cita afectada, con la respuesta del backend. Si falla, la cita pudo haber
   // cambiado por otro lado y se vuelve a pedir la lista para mostrar su estado real.
-  const ejecutar = async (en: Procesando, accion: () => Promise<AppointmentResponse>) => {
-    setErrorAccion('');
-    setProcesando(en);
+  const run = async (targetId: Processing, action: () => Promise<AppointmentResponse>) => {
+    setActionError('');
+    setProcessing(targetId);
     try {
-      const actualizada = await accion();
-      actualizar((lista) => lista.map((c) => (c.id === actualizada.id ? actualizada : c)));
+      const updated = await action();
+      update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
     } catch (err) {
-      setErrorAccion((err as Error).message);
-      recargar();
+      setActionError((err as Error).message);
+      reload();
     } finally {
-      setProcesando(null);
+      setProcessing(null);
     }
   };
 
-  const cancelar = async (cita: AppointmentResponse) => {
+  const cancel = async (appointment: AppointmentResponse) => {
     const ok = await confirm({
       title: '¿Cancelar esta cita?',
-      message: `${cita.paciente.nombre} ${cita.paciente.apellido} perderá su horario, que quedará disponible.`,
+      message: `${appointment.paciente.nombre} ${appointment.paciente.apellido} perderá su horario, que quedará disponible.`,
       confirmLabel: 'Cancelar cita',
       cancelLabel: 'Volver',
     });
     if (ok) {
-      await ejecutar({ citaId: cita.id, accion: 'cancelar' }, () =>
-        appointmentsApi.cancelar(cita.id),
+      await run({ appointmentId: appointment.id, action: 'cancelar' }, () =>
+        appointmentsApi.cancel(appointment.id),
       );
     }
   };
 
   // Un filtro nuevo siempre empieza en la primera página.
-  const alFiltrar = (cambio: () => void) => {
-    cambio();
+  const onFilter = (change: () => void) => {
+    change();
     setOffset(0);
   };
 
-  const enCurso = (citaId: string, accion: Procesando['accion']) =>
-    procesando?.citaId === citaId && procesando.accion === accion;
+  const inProgress = (appointmentId: string, action: Processing['action']) =>
+    processing?.appointmentId === appointmentId && processing.action === action;
 
   return (
     <div className="page">
@@ -108,34 +114,34 @@ export function AdminCitasPage() {
         <div className="filters">
           <DateField
             label="Fecha"
-            value={fecha}
-            onChange={(valor) => alFiltrar(() => setFecha(valor))}
+            value={date}
+            onChange={(value) => onFilter(() => setDate(value))}
             clearable
             fieldClassName="field-filter"
           />
           <Select
             variant="filter"
             label="Estado"
-            value={estado}
-            options={OPCIONES_ESTADO}
-            onChange={(valor) => alFiltrar(() => setEstado(valor))}
+            value={status}
+            options={STATUS_OPTIONS}
+            onChange={(value) => onFilter(() => setStatus(value))}
           />
           <Select
             variant="filter"
             label="Odontólogo"
             value={dentistId}
-            options={opcionesOdontologo}
-            onChange={(valor) => alFiltrar(() => setDentistId(valor))}
+            options={dentistOptions}
+            onChange={(value) => onFilter(() => setDentistId(value))}
           />
         </div>
 
-        {errorAccion && <ErrorMessage>{errorAccion}</ErrorMessage>}
-        {citas.status === 'cargando' && <LoadingState />}
-        {citas.status === 'error' && <ErrorMessage>{citas.mensaje}</ErrorMessage>}
-        {citas.status === 'ok' && citas.datos.length === 0 && (
+        {actionError && <ErrorMessage>{actionError}</ErrorMessage>}
+        {appointments.status === 'cargando' && <LoadingState />}
+        {appointments.status === 'error' && <ErrorMessage>{appointments.message}</ErrorMessage>}
+        {appointments.status === 'ok' && appointments.data.length === 0 && (
           <EmptyState title="No hay citas con estos filtros" />
         )}
-        {citas.status === 'ok' && citas.datos.length > 0 && (
+        {appointments.status === 'ok' && appointments.data.length > 0 && (
           <div className="table-scroll">
             <table>
               <thead>
@@ -151,33 +157,34 @@ export function AdminCitasPage() {
                 </tr>
               </thead>
               <tbody>
-                {citas.datos.map((cita) => {
-                  const acciones = user ? accionesPermitidas(cita.estado, user.role) : [];
-                  const ocupada = procesando?.citaId === cita.id;
+                {appointments.data.map((appointment) => {
+                  const actions = user ? allowedActions(appointment.estado, user.role) : [];
+                  const busy = processing?.appointmentId === appointment.id;
                   return (
-                    <tr key={cita.id} data-testid={`cita-${cita.id}`}>
+                    <tr key={appointment.id} data-testid={`cita-${appointment.id}`}>
                       <td className="cell-primary">
-                        {cita.paciente.nombre} {cita.paciente.apellido}
+                        {appointment.paciente.nombre} {appointment.paciente.apellido}
                       </td>
-                      <td>{cita.odontologo.nombre}</td>
-                      <td>{cita.servicio.nombre}</td>
+                      <td>{appointment.odontologo.nombre}</td>
+                      <td>{appointment.servicio.nombre}</td>
                       <td>
-                        {formatearFecha(cita.horaInicio)}
+                        {formatDate(appointment.horaInicio)}
                         <br />
-                        {formatearRangoHora(cita.horaInicio, cita.horaFin)}
+                        {formatTimeRange(appointment.horaInicio, appointment.horaFin)}
                       </td>
                       <td>
-                        <EstadoCitaBadge estado={cita.estado} />
+                        <EstadoCitaBadge status={appointment.estado} />
                       </td>
                       <td>
                         <div className="actions">
-                          {acciones.includes('confirmar') && (
+                          {actions.includes('confirmar') && (
                             <Button
-                              loading={enCurso(cita.id, 'confirmar')}
-                              disabled={ocupada}
+                              loading={inProgress(appointment.id, 'confirmar')}
+                              disabled={busy}
                               onClick={() =>
-                                void ejecutar({ citaId: cita.id, accion: 'confirmar' }, () =>
-                                  appointmentsApi.cambiarEstado(cita.id, 'CONFIRMADA'),
+                                void run(
+                                  { appointmentId: appointment.id, action: 'confirmar' },
+                                  () => appointmentsApi.changeStatus(appointment.id, 'CONFIRMADA'),
                                 )
                               }
                               data-testid="btn-confirmar"
@@ -185,12 +192,12 @@ export function AdminCitasPage() {
                               Confirmar
                             </Button>
                           )}
-                          {acciones.includes('cancelar') && (
+                          {actions.includes('cancelar') && (
                             <Button
                               variant="danger-outline"
-                              loading={enCurso(cita.id, 'cancelar')}
-                              disabled={ocupada}
-                              onClick={() => void cancelar(cita)}
+                              loading={inProgress(appointment.id, 'cancelar')}
+                              disabled={busy}
+                              onClick={() => void cancel(appointment)}
                               data-testid="btn-cancelar"
                             >
                               Cancelar
@@ -209,14 +216,14 @@ export function AdminCitasPage() {
           <Button
             variant="secondary"
             disabled={offset === 0}
-            onClick={() => setOffset((actual) => Math.max(actual - LIMITE, 0))}
+            onClick={() => setOffset((current) => Math.max(current - LIMIT, 0))}
           >
             Anterior
           </Button>
           <Button
             variant="secondary"
-            disabled={citas.status !== 'ok' || citas.datos.length < LIMITE}
-            onClick={() => setOffset((actual) => actual + LIMITE)}
+            disabled={appointments.status !== 'ok' || appointments.data.length < LIMIT}
+            onClick={() => setOffset((current) => current + LIMIT)}
           >
             Siguiente
           </Button>

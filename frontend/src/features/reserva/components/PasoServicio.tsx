@@ -5,49 +5,49 @@ import { Button } from '@/shared/components/Button';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { LoadingState } from '@/shared/components/LoadingState';
-import { useCarga } from '@/shared/hooks/useCarga';
-import { formatearDuracion } from '@/shared/lib/formato';
+import { useLoader } from '@/shared/hooks/useLoader';
+import { formatDuration } from '@/shared/lib/format';
 
 type Props = {
   // Si se llegó desde un odontólogo, solo se ofrecen los servicios que él realiza.
-  odontologo?: DentistPublicResponse | null;
-  onElegir: (servicio: ServiceResponse) => void;
+  dentist?: DentistPublicResponse | null;
+  onChoose: (service: ServiceResponse) => void;
 };
 
-export function PasoServicio({ odontologo, onElegir }: Props) {
-  const cargar = useCallback(() => servicesApi.listar(), []);
-  const { estado } = useCarga(cargar);
-  const servicios =
-    estado.status === 'ok' && odontologo
-      ? estado.datos.filter((s) => odontologo.servicios.some((propio) => propio.id === s.id))
-      : estado.status === 'ok'
-        ? estado.datos
+export function PasoServicio({ dentist, onChoose }: Props) {
+  const load = useCallback(() => servicesApi.list(), []);
+  const { state } = useLoader(load);
+  const services =
+    state.status === 'ok' && dentist
+      ? state.data.filter((s) => dentist.servicios.some((own) => own.id === s.id))
+      : state.status === 'ok'
+        ? state.data
         : [];
 
   return (
     <section className="card" aria-labelledby="titulo-paso-servicio">
       <h2 id="titulo-paso-servicio">
-        {odontologo ? `2. Elige un servicio de ${odontologo.nombre}` : '1. Elige un servicio'}
+        {dentist ? `2. Elige un servicio de ${dentist.nombre}` : '1. Elige un servicio'}
       </h2>
-      {estado.status === 'cargando' && <LoadingState />}
-      {estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
-      {estado.status === 'ok' && servicios.length === 0 && (
+      {state.status === 'cargando' && <LoadingState />}
+      {state.status === 'error' && <ErrorMessage>{state.message}</ErrorMessage>}
+      {state.status === 'ok' && services.length === 0 && (
         <EmptyState title="No hay servicios disponibles" />
       )}
-      {estado.status === 'ok' && servicios.length > 0 && (
+      {state.status === 'ok' && services.length > 0 && (
         <ul className="service-list">
-          {servicios.map((servicio) => (
-            <li className="service" key={servicio.id}>
+          {services.map((service) => (
+            <li className="service" key={service.id}>
               <div className="service-text">
-                <strong>{servicio.nombre}</strong>
+                <strong>{service.nombre}</strong>
                 <span className="muted">
-                  {servicio.descripcion} · {formatearDuracion(servicio.duracionMin)}
+                  {service.descripcion} · {formatDuration(service.duracionMin)}
                 </span>
               </div>
               <Button
                 variant="secondary"
-                aria-label={`Elegir ${servicio.nombre}`}
-                onClick={() => onElegir(servicio)}
+                aria-label={`Elegir ${service.nombre}`}
+                onClick={() => onChoose(service)}
               >
                 Elegir
               </Button>

@@ -9,31 +9,31 @@ import { Icon } from '@/shared/components/Icon';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { useConfirm } from '@/shared/hooks/useConfirm';
-import { useOdontologosAdmin } from '../hooks/useOdontologosAdmin';
+import { useAdminDentists } from '../hooks/useAdminDentists';
 
 // Gestión de odontólogos (ADMIN): todos, con su estado profesional y el de su cuenta.
 export function AdminOdontologosPage() {
-  const { estado, cambiarEstado } = useOdontologosAdmin();
+  const { state, changeStatus } = useAdminDentists();
   const { confirm, dialog } = useConfirm();
-  const [procesando, setProcesando] = useState<string | null>(null);
-  const [errorAccion, setErrorAccion] = useState('');
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
-  const alternarEstado = async (id: string, nombre: string, activo: boolean) => {
+  const toggleStatus = async (id: string, name: string, active: boolean) => {
     if (
-      activo &&
+      active &&
       !(await confirm({
-        title: `¿Deshabilitar a ${nombre}?`,
+        title: `¿Deshabilitar a ${name}?`,
         message: 'No recibirá nuevas citas; sus citas existentes se conservan.',
         confirmLabel: 'Deshabilitar',
       }))
     ) {
       return;
     }
-    setErrorAccion('');
-    setProcesando(id);
-    const error = await cambiarEstado(id, !activo);
-    setProcesando(null);
-    if (error) setErrorAccion(error);
+    setActionError('');
+    setProcessing(id);
+    const error = await changeStatus(id, !active);
+    setProcessing(null);
+    if (error) setActionError(error);
   };
 
   return (
@@ -50,17 +50,17 @@ export function AdminOdontologosPage() {
       />
 
       <section className="card card-flush">
-        {estado.status === 'cargando' && <LoadingState />}
-        {(estado.status === 'error' || errorAccion) && (
-          <ErrorMessage>{estado.status === 'error' ? estado.mensaje : errorAccion}</ErrorMessage>
+        {state.status === 'cargando' && <LoadingState />}
+        {(state.status === 'error' || actionError) && (
+          <ErrorMessage>{state.status === 'error' ? state.message : actionError}</ErrorMessage>
         )}
-        {estado.status === 'ok' && estado.odontologos.length === 0 && (
+        {state.status === 'ok' && state.dentists.length === 0 && (
           <EmptyState
             title="Todavía no hay odontólogos registrados"
             description="Registra el primero con el botón Nuevo odontólogo."
           />
         )}
-        {estado.status === 'ok' && estado.odontologos.length > 0 && (
+        {state.status === 'ok' && state.dentists.length > 0 && (
           <div className="table-scroll">
             <table>
               <thead>
@@ -75,7 +75,7 @@ export function AdminOdontologosPage() {
                 </tr>
               </thead>
               <tbody>
-                {estado.odontologos.map((d) => (
+                {state.dentists.map((d) => (
                   <tr key={d.id} data-testid={`odontologo-${d.id}`}>
                     <td>
                       <div className="cell-person">
@@ -117,8 +117,8 @@ export function AdminOdontologosPage() {
                           </ButtonLink>
                           <Button
                             variant={d.activo ? 'danger-outline' : 'secondary'}
-                            loading={procesando === d.id}
-                            onClick={() => void alternarEstado(d.id, d.nombre, d.activo)}
+                            loading={processing === d.id}
+                            onClick={() => void toggleStatus(d.id, d.nombre, d.activo)}
                             data-testid="btn-cambiar-estado-odontologo"
                           >
                             {d.activo ? 'Deshabilitar' : 'Habilitar'}

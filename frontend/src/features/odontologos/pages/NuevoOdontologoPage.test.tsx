@@ -3,14 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { HttpResponse, http } from 'msw';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import { odontologoAdminDePrueba, servicioDePrueba } from '@/test/factories';
+import { testAdminDentist, testService } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
 import { NuevoOdontologoPage } from './NuevoOdontologoPage';
 
-function renderPagina() {
-  server.use(http.get(`${API}/services`, () => HttpResponse.json([servicioDePrueba()])));
+function renderPage() {
+  server.use(http.get(`${API}/services`, () => HttpResponse.json([testService()])));
   renderWithProviders(
     <Routes>
       <Route path="/admin/odontologos/nuevo" element={<NuevoOdontologoPage />} />
@@ -20,7 +20,7 @@ function renderPagina() {
   );
 }
 
-async function llenarFormulario() {
+async function fillForm() {
   const user = userEvent.setup();
   await user.type(screen.getByLabelText('Nombre'), 'Dr. Juan Rojas');
   await user.type(screen.getByLabelText('Especialidad'), 'Ortodoncia');
@@ -32,20 +32,20 @@ async function llenarFormulario() {
 
 describe('NuevoOdontologoPage', () => {
   it('registra al odontólogo con sus servicios y vuelve al listado', async () => {
-    const recibidos: unknown[] = [];
+    const received: unknown[] = [];
     server.use(
       http.post(`${API}/dentists`, async ({ request }) => {
-        recibidos.push(await request.json());
-        return HttpResponse.json(odontologoAdminDePrueba(), { status: 201 });
+        received.push(await request.json());
+        return HttpResponse.json(testAdminDentist(), { status: 201 });
       }),
     );
-    renderPagina();
-    const user = await llenarFormulario();
+    renderPage();
+    const user = await fillForm();
 
     await user.click(screen.getByRole('button', { name: 'Registrar odontólogo' }));
 
     expect(await screen.findByRole('heading', { name: 'Listado' })).toBeInTheDocument();
-    expect(recibidos).toEqual([
+    expect(received).toEqual([
       {
         nombre: 'Dr. Juan Rojas',
         especialidad: 'Ortodoncia',
@@ -62,8 +62,8 @@ describe('NuevoOdontologoPage', () => {
         HttpResponse.json({ statusCode: 409, message: 'El email ya existe' }, { status: 409 }),
       ),
     );
-    renderPagina();
-    const user = await llenarFormulario();
+    renderPage();
+    const user = await fillForm();
 
     await user.click(screen.getByRole('button', { name: 'Registrar odontólogo' }));
 
@@ -72,7 +72,7 @@ describe('NuevoOdontologoPage', () => {
   });
 
   it('el enlace para volver al listado está en la cabecera', async () => {
-    renderPagina();
+    renderPage();
 
     expect(await screen.findByRole('link', { name: 'Volver al listado' })).toHaveAttribute(
       'href',

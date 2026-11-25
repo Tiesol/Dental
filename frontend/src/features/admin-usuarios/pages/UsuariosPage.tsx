@@ -15,11 +15,11 @@ import { TextField } from '@/shared/components/TextField';
 import { useConfirm } from '@/shared/hooks/useConfirm';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { ROLE_LABEL } from '@/shared/lib/roles';
-import { useUsuarios } from '../hooks/useUsuarios';
+import { useUsers } from '../hooks/useUsers';
 
-type FiltroRol = Role | 'TODOS';
+type RoleFilter = Role | 'TODOS';
 
-const OPCIONES_ROL: SelectOption<FiltroRol>[] = [
+const ROLE_OPTIONS: SelectOption<RoleFilter>[] = [
   { value: 'TODOS', label: 'Todos' },
   { value: 'PACIENTE', label: ROLE_LABEL.PACIENTE },
   { value: 'ODONTOLOGO', label: ROLE_LABEL.ODONTOLOGO },
@@ -27,41 +27,41 @@ const OPCIONES_ROL: SelectOption<FiltroRol>[] = [
 ];
 
 export function UsuariosPage() {
-  const { user: yo } = useAuth();
-  const { estado, cambiarEstado } = useUsuarios();
+  const { user: me } = useAuth();
+  const { state, changeStatus } = useUsers();
   const { confirm, dialog } = useConfirm();
-  const [filtroRol, setFiltroRol] = useState<FiltroRol>('TODOS');
-  const [busqueda, setBusqueda] = useState('');
-  const busquedaAplicada = useDebouncedValue(busqueda);
-  const [procesando, setProcesando] = useState<string | null>(null);
-  const [errorAccion, setErrorAccion] = useState('');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('TODOS');
+  const [query, setQuery] = useState('');
+  const appliedQuery = useDebouncedValue(query);
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
-  const visibles = useMemo(() => {
-    if (estado.status !== 'ok') return [];
-    const texto = busquedaAplicada.trim().toLowerCase();
-    return estado.usuarios.filter(
+  const visible = useMemo(() => {
+    if (state.status !== 'ok') return [];
+    const text = appliedQuery.trim().toLowerCase();
+    return state.users.filter(
       (u) =>
-        (filtroRol === 'TODOS' || u.role === filtroRol) &&
-        (!texto || u.nombre.toLowerCase().includes(texto) || u.email.toLowerCase().includes(texto)),
+        (roleFilter === 'TODOS' || u.role === roleFilter) &&
+        (!text || u.nombre.toLowerCase().includes(text) || u.email.toLowerCase().includes(text)),
     );
-  }, [estado, filtroRol, busquedaAplicada]);
+  }, [state, roleFilter, appliedQuery]);
 
-  const alternarEstado = async (id: string, nombre: string, activo: boolean) => {
+  const toggleStatus = async (id: string, name: string, active: boolean) => {
     if (
-      activo &&
+      active &&
       !(await confirm({
-        title: `¿Deshabilitar a ${nombre}?`,
+        title: `¿Deshabilitar a ${name}?`,
         message: 'No podrá iniciar sesión hasta que vuelvas a habilitar su cuenta.',
         confirmLabel: 'Deshabilitar',
       }))
     ) {
       return;
     }
-    setErrorAccion('');
-    setProcesando(id);
-    const error = await cambiarEstado(id, !activo);
-    setProcesando(null);
-    if (error) setErrorAccion(error);
+    setActionError('');
+    setProcessing(id);
+    const error = await changeStatus(id, !active);
+    setProcessing(null);
+    if (error) setActionError(error);
   };
 
   return (
@@ -82,37 +82,37 @@ export function UsuariosPage() {
           <Select
             variant="filter"
             label="Rol"
-            value={filtroRol}
-            options={OPCIONES_ROL}
-            onChange={setFiltroRol}
+            value={roleFilter}
+            options={ROLE_OPTIONS}
+            onChange={setRoleFilter}
           />
           <TextField
             label="Buscar"
             type="search"
             placeholder="Nombre o email"
-            value={busqueda}
-            onChange={setBusqueda}
+            value={query}
+            onChange={setQuery}
             fieldClassName="field-filter filters-grow"
           />
-          {estado.status === 'ok' && (
+          {state.status === 'ok' && (
             <p className="muted filters-count" role="status">
-              Mostrando {visibles.length} de {estado.usuarios.length}{' '}
-              {estado.usuarios.length === 1 ? 'usuario' : 'usuarios'}
+              Mostrando {visible.length} de {state.users.length}{' '}
+              {state.users.length === 1 ? 'usuario' : 'usuarios'}
             </p>
           )}
         </div>
 
-        {estado.status === 'cargando' && <LoadingState />}
-        {(estado.status === 'error' || errorAccion) && (
-          <ErrorMessage>{estado.status === 'error' ? estado.mensaje : errorAccion}</ErrorMessage>
+        {state.status === 'cargando' && <LoadingState />}
+        {(state.status === 'error' || actionError) && (
+          <ErrorMessage>{state.status === 'error' ? state.message : actionError}</ErrorMessage>
         )}
-        {estado.status === 'ok' && visibles.length === 0 && (
+        {state.status === 'ok' && visible.length === 0 && (
           <EmptyState
             title="No hay usuarios que coincidan"
             description="Prueba con otro rol o con otra búsqueda."
           />
         )}
-        {visibles.length > 0 && (
+        {visible.length > 0 && (
           <div className="table-scroll">
             <table>
               <thead>
@@ -126,8 +126,8 @@ export function UsuariosPage() {
                 </tr>
               </thead>
               <tbody>
-                {visibles.map((u) => {
-                  const esYo = u.id === yo?.id;
+                {visible.map((u) => {
+                  const isMe = u.id === me?.id;
                   return (
                     <tr key={u.id} data-testid={`usuario-${u.id}`}>
                       <td>
@@ -151,10 +151,10 @@ export function UsuariosPage() {
                             </ButtonLink>
                             <Button
                               variant={u.activo ? 'danger-outline' : 'secondary'}
-                              loading={procesando === u.id}
-                              disabled={esYo}
-                              title={esYo ? 'No puedes deshabilitar tu propia cuenta' : undefined}
-                              onClick={() => void alternarEstado(u.id, u.nombre, u.activo)}
+                              loading={processing === u.id}
+                              disabled={isMe}
+                              title={isMe ? 'No puedes deshabilitar tu propia cuenta' : undefined}
+                              onClick={() => void toggleStatus(u.id, u.nombre, u.activo)}
                               data-testid="btn-cambiar-estado"
                             >
                               {u.activo ? 'Deshabilitar' : 'Habilitar'}

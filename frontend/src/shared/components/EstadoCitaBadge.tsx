@@ -1,13 +1,13 @@
-import type { EstadoCita } from '@/api/types';
-import { claseEstado, etiquetaEstado } from '@/shared/lib/estados-cita';
+import type { AppointmentStatus } from '@/api/types';
+import { statusClass, statusLabel } from '@/shared/lib/appointment-status';
 
-type Props = { estado: EstadoCita };
+type Props = { status: AppointmentStatus };
 
 // Muestra el estado con el texto exacto del PDF: los E2E lo verifican.
-export function EstadoCitaBadge({ estado }: Props) {
+export function EstadoCitaBadge({ status }: Props) {
   return (
-    <span className={`badge ${claseEstado(estado)}`} data-testid="estado-cita">
-      {etiquetaEstado(estado)}
+    <span className={`badge ${statusClass(status)}`} data-testid="estado-cita">
+      {statusLabel(status)}
     </span>
   );
 }

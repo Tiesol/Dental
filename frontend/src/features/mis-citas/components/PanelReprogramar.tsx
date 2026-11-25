@@ -4,30 +4,30 @@ import { ApiError } from '@/api/errors';
 import type { AppointmentResponse, SlotResponse } from '@/api/types';
 import { SelectorHorario } from '@/features/reserva';
 import { Button } from '@/shared/components/Button';
-import { fechaEnClinica, formatearFecha, formatearRangoHora } from '@/shared/lib/dates';
+import { dateInClinic, formatDate, formatTimeRange } from '@/shared/lib/dates';
 
 type Props = {
-  cita: AppointmentResponse;
-  alTerminar: (reprogramada: AppointmentResponse) => void;
-  alFallar: (error: Error) => void;
-  alDesistir: () => void;
-  alElegir: () => void;
+  appointment: AppointmentResponse;
+  onDone: (rescheduled: AppointmentResponse) => void;
+  onFail: (error: Error) => void;
+  onCancel: () => void;
+  onChoose: () => void;
 };
 
 // Elige otro horario del mismo odontólogo y servicio. Si falla, la cita conserva el suyo.
-export function PanelReprogramar({ cita, alTerminar, alFallar, alDesistir, alElegir }: Props) {
-  const [fecha, setFecha] = useState(() => fechaEnClinica(cita.horaInicio));
+export function PanelReprogramar({ appointment, onDone, onFail, onCancel, onChoose }: Props) {
+  const [date, setDate] = useState(() => dateInClinic(appointment.horaInicio));
   const [slot, setSlot] = useState<SlotResponse | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const confirmar = async () => {
+  const confirm = async () => {
     if (!slot) return;
-    setEnviando(true);
+    setSending(true);
     try {
-      alTerminar(await appointmentsApi.reprogramar(cita.id, slot.inicio));
+      onDone(await appointmentsApi.reschedule(appointment.id, slot.inicio));
     } catch (err) {
-      alFallar(err as Error);
-      setEnviando(false);
+      onFail(err as Error);
+      setSending(false);
       // Al volver a la lista, SelectorHorario consulta de nuevo la disponibilidad.
       if (err instanceof ApiError && err.statusCode === 409) setSlot(null);
     }
@@ -38,40 +38,40 @@ export function PanelReprogramar({ cita, alTerminar, alFallar, alDesistir, alEle
       <h2 id="titulo-reprogramar">Reprogramar cita</h2>
       {!slot && (
         <SelectorHorario
-          dentistId={cita.odontologo.id}
-          serviceId={cita.servicio.id}
-          fecha={fecha}
-          onCambiarFecha={setFecha}
-          onElegir={(elegido) => {
-            alElegir();
-            setSlot(elegido);
+          dentistId={appointment.odontologo.id}
+          serviceId={appointment.servicio.id}
+          date={date}
+          onDateChange={setDate}
+          onChoose={(chosen) => {
+            onChoose();
+            setSlot(chosen);
           }}
         />
       )}
       {slot && (
         <dl className="details" data-testid="resumen-reprogramacion">
           <dt>Nueva fecha</dt>
-          <dd>{formatearFecha(slot.inicio)}</dd>
+          <dd>{formatDate(slot.inicio)}</dd>
           <dt>Nuevo horario</dt>
-          <dd>{formatearRangoHora(slot.inicio, slot.fin)}</dd>
+          <dd>{formatTimeRange(slot.inicio, slot.fin)}</dd>
         </dl>
       )}
       <div className="form-actions">
         {slot && (
           <Button
-            loading={enviando}
-            onClick={() => void confirmar()}
+            loading={sending}
+            onClick={() => void confirm()}
             data-testid="btn-confirmar-reprogramacion"
           >
             Confirmar nuevo horario
           </Button>
         )}
         {slot && (
-          <Button variant="secondary" disabled={enviando} onClick={() => setSlot(null)}>
+          <Button variant="secondary" disabled={sending} onClick={() => setSlot(null)}>
             Elegir otro horario
           </Button>
         )}
-        <Button variant="secondary" disabled={enviando} onClick={alDesistir}>
+        <Button variant="secondary" disabled={sending} onClick={onCancel}>
           Volver a la cita
         </Button>
       </div>

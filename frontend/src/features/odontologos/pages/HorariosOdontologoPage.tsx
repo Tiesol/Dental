@@ -4,36 +4,36 @@ import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { FormHorarios } from '../components/FormHorarios';
 import { SeccionBloques } from '../components/SeccionBloques';
-import { useDisponibilidad } from '../hooks/useDisponibilidad';
-import { useOdontologoAdmin } from '../hooks/useOdontologoAdmin';
+import { useAvailability } from '../hooks/useAvailability';
+import { useAdminDentist } from '../hooks/useAdminDentist';
 
 // Horarios de atención y bloques no disponibles de un odontólogo (ADMIN).
 export function HorariosOdontologoPage() {
   const { id = '' } = useParams();
-  const { estado, guardarHorarios, crearBloque, borrarBloque } = useDisponibilidad(id);
-  const { estado: odontologo } = useOdontologoAdmin(id);
+  const { state, saveSchedule, createBlock, deleteBlock } = useAvailability(id);
+  const { state: dentist } = useAdminDentist(id);
 
   return (
     <div className="page page-narrow">
       <PageHeader
         title="Horarios y bloques"
-        description={odontologo.status === 'ok' ? odontologo.odontologo.nombre : undefined}
+        description={dentist.status === 'ok' ? dentist.dentist.nombre : undefined}
         back={{ to: `/admin/odontologos/${id}`, label: 'Volver al odontólogo' }}
       />
-      {estado.status === 'cargando' && <LoadingState />}
-      {estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
-      {estado.status === 'ok' && (
+      {state.status === 'cargando' && <LoadingState />}
+      {state.status === 'error' && <ErrorMessage>{state.message}</ErrorMessage>}
+      {state.status === 'ok' && (
         <>
           <FormHorarios
             key={`horarios-${id}`}
-            horarios={estado.disponibilidad.horarios}
-            guardar={guardarHorarios}
+            schedule={state.availability.horarios}
+            save={saveSchedule}
           />
           <SeccionBloques
             key={`bloques-${id}`}
-            bloques={estado.disponibilidad.bloques}
-            crear={crearBloque}
-            borrar={borrarBloque}
+            blocks={state.availability.bloques}
+            onCreate={createBlock}
+            onDelete={deleteBlock}
           />
         </>
       )}

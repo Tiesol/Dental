@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { servicioDePrueba } from '@/test/factories';
+import { testService } from '@/test/factories';
 import { API } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/utils';
@@ -9,23 +9,23 @@ import { CatalogoServiciosPage } from './CatalogoServiciosPage';
 
 describe('CatalogoServiciosPage', () => {
   it('muestra cada servicio con su duración y su precio', async () => {
-    server.use(http.get(`${API}/services`, () => HttpResponse.json([servicioDePrueba()])));
+    server.use(http.get(`${API}/services`, () => HttpResponse.json([testService()])));
 
     renderWithProviders(<CatalogoServiciosPage />);
 
-    const servicio = within(await screen.findByTestId('servicio-s1'));
-    expect(servicio.getByRole('heading', { name: 'Limpieza dental' })).toBeInTheDocument();
-    expect(servicio.getByText('45 min')).toBeInTheDocument();
-    expect(servicio.getByText('Bs 150,00')).toBeInTheDocument();
+    const service = within(await screen.findByTestId('servicio-s1'));
+    expect(service.getByRole('heading', { name: 'Limpieza dental' })).toBeInTheDocument();
+    expect(service.getByText('45 min')).toBeInTheDocument();
+    expect(service.getByText('Bs 150,00')).toBeInTheDocument();
   });
 
   it('cada servicio tiene un enlace que abre la reserva con ese servicio ya elegido', async () => {
-    server.use(http.get(`${API}/services`, () => HttpResponse.json([servicioDePrueba()])));
+    server.use(http.get(`${API}/services`, () => HttpResponse.json([testService()])));
 
     renderWithProviders(<CatalogoServiciosPage />);
 
-    const servicio = within(await screen.findByTestId('servicio-s1'));
-    expect(servicio.getByRole('link', { name: 'Reservar Limpieza dental' })).toHaveAttribute(
+    const service = within(await screen.findByTestId('servicio-s1'));
+    expect(service.getByRole('link', { name: 'Reservar Limpieza dental' })).toHaveAttribute(
       'href',
       '/reservar?servicio=s1',
     );

@@ -1,4 +1,4 @@
-import { iniciales } from '@/shared/lib/formato';
+import { initials } from '@/shared/lib/format';
 
 type Props = { name: string };
 
@@ -6,7 +6,7 @@ type Props = { name: string };
 export function Avatar({ name }: Props) {
   return (
     <span className="avatar" aria-hidden="true">
-      {iniciales(name)}
+      {initials(name)}
     </span>
   );
 }

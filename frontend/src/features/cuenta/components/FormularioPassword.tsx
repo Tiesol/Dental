@@ -5,46 +5,46 @@ import { SuccessMessage } from '@/shared/components/SuccessMessage';
 import { TextField } from '@/shared/components/TextField';
 import { useForm } from '@/shared/hooks/useForm';
 import { combine, maxLength, minLength, required } from '@/shared/lib/validators';
-import { useCambiarPassword } from '../hooks/useCambiarPassword';
+import { useChangePassword } from '../hooks/useChangePassword';
 
-const VACIO = { passwordActual: '', passwordNueva: '', confirmacion: '' };
+const EMPTY = { passwordActual: '', passwordNueva: '', confirmacion: '' };
 
 export function FormularioPassword() {
-  const cambiarPassword = useCambiarPassword();
-  const form = useForm(VACIO, {
+  const changePassword = useChangePassword();
+  const form = useForm(EMPTY, {
     passwordActual: required('Escribe tu contraseña actual'),
     passwordNueva: combine(
       required('Escribe la nueva contraseña'),
       minLength(8, 'La nueva contraseña debe tener al menos 8 caracteres'),
       maxLength(72, 'La contraseña admite hasta 72 caracteres'),
     ),
-    confirmacion: (valor, valores) =>
-      required('Repite la nueva contraseña')(valor) ??
-      (valor !== valores.passwordNueva
+    confirmacion: (value, values) =>
+      required('Repite la nueva contraseña')(value) ??
+      (value !== values.passwordNueva
         ? 'La confirmación no coincide con la nueva contraseña'
         : null),
   });
-  const [enviando, setEnviando] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [exito, setExito] = useState('');
+  const [success, setSuccess] = useState('');
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    setExito('');
+    setSuccess('');
     if (!form.validate()) return;
-    setEnviando(true);
+    setSending(true);
     try {
-      await cambiarPassword({
+      await changePassword({
         passwordActual: form.values.passwordActual,
         passwordNueva: form.values.passwordNueva,
       });
       form.reset();
-      setExito('Contraseña actualizada');
+      setSuccess('Contraseña actualizada');
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setEnviando(false);
+      setSending(false);
     }
   };
 
@@ -71,9 +71,9 @@ export function FormularioPassword() {
         autoComplete="new-password"
       />
       {error && <ErrorMessage>{error}</ErrorMessage>}
-      {exito && <SuccessMessage>{exito}</SuccessMessage>}
+      {success && <SuccessMessage>{success}</SuccessMessage>}
       <div className="form-actions">
-        <Button type="submit" loading={enviando} data-testid="btn-cambiar-password">
+        <Button type="submit" loading={sending} data-testid="btn-cambiar-password">
           Cambiar contraseña
         </Button>
       </div>

@@ -4,26 +4,26 @@ import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { Icon } from '@/shared/components/Icon';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
-import { formatearDuracion, formatearPrecio } from '@/shared/lib/formato';
-import { useServicios } from '../hooks/useServicios';
+import { formatDuration, formatPrice } from '@/shared/lib/format';
+import { useServices } from '../hooks/useServices';
 
 // Catálogo para el paciente: el backend solo devuelve los servicios habilitados.
 export function CatalogoServiciosPage() {
-  const { estado } = useServicios();
+  const { state } = useServices();
 
   return (
     <div className="page">
       <PageHeader title="Servicios" description="Conoce los tratamientos que ofrece la clínica." />
-      {estado.status === 'error' && <ErrorMessage>{estado.mensaje}</ErrorMessage>}
-      {estado.status !== 'error' && (
+      {state.status === 'error' && <ErrorMessage>{state.message}</ErrorMessage>}
+      {state.status !== 'error' && (
         <section className="card card-flush">
-          {estado.status === 'cargando' && <LoadingState />}
-          {estado.status === 'ok' && estado.servicios.length === 0 && (
+          {state.status === 'cargando' && <LoadingState />}
+          {state.status === 'ok' && state.services.length === 0 && (
             <EmptyState title="Por ahora no hay servicios disponibles" />
           )}
-          {estado.status === 'ok' && estado.servicios.length > 0 && (
+          {state.status === 'ok' && state.services.length > 0 && (
             <ul className="service-list">
-              {estado.servicios.map((s) => (
+              {state.services.map((s) => (
                 <li
                   key={s.id}
                   className="service service-con-accion"
@@ -38,14 +38,14 @@ export function CatalogoServiciosPage() {
                       <dt>Duración</dt>
                       <dd>
                         <Icon name="clock" />
-                        {formatearDuracion(s.duracionMin)}
+                        {formatDuration(s.duracionMin)}
                       </dd>
                     </div>
                     <div>
                       <dt>Precio</dt>
                       <dd>
                         <Icon name="tag" />
-                        {formatearPrecio(s.precioReferencial)}
+                        {formatPrice(s.precioReferencial)}
                       </dd>
                     </div>
                   </dl>

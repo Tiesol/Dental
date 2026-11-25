@@ -3,14 +3,14 @@ import { ButtonLink } from '@/shared/components/ButtonLink';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { EstadoCitaBadge } from '@/shared/components/EstadoCitaBadge';
 import { Icon } from '@/shared/components/Icon';
-import { formatearFecha, formatearRangoHora } from '@/shared/lib/dates';
+import { formatDate, formatTimeRange } from '@/shared/lib/dates';
 
-type Props = { citas: AppointmentResponse[]; vacio: string };
+type Props = { appointments: AppointmentResponse[]; emptyText: string };
 
 // Citas en el orden que devuelve el backend, con los datos que pide el PDF: paciente, servicio,
 // estado y observación.
-export function TablaAgenda({ citas, vacio }: Props) {
-  if (citas.length === 0) return <EmptyState title={vacio} />;
+export function TablaAgenda({ appointments, emptyText }: Props) {
+  if (appointments.length === 0) return <EmptyState title={emptyText} />;
 
   return (
     <div className="table-scroll">
@@ -28,27 +28,29 @@ export function TablaAgenda({ citas, vacio }: Props) {
           </tr>
         </thead>
         <tbody>
-          {citas.map((cita) => {
-            const paciente = `${cita.paciente.nombre} ${cita.paciente.apellido}`;
+          {appointments.map((appointment) => {
+            const patient = `${appointment.paciente.nombre} ${appointment.paciente.apellido}`;
             return (
-              <tr key={cita.id} data-testid={`cita-${cita.id}`}>
-                <td className="cell-primary">{paciente}</td>
-                <td>{cita.servicio.nombre}</td>
+              <tr key={appointment.id} data-testid={`cita-${appointment.id}`}>
+                <td className="cell-primary">{patient}</td>
+                <td>{appointment.servicio.nombre}</td>
                 <td>
-                  {formatearFecha(cita.horaInicio)}
+                  {formatDate(appointment.horaInicio)}
                   <br />
-                  {formatearRangoHora(cita.horaInicio, cita.horaFin)}
+                  {formatTimeRange(appointment.horaInicio, appointment.horaFin)}
                 </td>
                 <td>
-                  <EstadoCitaBadge estado={cita.estado} />
+                  <EstadoCitaBadge status={appointment.estado} />
                 </td>
-                <td>{cita.observacion?.texto ?? <span className="muted">Sin observación</span>}</td>
+                <td>
+                  {appointment.observacion?.texto ?? <span className="muted">Sin observación</span>}
+                </td>
                 <td>
                   <div className="actions">
                     <ButtonLink
                       variant="secondary"
-                      to={`/agenda/${cita.id}`}
-                      aria-label={`Abrir cita de ${paciente}`}
+                      to={`/agenda/${appointment.id}`}
+                      aria-label={`Abrir cita de ${patient}`}
                     >
                       <span className="btn-label">
                         Abrir
