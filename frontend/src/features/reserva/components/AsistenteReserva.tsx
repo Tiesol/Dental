@@ -8,6 +8,7 @@ import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { formatearFecha, formatearRangoHora, hoyEnClinica } from '@/shared/lib/dates';
 import { PasoOdontologo } from './PasoOdontologo';
 import { PasoServicio } from './PasoServicio';
+import { PasosReserva } from './PasosReserva';
 import { SelectorHorario } from './SelectorHorario';
 
 export type EleccionInicial = {
@@ -85,8 +86,16 @@ export function AsistenteReserva({ inicial }: Props) {
     </div>
   );
 
+  // El orden sigue al de la elección; el paso actual es el primero que falta.
+  const pasos = desdeOdontologo
+    ? ['Odontólogo', 'Servicio', 'Horario', 'Confirmar']
+    : ['Servicio', 'Odontólogo', 'Horario', 'Confirmar'];
+  const primero = desdeOdontologo ? odontologo : servicio;
+  const pasoActual = !primero ? 0 : !(servicio && odontologo) ? 1 : !slot ? 2 : 3;
+
   return (
     <>
+      <PasosReserva pasos={pasos} actual={pasoActual} />
       {error && <ErrorMessage>{error}</ErrorMessage>}
 
       {desdeOdontologo ? eleccionOdontologo : eleccionServicio}

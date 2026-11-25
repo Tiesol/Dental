@@ -235,6 +235,12 @@ Siempre con `Button` (o `ButtonLink` para navegar); los estilos viven en `.btn` 
 - La búsqueda por texto espera 300 ms sin teclear (`useDebouncedValue`) antes de pedir.
 - Una acción sobre una fila actualiza solo esa fila con la respuesta del backend, sin recargar el listado.
 
+**Pasos de la reserva**
+
+- `PasosReserva` muestra arriba del asistente los cuatro pasos (Servicio, Odontólogo, Horario, Confirmar) como casillas unidas por un renglón punteado. Las de los pasos hechos quedan selladas con la tinta y un ✓, y el renglón que las une se vuelve continuo.
+- El paso actual lleva `aria-current="step"`. Si se llega desde un odontólogo, el orden empieza por Odontólogo.
+- Ningún paso cambia el peso de la letra: el estado se marca con la casilla y el color.
+
 **Horarios (slots)**
 
 - Cada horario es un `Button`, nunca un `div`, con `data-testid="slot-<HH:mm>"`. Muestra solo la hora de inicio en hora de la clínica ("09:00") y su nombre accesible es el rango ("09:00 a 09:30"): los horarios se ofrecen cada 15 minutos y, escritos como rangos, parecían solaparse.
