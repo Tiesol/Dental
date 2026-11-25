@@ -2,11 +2,11 @@ import { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 import { createTestApp } from '../helpers/app';
-import { conToken, loginComo, ruta } from '../helpers/auth';
+import { withToken, loginAs, apiPath } from '../helpers/auth';
 import { resetDb } from '../helpers/db';
-import { crearAdmin, crearOdontologo, crearPaciente, crearServicio } from '../helpers/factories';
+import { createAdmin, createDentist, createPatient, createService } from '../helpers/factories';
 
-const ID_INEXISTENTE = '00000000-0000-4000-8000-000000000000';
+const MISSING_ID = '00000000-0000-4000-8000-000000000000';
 
 describe('Servicios (integración)', () => {
   let app: INestApplication;
@@ -24,9 +24,9 @@ describe('Servicios (integración)', () => {
   beforeEach(() => resetDb(prisma));
 
   const http = () => request(app.getHttpServer());
-  const tokenDeAdmin = async () => loginComo(app, await crearAdmin(prisma));
-  const tokenDePaciente = async () => loginComo(app, await crearPaciente(prisma));
-  const datos = {
+  const adminToken = async () => loginAs(app, await createAdmin(prisma));
+  const patientToken = async () => loginAs(app, await createPatient(prisma));
+  const data = {
     nombre: 'Limpieza dental',
     descripcion: 'Profilaxis y eliminación de sarro',
     duracionMin: 30,
@@ -34,32 +34,32 @@ describe('Servicios (integración)', () => {
   };
 
   describe('rutas protegidas', () => {
-    const rutas = [
+    const routes = [
       ['get', '/services'],
-      ['get', `/services/${ID_INEXISTENTE}`],
+      ['get', `/services/${MISSING_ID}`],
       ['post', '/services'],
-      ['patch', `/services/${ID_INEXISTENTE}`],
-      ['patch', `/services/${ID_INEXISTENTE}/estado`],
+      ['patch', `/services/${MISSING_ID}`],
+      ['patch', `/services/${MISSING_ID}/estado`],
     ] as const;
 
-    it.each(rutas)('%s %s responde 401 sin token', async (metodo, path) => {
-      const res = await http()[metodo](ruta(path));
+    it.each(routes)('%s %s responde 401 sin token', async (method, path) => {
+      const res = await http()[method](apiPath(path));
 
       expect(res.status).toBe(401);
     });
 
-    it.each(rutas.slice(2))('%s %s responde 403 a un PACIENTE', async (metodo, path) => {
-      const token = await tokenDePaciente();
+    it.each(routes.slice(2))('%s %s responde 403 a un PACIENTE', async (method, path) => {
+      const token = await patientToken();
 
-      const res = await conToken(http()[metodo](ruta(path)), token);
+      const res = await withToken(http()[method](apiPath(path)), token);
 
       expect(res.status).toBe(403);
     });
 
-    it.each(rutas.slice(2))('%s %s responde 403 a un ODONTOLOGO', async (metodo, path) => {
-      const token = await loginComo(app, await crearOdontologo(prisma));
+    it.each(routes.slice(2))('%s %s responde 403 a un ODONTOLOGO', async (method, path) => {
+      const token = await loginAs(app, await createDentist(prisma));
 
-      const res = await conToken(http()[metodo](ruta(path)), token);
+      const res = await withToken(http()[method](apiPath(path)), token);
 
       expect(res.status).toBe(403);
     });
@@ -67,32 +67,32 @@ describe('Servicios (integración)', () => {
 
   describe('gestión por el ADMIN', () => {
     it('crea un servicio y lo persiste', async () => {
-      const token = await tokenDeAdmin();
+      const token = await adminToken();
 
-      const res = await conToken(http().post(ruta('/services')), token).send(datos);
+      const res = await withToken(http().post(apiPath('/services')), token).send(data);
 
       expect(res.status).toBe(201);
-      expect(res.body).toMatchObject({ ...datos, activo: true });
-      const enBd = await prisma.service.findUniqueOrThrow({ where: { id: res.body.id } });
-      expect(enBd).toMatchObject({ nombre: 'Limpieza dental', duracionMin: 30 });
+      expect(res.body).toMatchObject({ ...data, activo: true });
+      const inDb = await prisma.service.findUniqueOrThrow({ where: { id: res.body.id } });
+      expect(inDb).toMatchObject({ nombre: 'Limpieza dental', duracionMin: 30 });
     });
 
     it('el precio referencial es opcional', async () => {
-      const { precioReferencial: _precio, ...sinPrecio } = datos;
-      const token = await tokenDeAdmin();
+      const { precioReferencial: _price, ...withoutPrice } = data;
+      const token = await adminToken();
 
-      const res = await conToken(http().post(ruta('/services')), token).send(sinPrecio);
+      const res = await withToken(http().post(apiPath('/services')), token).send(withoutPrice);
 
       expect(res.status).toBe(201);
       expect(res.body.precioReferencial).toBeNull();
     });
 
     it('responde 409 con un nombre repetido, sin distinguir mayúsculas', async () => {
-      await crearServicio(prisma, { nombre: 'Limpieza dental' });
-      const token = await tokenDeAdmin();
+      await createService(prisma, { nombre: 'Limpieza dental' });
+      const token = await adminToken();
 
-      const res = await conToken(http().post(ruta('/services')), token).send({
-        ...datos,
+      const res = await withToken(http().post(apiPath('/services')), token).send({
+        ...data,
         nombre: 'LIMPIEZA  dental',
       });
 
@@ -109,12 +109,12 @@ describe('Servicios (integración)', () => {
       ['nombre vacío', { nombre: '' }],
       ['descripción ausente', { descripcion: undefined }],
       ['un campo extra', { id: 'x' }],
-    ])('responde 400 con %s y no crea nada', async (_caso, cambios) => {
-      const token = await tokenDeAdmin();
+    ])('responde 400 con %s y no crea nada', async (_testCase, changes) => {
+      const token = await adminToken();
 
-      const res = await conToken(http().post(ruta('/services')), token).send({
-        ...datos,
-        ...cambios,
+      const res = await withToken(http().post(apiPath('/services')), token).send({
+        ...data,
+        ...changes,
       });
 
       expect(res.status).toBe(400);
@@ -122,23 +122,23 @@ describe('Servicios (integración)', () => {
     });
 
     it('edita un servicio y persiste el cambio', async () => {
-      const servicio = await crearServicio(prisma);
-      const token = await tokenDeAdmin();
+      const service = await createService(prisma);
+      const token = await adminToken();
 
-      const res = await conToken(http().patch(ruta(`/services/${servicio.id}`)), token).send({
+      const res = await withToken(http().patch(apiPath(`/services/${service.id}`)), token).send({
         duracionMin: 45,
       });
 
       expect(res.status).toBe(200);
-      const enBd = await prisma.service.findUniqueOrThrow({ where: { id: servicio.id } });
-      expect(enBd.duracionMin).toBe(45);
+      const inDb = await prisma.service.findUniqueOrThrow({ where: { id: service.id } });
+      expect(inDb.duracionMin).toBe(45);
     });
 
     it('permite mantener el propio nombre al editar', async () => {
-      const servicio = await crearServicio(prisma, { nombre: 'Limpieza' });
-      const token = await tokenDeAdmin();
+      const service = await createService(prisma, { nombre: 'Limpieza' });
+      const token = await adminToken();
 
-      const res = await conToken(http().patch(ruta(`/services/${servicio.id}`)), token).send({
+      const res = await withToken(http().patch(apiPath(`/services/${service.id}`)), token).send({
         nombre: 'limpieza',
       });
 
@@ -146,11 +146,11 @@ describe('Servicios (integración)', () => {
     });
 
     it('al editar responde 409 si el nombre ya es de otro servicio', async () => {
-      await crearServicio(prisma, { nombre: 'Ortodoncia' });
-      const servicio = await crearServicio(prisma, { nombre: 'Limpieza' });
-      const token = await tokenDeAdmin();
+      await createService(prisma, { nombre: 'Ortodoncia' });
+      const service = await createService(prisma, { nombre: 'Limpieza' });
+      const token = await adminToken();
 
-      const res = await conToken(http().patch(ruta(`/services/${servicio.id}`)), token).send({
+      const res = await withToken(http().patch(apiPath(`/services/${service.id}`)), token).send({
         nombre: 'Ortodoncia',
       });
 
@@ -158,52 +158,52 @@ describe('Servicios (integración)', () => {
     });
 
     it.each([
-      ['patch', `/services/${ID_INEXISTENTE}`, { duracionMin: 45 }],
-      ['patch', `/services/${ID_INEXISTENTE}/estado`, { activo: false }],
-    ] as const)('%s %s responde 404 si no existe', async (metodo, path, cuerpo) => {
-      const token = await tokenDeAdmin();
+      ['patch', `/services/${MISSING_ID}`, { duracionMin: 45 }],
+      ['patch', `/services/${MISSING_ID}/estado`, { activo: false }],
+    ] as const)('%s %s responde 404 si no existe', async (method, path, body) => {
+      const token = await adminToken();
 
-      const res = await conToken(http()[metodo](ruta(path)), token).send(cuerpo);
+      const res = await withToken(http()[method](apiPath(path)), token).send(body);
 
       expect(res.status).toBe(404);
     });
   });
 
   describe('servicio deshabilitado', () => {
-    async function deshabilitado() {
-      const servicio = await crearServicio(prisma);
-      const admin = await tokenDeAdmin();
-      await conToken(http().patch(ruta(`/services/${servicio.id}/estado`)), admin)
+    async function disabled() {
+      const service = await createService(prisma);
+      const admin = await adminToken();
+      await withToken(http().patch(apiPath(`/services/${service.id}/estado`)), admin)
         .send({ activo: false })
         .expect(200);
-      return { servicio, admin };
+      return { service, admin };
     }
 
     it('un paciente no lo ve en el catálogo y su detalle responde 404', async () => {
-      const { servicio } = await deshabilitado();
-      const visible = await crearServicio(prisma);
-      const token = await tokenDePaciente();
+      const { service } = await disabled();
+      const visible = await createService(prisma);
+      const token = await patientToken();
 
-      const lista = await conToken(http().get(ruta('/services')), token);
-      const detalle = await conToken(http().get(ruta(`/services/${servicio.id}`)), token);
+      const list = await withToken(http().get(apiPath('/services')), token);
+      const detail = await withToken(http().get(apiPath(`/services/${service.id}`)), token);
 
-      expect((lista.body as { id: string }[]).map((s) => s.id)).toEqual([visible.id]);
-      expect(detalle.status).toBe(404);
+      expect((list.body as { id: string }[]).map((s) => s.id)).toEqual([visible.id]);
+      expect(detail.status).toBe(404);
     });
 
     it('el ADMIN lo sigue viendo y puede volver a habilitarlo', async () => {
-      const { servicio, admin } = await deshabilitado();
+      const { service, admin } = await disabled();
 
-      const lista = await conToken(http().get(ruta('/services')), admin);
-      const habilitar = await conToken(
-        http().patch(ruta(`/services/${servicio.id}/estado`)),
+      const list = await withToken(http().get(apiPath('/services')), admin);
+      const enable = await withToken(
+        http().patch(apiPath(`/services/${service.id}/estado`)),
         admin,
       ).send({ activo: true });
 
-      expect((lista.body as { id: string }[]).map((s) => s.id)).toEqual([servicio.id]);
-      expect(habilitar.status).toBe(200);
-      const enBd = await prisma.service.findUniqueOrThrow({ where: { id: servicio.id } });
-      expect(enBd.activo).toBe(true);
+      expect((list.body as { id: string }[]).map((s) => s.id)).toEqual([service.id]);
+      expect(enable.status).toBe(200);
+      const inDb = await prisma.service.findUniqueOrThrow({ where: { id: service.id } });
+      expect(inDb.activo).toBe(true);
     });
   });
 });

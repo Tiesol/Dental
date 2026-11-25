@@ -40,7 +40,7 @@ Reglas de estilo y de trabajo que aplican a todo el código del backend. Si algo
 ## 5. Errores
 
 - Excepciones de dominio en `src/common/errors/`: `DomainError` base y derivadas con nombre de la regla:
-  `ServicioDeshabilitadoError`, `OdontologoDeshabilitadoError`, `OdontologoNoRealizaServicioError`, `HorarioNoDisponibleError`, `HorarioEnElPasadoError`, `TransicionDeEstadoInvalidaError`, `CitaNoModificableError`, `AccesoDenegadoACitaError`.
+  `ServiceDisabledError`, `DentistDisabledError`, `DentistDoesNotOfferServiceError`, `SlotUnavailableError`, `SlotInThePastError`, `InvalidStatusTransitionError`, `AppointmentNotModifiableError`, `AppointmentAccessDeniedError`.
 - Un filtro global mapea cada `DomainError` a un código HTTP:
   - validación de entrada → `400`
   - no autenticado → `401`
@@ -63,8 +63,8 @@ Reglas de estilo y de trabajo que aplican a todo el código del backend. Si algo
 - Patrón **AAA** (Arrange, Act, Assert) con líneas en blanco separando las tres partes.
 - Un `it` prueba una sola regla. Casos positivos y negativos para cada regla.
 - Unitarios: sin BD, sin red. Los repositories se mockean con `jest.fn()` o fakes en memoria. El dominio se prueba sin ningún mock.
-- Integración: BD PostgreSQL real de test. `resetDb()` (`test/helpers/db.ts`) trunca todas las tablas en `beforeEach`. Factories de `test/helpers/factories.ts` (`crearPaciente`, `crearOdontologo`, `crearAdmin`, ...) crean filas con valores por defecto sensatos; `loginComo()` y `ruta()` de `test/helpers/auth.ts` obtienen el token real y arman la URL con el prefijo `/api/v1`.
-- Asserts específicos: `toEqual`, `toThrow(HorarioNoDisponibleError)`, `expect(res.status).toBe(409)`. Prohibido `toBeTruthy()` como único assert.
+- Integración: BD PostgreSQL real de test. `resetDb()` (`test/helpers/db.ts`) trunca todas las tablas en `beforeEach`. Factories de `test/helpers/factories.ts` (`createPatient`, `createDentist`, `createAdmin`, ...) crean filas con valores por defecto sensatos; `loginAs()` y `apiPath()` de `test/helpers/auth.ts` obtienen el token real y arman la URL con el prefijo `/api/v1`.
+- Asserts específicos: `toEqual`, `toThrow(SlotUnavailableError)`, `expect(res.status).toBe(409)`. Prohibido `toBeTruthy()` como único assert.
 - Cobertura mínima exigida por CI: 90% en `domain/` y services; el resto sin umbral obligatorio.
 - Comandos canónicos: `npm run test` (unit), `npm run test:int` (integración; aplica migraciones a la BD de test automáticamente), `npm run test:all`, `npm run test:cov`. Con `AI_AGENT` en el entorno Jest compacta la salida; para ver cada test: `env -u AI_AGENT -u CLAUDECODE npm run test -- --verbose`.
 

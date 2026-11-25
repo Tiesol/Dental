@@ -7,7 +7,7 @@ export class Clock {
   // CLOCK_NOW solo se respeta en modo test: los E2E necesitan que los horarios existan siempre y
   // no caigan en el pasado.
   now(): Date {
-    const fija = process.env.NODE_ENV === 'test' ? process.env.CLOCK_NOW : undefined;
-    return fija ? new Date(fija) : new Date();
+    const fixed = process.env.NODE_ENV === 'test' ? process.env.CLOCK_NOW : undefined;
+    return fixed ? new Date(fixed) : new Date();
   }
 }

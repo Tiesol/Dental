@@ -13,12 +13,12 @@ export class E2eController {
   constructor(private readonly e2eService: E2eService) {}
 
   @Post('seed')
-  sembrar() {
-    return this.e2eService.sembrar();
+  seed() {
+    return this.e2eService.seed();
   }
 
   @Post('citas')
-  crearCita(@Body() dto: CreateE2eAppointmentDto) {
-    return this.e2eService.crearCita(dto);
+  createAppointment(@Body() dto: CreateE2eAppointmentDto) {
+    return this.e2eService.createAppointment(dto);
   }
 }

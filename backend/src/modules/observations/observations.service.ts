@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CurrentUserData } from '../../common/types/current-user';
 import { AppointmentsService } from '../appointments/appointments.service';
-import { assertPuedeRegistrarObservacion } from './domain/observation-rules';
+import { assertCanRegisterObservation } from './domain/observation-rules';
 import { ObservationsRepository } from './observations.repository';
 
 // Observación de atención: la registra el odontólogo asignado durante la cita.
@@ -12,13 +12,13 @@ export class ObservationsService {
     private readonly appointments: AppointmentsService,
   ) {}
 
-  async registrar(
+  async register(
     appointmentId: string,
-    texto: string,
+    text: string,
     user: CurrentUserData,
   ): Promise<{ texto: string; createdAt: Date }> {
-    const cita = await this.appointments.findOne(appointmentId, user);
-    assertPuedeRegistrarObservacion(cita);
-    return this.observations.create(appointmentId, texto.trim());
+    const appointment = await this.appointments.findOne(appointmentId, user);
+    assertCanRegisterObservation(appointment);
+    return this.observations.create(appointmentId, text.trim());
   }
 }

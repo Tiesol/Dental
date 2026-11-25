@@ -23,10 +23,10 @@ export type NewAppointment = {
   horaFin: Date;
 };
 
-export type CuandoCitas = 'proximas' | 'historial';
+export type AppointmentWhen = 'proximas' | 'historial';
 
 export type AppointmentFilters = {
-  rango?: { inicio: Date; fin: Date };
+  range?: { inicio: Date; fin: Date };
   estado?: AppointmentStatus;
   dentistId?: string;
   limit: number;

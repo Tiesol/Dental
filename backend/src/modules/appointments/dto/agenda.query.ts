@@ -3,7 +3,7 @@ import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class AgendaQuery {
-  // Aquí solo se exige un texto; que la fecha exista lo valida el dominio (FechaInvalidaError).
+  // Aquí solo se exige un texto; que la fecha exista lo valida el dominio (InvalidDateError).
   @ApiPropertyOptional({ example: '2026-11-10', description: 'Hoy en la clínica, por defecto' })
   @IsOptional()
   @IsString({ message: 'fecha debe ser un texto con formato YYYY-MM-DD' })

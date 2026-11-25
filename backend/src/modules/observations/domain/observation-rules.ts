@@ -1,17 +1,17 @@
 import {
-  CitaNoEnAtencionError,
-  ObservacionYaRegistradaError,
+  AppointmentNotInProgressError,
+  ObservationAlreadyRegisteredError,
 } from '../../../common/errors/domain-error';
 import { AppointmentView } from '../../appointments/domain/appointment';
 
 // La observación se registra durante la atención y una sola vez (D5 de PLAN.md).
-export function assertPuedeRegistrarObservacion(
-  cita: Pick<AppointmentView, 'estado' | 'observacion'>,
+export function assertCanRegisterObservation(
+  appointment: Pick<AppointmentView, 'estado' | 'observacion'>,
 ): void {
-  if (cita.estado !== 'EN_ATENCION') {
-    throw new CitaNoEnAtencionError();
+  if (appointment.estado !== 'EN_ATENCION') {
+    throw new AppointmentNotInProgressError();
   }
-  if (cita.observacion) {
-    throw new ObservacionYaRegistradaError();
+  if (appointment.observacion) {
+    throw new ObservationAlreadyRegisteredError();
   }
 }

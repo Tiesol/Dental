@@ -3,14 +3,14 @@ import { hash } from 'bcryptjs';
 
 // Factories para tests de integración: crean filas reales con valores por defecto sensatos.
 
-let contador = 0;
-const siguiente = () => ++contador;
+let counter = 0;
+const next = () => ++counter;
 
-export async function crearPaciente(
+export async function createPatient(
   prisma: PrismaClient,
   overrides: { email?: string; password?: string; nombre?: string; apellido?: string } = {},
 ) {
-  const n = siguiente();
+  const n = next();
   const password = overrides.password ?? 'secreta123';
   const user = await prisma.user.create({
     data: {
@@ -26,11 +26,11 @@ export async function crearPaciente(
   return { ...user, password };
 }
 
-export async function crearOdontologo(
+export async function createDentist(
   prisma: PrismaClient,
   overrides: { email?: string; password?: string; nombre?: string; especialidad?: string } = {},
 ) {
-  const n = siguiente();
+  const n = next();
   const password = overrides.password ?? 'secreta123';
   const user = await prisma.user.create({
     data: {
@@ -49,11 +49,11 @@ export async function crearOdontologo(
   return { ...user, password };
 }
 
-export async function crearAdmin(
+export async function createAdmin(
   prisma: PrismaClient,
   overrides: { email?: string; password?: string } = {},
 ) {
-  const n = siguiente();
+  const n = next();
   const password = overrides.password ?? 'Admin12345';
   const user = await prisma.user.create({
     data: {
@@ -65,13 +65,13 @@ export async function crearAdmin(
   return { ...user, password };
 }
 
-export async function crearServicio(
+export async function createService(
   prisma: PrismaClient,
   overrides: { nombre?: string; duracionMin?: number } = {},
 ) {
   return prisma.service.create({
     data: {
-      nombre: overrides.nombre ?? `Servicio ${siguiente()}`,
+      nombre: overrides.nombre ?? `Servicio ${next()}`,
       descripcion: 'Servicio de prueba',
       duracionMin: overrides.duracionMin ?? 30,
     },
@@ -79,22 +79,22 @@ export async function crearServicio(
 }
 
 // Crea una cita directamente en la BD, con un paciente y un servicio nuevos.
-export async function crearCita(
+export async function createAppointment(
   prisma: PrismaClient,
-  datos: {
+  data: {
     dentistId: string;
     horaInicio: Date;
     horaFin: Date;
     estado?: AppointmentStatus;
   },
 ) {
-  const paciente = await crearPaciente(prisma);
-  const servicio = await crearServicio(prisma);
+  const patient = await createPatient(prisma);
+  const service = await createService(prisma);
   return prisma.appointment.create({
     data: {
-      ...datos,
-      patientId: paciente.patient!.id,
-      serviceId: servicio.id,
+      ...data,
+      patientId: patient.patient!.id,
+      serviceId: service.id,
     },
   });
 }

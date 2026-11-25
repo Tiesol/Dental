@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsUUID } from 'class-validator';
-import { IsFechaHoraConZona } from '../../../common/validation/is-fecha-hora-con-zona.decorator';
+import { IsDateTimeWithZone } from '../../../common/validation/is-date-time-with-zone.decorator';
 
 // El cliente nunca envía horaFin, estado ni patientId: se derivan en el servidor.
 export class CreateAppointmentDto {
@@ -13,6 +13,6 @@ export class CreateAppointmentDto {
   serviceId: string;
 
   @ApiProperty({ example: '2026-11-10T13:00:00.000Z' })
-  @IsFechaHoraConZona('horaInicio')
+  @IsDateTimeWithZone('horaInicio')
   horaInicio: string;
 }

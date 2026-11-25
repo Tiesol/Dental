@@ -34,8 +34,8 @@ export class AvailabilityController {
   @Put('availability')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Reemplaza todos los horarios de atención (solo ADMIN)' })
-  replaceHorarios(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetAvailabilityDto) {
-    return this.availabilityService.replaceHorarios(id, dto.horarios);
+  replaceSchedule(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetAvailabilityDto) {
+    return this.availabilityService.replaceSchedule(id, dto.horarios);
   }
 
   @Get('slots')

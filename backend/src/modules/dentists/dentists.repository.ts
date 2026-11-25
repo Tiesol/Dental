@@ -15,20 +15,17 @@ type DentistRow = Prisma.DentistGetPayload<{ include: typeof withRelations }>;
 export class DentistsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // soloDisponibles: profesional y cuenta habilitados. serviceId: solo quienes lo realizan
-  // (y, si soloDisponibles, solo si ese servicio está habilitado).
-  async findAll(options: {
-    soloDisponibles: boolean;
-    serviceId?: string;
-  }): Promise<DentistRecord[]> {
+  // onlyAvailable: profesional y cuenta habilitados. serviceId: solo quienes lo realizan
+  // (y, si onlyAvailable, solo si ese servicio está habilitado).
+  async findAll(options: { onlyAvailable: boolean; serviceId?: string }): Promise<DentistRecord[]> {
     const where: Prisma.DentistWhereInput = {
-      ...(options.soloDisponibles ? { activo: true, user: { activo: true } } : {}),
+      ...(options.onlyAvailable ? { activo: true, user: { activo: true } } : {}),
       ...(options.serviceId
         ? {
             services: {
               some: {
                 serviceId: options.serviceId,
-                ...(options.soloDisponibles ? { service: { activo: true } } : {}),
+                ...(options.onlyAvailable ? { service: { activo: true } } : {}),
               },
             },
           }
@@ -59,10 +56,10 @@ export class DentistsRepository {
     return toRecord(row);
   }
 
-  async setActivo(id: string, activo: boolean): Promise<DentistRecord> {
+  async setActive(id: string, active: boolean): Promise<DentistRecord> {
     const row = await this.prisma.dentist.update({
       where: { id },
-      data: { activo },
+      data: { activo: active },
       include: withRelations,
     });
     return toRecord(row);

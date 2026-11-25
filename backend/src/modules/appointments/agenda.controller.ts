@@ -17,12 +17,12 @@ export class AgendaController {
   @Get()
   @ApiOperation({ summary: 'Mis citas de un día, hoy por defecto (solo ODONTOLOGO)' })
   findDay(@CurrentUser() user: CurrentUserData, @Query() query: AgendaQuery) {
-    return this.appointmentsService.agendaDelDia(user.dentistId!, query.fecha);
+    return this.appointmentsService.dayAgenda(user.dentistId!, query.fecha);
   }
 
   @Get('upcoming')
   @ApiOperation({ summary: 'Mis próximas citas (solo ODONTOLOGO)' })
   findUpcoming(@CurrentUser() user: CurrentUserData, @Query() query: UpcomingAgendaQuery) {
-    return this.appointmentsService.proximasDelOdontologo(user.dentistId!, query.limit);
+    return this.appointmentsService.upcomingForDentist(user.dentistId!, query.limit);
   }
 }

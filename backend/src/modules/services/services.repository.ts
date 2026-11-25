@@ -8,9 +8,9 @@ import { NewService, ServiceChanges, ServiceRecord } from './domain/service';
 export class ServicesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(options: { soloActivos: boolean }): Promise<ServiceRecord[]> {
+  async findAll(options: { onlyActive: boolean }): Promise<ServiceRecord[]> {
     const rows = await this.prisma.service.findMany({
-      where: options.soloActivos ? { activo: true } : {},
+      where: options.onlyActive ? { activo: true } : {},
       orderBy: { nombre: 'asc' },
     });
     return rows.map(toRecord);
@@ -27,9 +27,9 @@ export class ServicesRepository {
   }
 
   // Búsqueda sin distinguir mayúsculas, para no permitir "Limpieza" y "limpieza" a la vez.
-  async findByNombre(nombre: string): Promise<ServiceRecord | null> {
+  async findByName(name: string): Promise<ServiceRecord | null> {
     const row = await this.prisma.service.findFirst({
-      where: { nombre: { equals: nombre, mode: 'insensitive' } },
+      where: { nombre: { equals: name, mode: 'insensitive' } },
     });
     return row ? toRecord(row) : null;
   }
@@ -42,8 +42,8 @@ export class ServicesRepository {
     return toRecord(await this.prisma.service.update({ where: { id }, data: changes }));
   }
 
-  async setActivo(id: string, activo: boolean): Promise<ServiceRecord> {
-    return toRecord(await this.prisma.service.update({ where: { id }, data: { activo } }));
+  async setActive(id: string, active: boolean): Promise<ServiceRecord> {
+    return toRecord(await this.prisma.service.update({ where: { id }, data: { activo: active } }));
   }
 }
 

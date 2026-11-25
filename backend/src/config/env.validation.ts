@@ -13,7 +13,7 @@ import {
 
 // Acepta solo zonas horarias IANA que el runtime reconoce (p. ej. America/La_Paz).
 @ValidatorConstraint({ name: 'zonaHorariaIana' })
-class ZonaHorariaIana implements ValidatorConstraintInterface {
+class IanaTimeZone implements ValidatorConstraintInterface {
   validate(value: unknown): boolean {
     if (typeof value !== 'string' || value === '') return false;
     try {
@@ -60,7 +60,7 @@ export class EnvVars {
 
   // Zona horaria de la clínica: los horarios de atención ("09:00") se interpretan en esta zona.
   @IsOptional()
-  @Validate(ZonaHorariaIana)
+  @Validate(IanaTimeZone)
   CLINIC_TIMEZONE: string = 'America/La_Paz';
 }
 
@@ -68,10 +68,10 @@ export function validateEnv(config: Record<string, unknown>): EnvVars {
   const validated = plainToInstance(EnvVars, config, { enableImplicitConversion: true });
   const errors = validateSync(validated, { skipMissingProperties: false, whitelist: true });
   if (errors.length > 0) {
-    const detalle = errors
+    const detail = errors
       .map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`)
       .join('; ');
-    throw new Error(`Configuración inválida. ${detalle}`);
+    throw new Error(`Configuración inválida. ${detail}`);
   }
   return validated;
 }

@@ -6,6 +6,7 @@ description: Cambiar el esquema de base de datos con Prisma (editar schema.prism
 # Migraciones con Prisma
 
 ## Flujo
+
 1. Edita `prisma/schema.prisma`. Respeta nombres de `CONVENCIONES.md` sección 6.
 2. Genera la migración sin aplicarla todavía para poder editarla:
    ```bash
@@ -35,9 +36,10 @@ CREATE INDEX appointment_dentist_start_idx ON "Appointment" ("dentistId", "horaI
 CREATE INDEX appointment_patient_start_idx ON "Appointment" ("patientId", "horaInicio");
 ```
 
-El repository debe capturar la violación del constraint `appointment_no_overlap` (error de Prisma con el nombre del constraint en `meta`) y relanzar `HorarioNoDisponibleError`, para que la respuesta sea 409 igual que en el chequeo de aplicación.
+El repository debe capturar la violación del constraint `appointment_no_overlap` (error de Prisma con el nombre del constraint en `meta`) y relanzar `SlotUnavailableError`, para que la respuesta sea 409 igual que en el chequeo de aplicación.
 
 ## Reglas
+
 - Nunca `prisma db push` fuera de un experimento local; en el repo solo migraciones versionadas.
 - Nunca editar una migración ya aplicada en `main`. Crear una nueva.
 - Enums de negocio (`AppointmentStatus`, `Role`) como `enum` de Prisma, con los valores en español exactos del PDF.

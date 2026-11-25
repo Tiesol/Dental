@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import {
-  EmailYaRegistradoError,
-  OperacionSobrePropiaCuentaError,
-  PasswordActualIncorrectaError,
-  RecursoNoEncontradoError,
+  EmailAlreadyRegisteredError,
+  OwnAccountOperationError,
+  WrongCurrentPasswordError,
+  ResourceNotFoundError,
 } from '../../common/errors/domain-error';
 import { PasswordHasher } from '../../common/security/password-hasher';
 import { normalizeEmail } from '../auth/domain/normalize-email';
-import { construirCambiosDePerfil } from './domain/profile-changes';
+import { buildProfileChanges } from './domain/profile-changes';
 import { toUserDetail } from './domain/public-user';
 import { NewPatientUser, NewStaffUser, UserDetail, UserRecord } from './domain/user';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -51,7 +51,7 @@ export class UsersService {
 
   async createStaff(dto: CreateUserDto): Promise<UserDetail> {
     const email = normalizeEmail(dto.email);
-    await this.assertEmailLibre(email);
+    await this.assertEmailAvailable(email);
 
     const passwordHash = await this.hasher.hash(dto.password);
     const data: NewStaffUser =
@@ -77,7 +77,7 @@ export class UsersService {
     serviceIds: string[];
   }): Promise<UserRecord> {
     const email = normalizeEmail(data.email);
-    await this.assertEmailLibre(email);
+    await this.assertEmailAvailable(email);
     return this.users.createStaff({
       role: 'ODONTOLOGO',
       email,
@@ -90,14 +90,14 @@ export class UsersService {
 
   async update(id: string, dto: UpdateUserDto): Promise<UserDetail> {
     const user = await this.getOrThrow(id);
-    const { email, ...perfil } = dto;
-    const changes = construirCambiosDePerfil(user.role, perfil);
+    const { email, ...profile } = dto;
+    const changes = buildProfileChanges(user.role, profile);
 
     if (email !== undefined) {
-      const nuevo = normalizeEmail(email);
-      if (nuevo !== user.email) {
-        await this.assertEmailLibre(nuevo);
-        changes.email = nuevo;
+      const created = normalizeEmail(email);
+      if (created !== user.email) {
+        await this.assertEmailAvailable(created);
+        changes.email = created;
       }
     }
     return toUserDetail(await this.users.update(id, changes));
@@ -105,26 +105,26 @@ export class UsersService {
 
   // Habilitar / deshabilitar una cuenta. Un ADMIN no puede deshabilitarse a sí mismo
   // (así siempre queda al menos un ADMIN activo capaz de revertir el cambio).
-  async changeStatus(actorId: string, id: string, activo: boolean): Promise<UserDetail> {
+  async changeStatus(actorId: string, id: string, active: boolean): Promise<UserDetail> {
     if (actorId === id) {
-      throw new OperacionSobrePropiaCuentaError();
+      throw new OwnAccountOperationError();
     }
     await this.getOrThrow(id);
-    return toUserDetail(await this.users.setActivo(id, activo));
+    return toUserDetail(await this.users.setActive(id, active));
   }
 
   // ---- Cuenta propia ----
 
   async updateMyProfile(userId: string, dto: UpdateMyProfileDto): Promise<UserDetail> {
     const user = await this.getOrThrow(userId);
-    const changes = construirCambiosDePerfil(user.role, dto);
+    const changes = buildProfileChanges(user.role, dto);
     return toUserDetail(await this.users.update(userId, changes));
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
     const user = await this.getOrThrow(userId);
     if (!(await this.hasher.compare(dto.passwordActual, user.passwordHash))) {
-      throw new PasswordActualIncorrectaError();
+      throw new WrongCurrentPasswordError();
     }
     await this.users.updatePasswordHash(userId, await this.hasher.hash(dto.passwordNueva));
   }
@@ -132,14 +132,14 @@ export class UsersService {
   private async getOrThrow(id: string): Promise<UserRecord> {
     const user = await this.users.findById(id);
     if (!user) {
-      throw new RecursoNoEncontradoError('Usuario');
+      throw new ResourceNotFoundError('Usuario');
     }
     return user;
   }
 
-  private async assertEmailLibre(email: string): Promise<void> {
+  private async assertEmailAvailable(email: string): Promise<void> {
     if (await this.users.findByEmail(email)) {
-      throw new EmailYaRegistradoError();
+      throw new EmailAlreadyRegisteredError();
     }
   }
 }

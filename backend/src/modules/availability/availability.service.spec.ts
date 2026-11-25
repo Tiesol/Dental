@@ -1,12 +1,12 @@
 import { ConfigService } from '@nestjs/config';
 import {
-  BloqueConCitasError,
-  FechaInvalidaError,
-  HorarioInvalidoError,
-  OdontologoDeshabilitadoError,
-  OdontologoNoRealizaServicioError,
-  RecursoNoEncontradoError,
-  ServicioDeshabilitadoError,
+  BlockHasAppointmentsError,
+  InvalidDateError,
+  InvalidScheduleError,
+  DentistDisabledError,
+  DentistDoesNotOfferServiceError,
+  ResourceNotFoundError,
+  ServiceDisabledError,
 } from '../../common/errors/domain-error';
 import { DentistsService } from '../dentists/dentists.service';
 import { ServicesService } from '../services/services.service';
@@ -14,9 +14,9 @@ import { AvailabilityRepository } from './availability.repository';
 import { AvailabilityService } from './availability.service';
 
 describe('AvailabilityService', () => {
-  const ahora = new Date('2026-11-09T14:00:00.000Z');
-  const vista = { horarios: [], bloques: [] };
-  const conBloque = {
+  const now = new Date('2026-11-09T14:00:00.000Z');
+  const view = { horarios: [], bloques: [] };
+  const withBlock = {
     horarios: [],
     bloques: [
       {
@@ -27,8 +27,8 @@ describe('AvailabilityService', () => {
       },
     ],
   };
-  const lunes = { diaSemana: 1, minutoInicio: 540, minutoFin: 720 };
-  const cuerpoBloque = { inicio: '2026-11-10T14:00:00.000Z', fin: '2026-11-10T15:00:00.000Z' };
+  const monday = { diaSemana: 1, minutoInicio: 540, minutoFin: 720 };
+  const blockBody = { inicio: '2026-11-10T14:00:00.000Z', fin: '2026-11-10T15:00:00.000Z' };
 
   const repository = {
     findByDentist: jest.fn(),
@@ -44,22 +44,22 @@ describe('AvailabilityService', () => {
     repository as unknown as AvailabilityRepository,
     dentists as unknown as DentistsService,
     services as unknown as ServicesService,
-    { now: () => ahora },
+    { now: () => now },
     config as unknown as ConfigService,
   );
 
   beforeEach(() => {
     jest.resetAllMocks();
-    repository.findByDentist.mockResolvedValue(vista);
+    repository.findByDentist.mockResolvedValue(view);
   });
 
   describe('findSlots', () => {
-    const odontologo = { activo: true, cuentaActiva: true, servicios: [{ id: 's1' }] };
-    const servicio = { id: 's1', activo: true, duracionMin: 30 };
+    const dentist = { activo: true, cuentaActiva: true, servicios: [{ id: 's1' }] };
+    const dentalService = { id: 's1', activo: true, duracionMin: 30 };
 
     beforeEach(() => {
-      dentists.getOrThrow.mockResolvedValue(odontologo);
-      services.getOrThrow.mockResolvedValue(servicio);
+      dentists.getOrThrow.mockResolvedValue(dentist);
+      services.getOrThrow.mockResolvedValue(dentalService);
       repository.findSlotInputs.mockResolvedValue({
         horarios: [{ diaSemana: 2, minutoInicio: 540, minutoFin: 570 }],
         bloques: [],
@@ -77,7 +77,7 @@ describe('AvailabilityService', () => {
           inicio: new Date('2026-11-10T04:00:00.000Z'),
           fin: new Date('2026-11-11T04:00:00.000Z'),
         },
-        { tx: undefined, excluirCitaId: undefined },
+        { tx: undefined, excludeAppointmentId: undefined },
       );
       expect(slots).toEqual([
         { inicio: new Date('2026-11-10T13:00:00.000Z'), fin: new Date('2026-11-10T13:30:00.000Z') },
@@ -85,108 +85,108 @@ describe('AvailabilityService', () => {
     });
 
     it('rechaza una fecha inválida sin consultar nada', async () => {
-      await expect(service.findSlots('d1', 's1', '2026-02-30')).rejects.toThrow(FechaInvalidaError);
+      await expect(service.findSlots('d1', 's1', '2026-02-30')).rejects.toThrow(InvalidDateError);
 
       expect(services.getOrThrow).not.toHaveBeenCalled();
       expect(repository.findSlotInputs).not.toHaveBeenCalled();
     });
 
     it('no calcula horarios de un servicio deshabilitado', async () => {
-      services.getOrThrow.mockResolvedValue({ ...servicio, activo: false });
+      services.getOrThrow.mockResolvedValue({ ...dentalService, activo: false });
 
       await expect(service.findSlots('d1', 's1', '2026-11-10')).rejects.toThrow(
-        ServicioDeshabilitadoError,
+        ServiceDisabledError,
       );
 
       expect(repository.findSlotInputs).not.toHaveBeenCalled();
     });
 
     it('no calcula horarios de un odontólogo que no acepta citas', async () => {
-      dentists.getOrThrow.mockResolvedValue({ ...odontologo, activo: false });
+      dentists.getOrThrow.mockResolvedValue({ ...dentist, activo: false });
 
       await expect(service.findSlots('d1', 's1', '2026-11-10')).rejects.toThrow(
-        OdontologoDeshabilitadoError,
+        DentistDisabledError,
       );
 
       expect(repository.findSlotInputs).not.toHaveBeenCalled();
     });
 
     it('no calcula horarios de un servicio que el odontólogo no realiza', async () => {
-      dentists.getOrThrow.mockResolvedValue({ ...odontologo, servicios: [] });
+      dentists.getOrThrow.mockResolvedValue({ ...dentist, servicios: [] });
 
       await expect(service.findSlots('d1', 's1', '2026-11-10')).rejects.toThrow(
-        OdontologoNoRealizaServicioError,
+        DentistDoesNotOfferServiceError,
       );
 
       expect(repository.findSlotInputs).not.toHaveBeenCalled();
     });
   });
 
-  describe('fechaClinica', () => {
+  describe('clinicDate', () => {
     it('devuelve el día de la clínica de un instante nocturno', () => {
-      expect(service.fechaClinica(new Date('2026-11-11T02:00:00.000Z'))).toBe('2026-11-10');
+      expect(service.clinicDate(new Date('2026-11-11T02:00:00.000Z'))).toBe('2026-11-10');
     });
   });
 
   describe('find', () => {
     it('no consulta la disponibilidad de un odontólogo que el rol no puede ver', async () => {
-      dentists.findOne.mockRejectedValue(new RecursoNoEncontradoError('Odontólogo'));
+      dentists.findOne.mockRejectedValue(new ResourceNotFoundError('Odontólogo'));
 
-      await expect(service.find('d1', 'PACIENTE')).rejects.toThrow(RecursoNoEncontradoError);
+      await expect(service.find('d1', 'PACIENTE')).rejects.toThrow(ResourceNotFoundError);
 
       expect(dentists.findOne).toHaveBeenCalledWith('d1', 'PACIENTE');
       expect(repository.findByDentist).not.toHaveBeenCalled();
     });
 
     it('consulta los bloques vigentes según la hora del reloj', async () => {
-      const resultado = await service.find('d1', 'PACIENTE');
+      const result = await service.find('d1', 'PACIENTE');
 
-      expect(resultado).toEqual(vista);
-      expect(repository.findByDentist).toHaveBeenCalledWith('d1', ahora);
+      expect(result).toEqual(view);
+      expect(repository.findByDentist).toHaveBeenCalledWith('d1', now);
     });
 
     it('entrega el motivo de los bloques al ADMIN', async () => {
-      repository.findByDentist.mockResolvedValue(conBloque);
+      repository.findByDentist.mockResolvedValue(withBlock);
 
-      const resultado = await service.find('d1', 'ADMIN');
+      const result = await service.find('d1', 'ADMIN');
 
-      expect(resultado).toEqual(conBloque);
+      expect(result).toEqual(withBlock);
     });
 
-    it.each(['PACIENTE', 'ODONTOLOGO'] as const)('oculta el motivo al rol %s', async (rol) => {
-      repository.findByDentist.mockResolvedValue(conBloque);
+    it.each(['PACIENTE', 'ODONTOLOGO'] as const)('oculta el motivo al rol %s', async (role) => {
+      repository.findByDentist.mockResolvedValue(withBlock);
 
-      const resultado = await service.find('d1', rol);
+      const result = await service.find('d1', role);
 
-      expect(resultado.bloques).toEqual([
-        { id: 'b1', inicio: conBloque.bloques[0].inicio, fin: conBloque.bloques[0].fin },
+      expect(result.bloques).toEqual([
+        { id: 'b1', inicio: withBlock.bloques[0].inicio, fin: withBlock.bloques[0].fin },
       ]);
     });
   });
 
-  describe('replaceHorarios', () => {
+  describe('replaceSchedule', () => {
     it('guarda los horarios válidos y devuelve la disponibilidad actualizada', async () => {
-      const resultado = await service.replaceHorarios('d1', [lunes]);
+      const result = await service.replaceSchedule('d1', [monday]);
 
-      expect(repository.replaceRules).toHaveBeenCalledWith('d1', [lunes]);
-      expect(repository.findByDentist).toHaveBeenCalledWith('d1', ahora);
-      expect(resultado).toEqual(vista);
+      expect(repository.replaceRules).toHaveBeenCalledWith('d1', [monday]);
+      expect(repository.findByDentist).toHaveBeenCalledWith('d1', now);
+      expect(result).toEqual(view);
     });
 
     it('no guarda nada si los horarios son inválidos', async () => {
-      const solapados = [lunes, { ...lunes, minutoInicio: 600 }];
+      const overlapping = [monday, { ...monday, minutoInicio: 600 }];
 
-      await expect(service.replaceHorarios('d1', solapados)).rejects.toThrow(HorarioInvalidoError);
+      await expect(service.replaceSchedule('d1', overlapping)).rejects.toThrow(
+        InvalidScheduleError,
+      );
 
       expect(repository.replaceRules).not.toHaveBeenCalled();
     });
 
     it('no guarda nada si el odontólogo no existe', async () => {
-      dentists.findOne.mockRejectedValue(new RecursoNoEncontradoError('Odontólogo'));
+      dentists.findOne.mockRejectedValue(new ResourceNotFoundError('Odontólogo'));
 
-      await expect(service.replaceHorarios('d1', [lunes])).rejects.toThrow(
-        RecursoNoEncontradoError,
-      );
+      await expect(service.replaceSchedule('d1', [monday])).rejects.toThrow(ResourceNotFoundError);
 
       expect(repository.replaceRules).not.toHaveBeenCalled();
     });
@@ -194,39 +194,37 @@ describe('AvailabilityService', () => {
 
   describe('createBlock', () => {
     it('convierte las fechas y guarda el motivo como null si no se indica', async () => {
-      const creado = { id: 'b1', motivo: null };
-      repository.createBlockIfFree.mockResolvedValue(creado);
+      const created = { id: 'b1', motivo: null };
+      repository.createBlockIfFree.mockResolvedValue(created);
 
-      const resultado = await service.createBlock('d1', cuerpoBloque);
+      const result = await service.createBlock('d1', blockBody);
 
-      expect(resultado).toEqual(creado);
+      expect(result).toEqual(created);
       expect(repository.createBlockIfFree).toHaveBeenCalledWith('d1', {
-        inicio: new Date(cuerpoBloque.inicio),
-        fin: new Date(cuerpoBloque.fin),
+        inicio: new Date(blockBody.inicio),
+        fin: new Date(blockBody.fin),
         motivo: null,
       });
     });
 
-    it('lanza BloqueConCitasError si el repository no pudo crearlo', async () => {
+    it('lanza BlockHasAppointmentsError si el repository no pudo crearlo', async () => {
       repository.createBlockIfFree.mockResolvedValue(null);
 
-      await expect(service.createBlock('d1', cuerpoBloque)).rejects.toThrow(BloqueConCitasError);
+      await expect(service.createBlock('d1', blockBody)).rejects.toThrow(BlockHasAppointmentsError);
     });
 
     it('no intenta crear un bloque ya terminado', async () => {
-      const terminado = { inicio: '2026-11-08T14:00:00.000Z', fin: '2026-11-08T15:00:00.000Z' };
+      const ended = { inicio: '2026-11-08T14:00:00.000Z', fin: '2026-11-08T15:00:00.000Z' };
 
-      await expect(service.createBlock('d1', terminado)).rejects.toThrow(FechaInvalidaError);
+      await expect(service.createBlock('d1', ended)).rejects.toThrow(InvalidDateError);
 
       expect(repository.createBlockIfFree).not.toHaveBeenCalled();
     });
 
     it('no intenta crear el bloque si el odontólogo no existe', async () => {
-      dentists.findOne.mockRejectedValue(new RecursoNoEncontradoError('Odontólogo'));
+      dentists.findOne.mockRejectedValue(new ResourceNotFoundError('Odontólogo'));
 
-      await expect(service.createBlock('d1', cuerpoBloque)).rejects.toThrow(
-        RecursoNoEncontradoError,
-      );
+      await expect(service.createBlock('d1', blockBody)).rejects.toThrow(ResourceNotFoundError);
 
       expect(repository.createBlockIfFree).not.toHaveBeenCalled();
     });
@@ -241,16 +239,16 @@ describe('AvailabilityService', () => {
       expect(repository.deleteBlock).toHaveBeenCalledWith('d1', 'b1');
     });
 
-    it('lanza RecursoNoEncontradoError si no había nada que borrar', async () => {
+    it('lanza ResourceNotFoundError si no había nada que borrar', async () => {
       repository.deleteBlock.mockResolvedValue(false);
 
-      await expect(service.deleteBlock('d1', 'b1')).rejects.toThrow(RecursoNoEncontradoError);
+      await expect(service.deleteBlock('d1', 'b1')).rejects.toThrow(ResourceNotFoundError);
     });
 
     it('no borra nada si el odontólogo no existe', async () => {
-      dentists.findOne.mockRejectedValue(new RecursoNoEncontradoError('Odontólogo'));
+      dentists.findOne.mockRejectedValue(new ResourceNotFoundError('Odontólogo'));
 
-      await expect(service.deleteBlock('d1', 'b1')).rejects.toThrow(RecursoNoEncontradoError);
+      await expect(service.deleteBlock('d1', 'b1')).rejects.toThrow(ResourceNotFoundError);
 
       expect(repository.deleteBlock).not.toHaveBeenCalled();
     });

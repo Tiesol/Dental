@@ -3,18 +3,18 @@ import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import type { AppointmentStatus } from '../domain/appointment';
 
-const ESTADOS = ['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'FINALIZADA', 'CANCELADA'];
+const STATUSES = ['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'FINALIZADA', 'CANCELADA'];
 
 export class ListAppointmentsQuery {
-  // Aquí solo se exige un texto; que la fecha exista lo valida el dominio (FechaInvalidaError).
+  // Aquí solo se exige un texto; que la fecha exista lo valida el dominio (InvalidDateError).
   @ApiPropertyOptional({ example: '2026-11-10', description: 'Día en la zona de la clínica' })
   @IsOptional()
   @IsString({ message: 'fecha debe ser un texto con formato YYYY-MM-DD' })
   fecha?: string;
 
-  @ApiPropertyOptional({ enum: ESTADOS })
+  @ApiPropertyOptional({ enum: STATUSES })
   @IsOptional()
-  @IsIn(ESTADOS, { message: 'estado no es válido' })
+  @IsIn(STATUSES, { message: 'estado no es válido' })
   estado?: AppointmentStatus;
 
   @ApiPropertyOptional()

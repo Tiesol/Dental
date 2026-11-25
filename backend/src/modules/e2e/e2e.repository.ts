@@ -7,55 +7,66 @@ import { AppointmentStatus } from '../appointments/domain/appointment';
 export class E2eRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async nombreDeLaBase(): Promise<string> {
-    const [{ nombre }] = await this.prisma.$queryRaw<{ nombre: string }[]>`
+  async databaseName(): Promise<string> {
+    const [{ nombre: name }] = await this.prisma.$queryRaw<{ nombre: string }[]>`
       SELECT current_database() AS nombre`;
-    return nombre;
+    return name;
   }
 
-  async vaciar(): Promise<void> {
-    const tablas = await this.prisma.$queryRaw<{ tablename: string }[]>`
+  async wipe(): Promise<void> {
+    const tables = await this.prisma.$queryRaw<{ tablename: string }[]>`
       SELECT tablename FROM pg_tables
       WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
-    const lista = tablas.map((t) => `"${t.tablename}"`).join(', ');
-    await this.prisma.$executeRawUnsafe(`TRUNCATE ${lista} CASCADE`);
+    const list = tables.map((t) => `"${t.tablename}"`).join(', ');
+    await this.prisma.$executeRawUnsafe(`TRUNCATE ${list} CASCADE`);
   }
 
-  async crearAdmin(email: string, passwordHash: string): Promise<void> {
+  async createAdmin(email: string, passwordHash: string): Promise<void> {
     await this.prisma.user.create({ data: { email, passwordHash, role: 'ADMIN' } });
   }
 
-  async crearPaciente(datos: {
+  async createPatient(data: {
     email: string;
     passwordHash: string;
     nombre: string;
     apellido: string;
   }): Promise<void> {
-    const { nombre, apellido, ...cuenta } = datos;
+    const { nombre: name, apellido: lastName, ...account } = data;
     await this.prisma.user.create({
-      data: { ...cuenta, role: 'PACIENTE', patient: { create: { nombre, apellido } } },
+      data: {
+        ...account,
+        role: 'PACIENTE',
+        patient: { create: { nombre: name, apellido: lastName } },
+      },
     });
   }
 
-  async crearServicio(datos: {
+  async createService(data: {
     nombre: string;
     descripcion: string;
     duracionMin: number;
     activo: boolean;
   }): Promise<string> {
-    const { id } = await this.prisma.service.create({ data: datos });
+    const { id } = await this.prisma.service.create({ data });
     return id;
   }
 
-  async crearOdontologo(datos: {
+  async createDentist(data: {
     email: string;
     passwordHash: string;
     nombre: string;
     especialidad: string;
     serviceIds: string[];
-    horarios: { diaSemana: number; minutoInicio: number; minutoFin: number }[];
+    schedule: { diaSemana: number; minutoInicio: number; minutoFin: number }[];
   }): Promise<void> {
-    const { email, passwordHash, nombre, especialidad, serviceIds, horarios } = datos;
+    const {
+      email,
+      passwordHash,
+      nombre: name,
+      especialidad: specialty,
+      serviceIds,
+      schedule,
+    } = data;
     await this.prisma.user.create({
       data: {
         email,
@@ -63,10 +74,10 @@ export class E2eRepository {
         role: 'ODONTOLOGO',
         dentist: {
           create: {
-            nombre,
-            especialidad,
+            nombre: name,
+            especialidad: specialty,
             services: { create: serviceIds.map((serviceId) => ({ serviceId })) },
-            availabilityRules: { create: horarios },
+            availabilityRules: { create: schedule },
           },
         },
       },
@@ -75,30 +86,30 @@ export class E2eRepository {
 
   // La cita usa al odontólogo del seed y el servicio indicado; se salta las validaciones a
   // propósito, para poder dejar citas pasadas o en cualquier estado.
-  async crearCita(datos: {
-    emailPaciente: string;
-    nombreServicio: string;
+  async createAppointment(data: {
+    patientEmail: string;
+    serviceName: string;
     horaInicio: Date;
-    horaFin: (duracionMin: number) => Date;
+    horaFin: (durationMin: number) => Date;
     estado: AppointmentStatus;
-    observacion?: string;
+    observation?: string;
   }): Promise<{ id: string }> {
-    const paciente = await this.prisma.patient.findFirstOrThrow({
-      where: { user: { email: datos.emailPaciente } },
+    const patient = await this.prisma.patient.findFirstOrThrow({
+      where: { user: { email: data.patientEmail } },
     });
-    const servicio = await this.prisma.service.findUniqueOrThrow({
-      where: { nombre: datos.nombreServicio },
+    const service = await this.prisma.service.findUniqueOrThrow({
+      where: { nombre: data.serviceName },
     });
-    const odontologo = await this.prisma.dentist.findFirstOrThrow();
+    const dentist = await this.prisma.dentist.findFirstOrThrow();
     return this.prisma.appointment.create({
       data: {
-        patientId: paciente.id,
-        dentistId: odontologo.id,
-        serviceId: servicio.id,
-        horaInicio: datos.horaInicio,
-        horaFin: datos.horaFin(servicio.duracionMin),
-        estado: datos.estado,
-        ...(datos.observacion ? { observation: { create: { texto: datos.observacion } } } : {}),
+        patientId: patient.id,
+        dentistId: dentist.id,
+        serviceId: service.id,
+        horaInicio: data.horaInicio,
+        horaFin: data.horaFin(service.duracionMin),
+        estado: data.estado,
+        ...(data.observation ? { observation: { create: { texto: data.observation } } } : {}),
       },
       select: { id: true },
     });

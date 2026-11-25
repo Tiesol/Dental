@@ -20,6 +20,6 @@ export class ObservationsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateObservationDto,
   ) {
-    return this.observationsService.registrar(id, dto.texto, user);
+    return this.observationsService.register(id, dto.texto, user);
   }
 }

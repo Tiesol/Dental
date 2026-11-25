@@ -6,11 +6,11 @@ import { Clock } from '../../src/common/time/clock';
 
 // Levanta la app real (mismos pipes, filtros y guards que producción) para tests de integración.
 // Con `ahora` fija la hora actual, para que las reglas que dependen de ella sean deterministas.
-export async function createTestApp(options: { ahora?: Date } = {}): Promise<INestApplication> {
+export async function createTestApp(options: { now?: Date } = {}): Promise<INestApplication> {
   const builder = Test.createTestingModule({ imports: [AppModule] });
-  const { ahora } = options;
-  if (ahora) {
-    builder.overrideProvider(Clock).useValue({ now: () => ahora });
+  const { now } = options;
+  if (now) {
+    builder.overrideProvider(Clock).useValue({ now: () => now });
   }
   const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication();

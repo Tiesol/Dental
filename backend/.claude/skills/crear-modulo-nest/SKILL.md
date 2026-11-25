@@ -28,7 +28,7 @@ async reservar(dto: CreateAppointmentDto, user: CurrentUserData): Promise<Appoin
     const service = await this.services.findActiveOrThrow(tx, dto.serviceId);
     const dentist = await this.dentists.findActiveOrThrow(tx, dto.dentistId);
     assertDentistPerformsService(dentist, service);                   // domain
-    const end = calcularHoraFin(dto.horaInicio, service.duracionMin); // domain
+    const end = calculateEndTime(dto.horaInicio, service.duracionMin); // domain
     assertNotInPast(dto.horaInicio, this.clock.now());                // domain
     const active = await this.appointments.findActiveByDentistBetween(tx, dentist.id, dto.horaInicio, end);
     assertNoOverlap({ inicio: dto.horaInicio, fin: end }, active);     // domain
@@ -41,7 +41,7 @@ async reservar(dto: CreateAppointmentDto, user: CurrentUserData): Promise<Appoin
 ## Diseño de la API (adaptado de api-and-interface-design)
 
 - **Contrato primero**: antes de codificar, escribe la fila del endpoint en `ARQUITECTURA.md` sección 8 (ruta, método, roles, cuerpo, respuesta) y los tipos de request/response. El DTO es el contrato.
-- **Recursos en plural, sin verbos en la URL**: `POST /appointments`, `PATCH /appointments/:id/cancel` (acción como sub-recurso), nunca `/crearCita`. Query params y campos de respuesta en `camelCase`; enums en `UPPER_SNAKE`.
+- **Recursos en plural, sin verbos en la URL**: `POST /appointments`, `PATCH /appointments/:id/cancel` (acción como sub-recurso), nunca `/createAppointment`. Query params y campos de respuesta en `camelCase`; enums en `UPPER_SNAKE`.
 - **Un solo formato de error** (`{ statusCode, error, message, details? }`) y un solo mapeo de códigos: 400 entrada inválida, 401 sin autenticar, 403 sin permiso o no es dueño, 404 no existe, 409 conflicto de negocio.
 - **Validar solo en el borde**: DTOs validan la entrada; el dominio y los repositories confían en los tipos. No repetir `if (!dto.x)` dentro de services.
 - **Entrada y salida separadas**: el cliente nunca envía campos que el servidor deriva (`horaFin`, `estado`, `patientId`); la respuesta incluye los generados (`id`, `createdAt`).
@@ -50,6 +50,7 @@ async reservar(dto: CreateAppointmentDto, user: CurrentUserData): Promise<Appoin
 - **Operaciones de escritura y reintentos**: reservar no es idempotente; el frontend no reintenta automáticamente (ver skill `consumo-api` del frontend). La doble reserva se evita en el servidor con transacción + bloqueo + constraint, no con claves de idempotencia.
 
 ## Checklist antes de dar por terminado
+
 - [ ] El dominio no importa `@nestjs/*` ni `@prisma/client`.
 - [ ] Ningún `if` de negocio en el controller.
 - [ ] Guards y roles declarados; endpoint probado sin token y con rol incorrecto.
