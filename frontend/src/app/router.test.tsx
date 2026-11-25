@@ -17,7 +17,46 @@ function usuarioConRol(role: 'PACIENTE' | 'ODONTOLOGO' | 'ADMIN') {
   );
 }
 
+// Las pantallas de inicio de cada rol piden sus listas al montar; aquí llegan vacías.
+function pantallasDeInicioVacias() {
+  server.use(
+    http.get(`${API}/appointments/mine`, () => HttpResponse.json([])),
+    http.get(`${API}/dentists/me/agenda`, () => HttpResponse.json([])),
+    http.get(`${API}/dentists/me/agenda/upcoming`, () => HttpResponse.json([])),
+    http.get(`${API}/appointments`, () => HttpResponse.json([])),
+    http.get(`${API}/dentists`, () => HttpResponse.json([])),
+  );
+}
+
 describe('AppRoutes', () => {
+  it.each([
+    ['PACIENTE', 'Mis citas'],
+    ['ODONTOLOGO', 'Agenda'],
+    ['ADMIN', 'Citas'],
+  ] as const)(
+    'al entrar a la raíz, el %s llega a su pantalla principal: %s',
+    async (rol, titulo) => {
+      usuarioConRol(rol);
+      pantallasDeInicioVacias();
+
+      renderWithProviders(<AppRoutes />, { route: '/', conSesion: true });
+
+      expect(await screen.findByRole('heading', { level: 1, name: titulo })).toBeInTheDocument();
+    },
+  );
+
+  it('Mi cuenta tiene su propia ruta para cualquier rol', async () => {
+    usuarioConRol('ODONTOLOGO');
+
+    renderWithProviders(<AppRoutes />, { route: '/mi-cuenta', conSesion: true });
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Mi cuenta' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Mi cuenta/, current: 'page' })).toHaveAttribute(
+      'href',
+      '/mi-cuenta',
+    );
+  });
+
   it('el login se muestra sin el menú de la aplicación', async () => {
     renderWithProviders(<AppRoutes />, { route: '/login' });
 
@@ -36,6 +75,7 @@ describe('AppRoutes', () => {
 
   it('una página protegida se muestra con el menú y un enlace para saltar al contenido', async () => {
     usuarioConRol('PACIENTE');
+    pantallasDeInicioVacias();
 
     renderWithProviders(<AppRoutes />, { route: '/', conSesion: true });
 
