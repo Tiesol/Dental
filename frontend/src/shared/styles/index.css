@@ -1289,6 +1289,23 @@ tbody tr:last-child td {
   font-size: var(--text-sm);
 }
 
+/* Íconos de las acciones de fila (reloj de Horarios, flecha de Abrir) en la tinta. */
+.actions .btn .icon {
+  width: 1.1em;
+  height: 1.1em;
+  color: var(--primary);
+}
+
+/* Editar y Deshabilitar, uno encima del otro y del mismo ancho. */
+.acciones-apiladas {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.acciones-apiladas .btn {
+  width: 100%;
+}
+
 /* En pantallas angostas cada fila se apila: las acciones quedan a la vista, sin scroll lateral. */
 @media (max-width: 43.99rem) {
   .table-scroll thead {

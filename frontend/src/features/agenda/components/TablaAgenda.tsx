@@ -1,7 +1,8 @@
-import { Link } from 'react-router-dom';
 import type { AppointmentResponse } from '@/api/types';
+import { ButtonLink } from '@/shared/components/ButtonLink';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { EstadoCitaBadge } from '@/shared/components/EstadoCitaBadge';
+import { Icon } from '@/shared/components/Icon';
 import { formatearFecha, formatearRangoHora } from '@/shared/lib/dates';
 
 type Props = { citas: AppointmentResponse[]; vacio: string };
@@ -44,9 +45,16 @@ export function TablaAgenda({ citas, vacio }: Props) {
                 <td>{cita.observacion?.texto ?? <span className="muted">Sin observación</span>}</td>
                 <td>
                   <div className="actions">
-                    <Link to={`/agenda/${cita.id}`} aria-label={`Abrir cita de ${paciente}`}>
-                      Abrir
-                    </Link>
+                    <ButtonLink
+                      variant="secondary"
+                      to={`/agenda/${cita.id}`}
+                      aria-label={`Abrir cita de ${paciente}`}
+                    >
+                      <span className="btn-label">
+                        Abrir
+                        <Icon name="chevron-right" />
+                      </span>
+                    </ButtonLink>
                   </div>
                 </td>
               </tr>

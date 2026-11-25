@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ActiveBadge } from '@/shared/components/ActiveBadge';
 import { Button } from '@/shared/components/Button';
 import { ButtonLink } from '@/shared/components/ButtonLink';
@@ -124,15 +123,19 @@ export function AdminServiciosPage() {
                     </td>
                     <td>
                       <div className="actions">
-                        <Link to={`/admin/servicios/${s.id}`}>Editar</Link>
-                        <Button
-                          variant={s.activo ? 'danger-outline' : 'secondary'}
-                          loading={procesando === s.id}
-                          onClick={() => void alternarEstado(s.id, s.nombre, s.activo)}
-                          data-testid="btn-cambiar-estado-servicio"
-                        >
-                          {s.activo ? 'Deshabilitar' : 'Habilitar'}
-                        </Button>
+                        <div className="acciones-apiladas">
+                          <ButtonLink variant="secondary" to={`/admin/servicios/${s.id}`}>
+                            Editar
+                          </ButtonLink>
+                          <Button
+                            variant={s.activo ? 'danger-outline' : 'secondary'}
+                            loading={procesando === s.id}
+                            onClick={() => void alternarEstado(s.id, s.nombre, s.activo)}
+                            data-testid="btn-cambiar-estado-servicio"
+                          >
+                            {s.activo ? 'Deshabilitar' : 'Habilitar'}
+                          </Button>
+                        </div>
                       </div>
                     </td>
                   </tr>
